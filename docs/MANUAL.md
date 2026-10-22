@@ -23,7 +23,7 @@ El club tiene 4 pistas techadas (1 a 4) y 1 sin techo (5); la app ya viene confi
 | --- | --- |
 | Categorías | Femenino, Masculino y Mixto, cada una en 7ma, 6ta, 5ta, 4ta, 3ra y Open (Open Mixto en Mixto) |
 | Formatos | **Individual**: cambias de pareja cada ronda. **Dupla fija**: parejas inscritas, todos contra todos. **Mixto**: como Individual, pero cada pareja es siempre un hombre y una mujer |
-| Puntuación | Puntos totales (ej. a 24), games con punto de oro, o sets cortos a 4 games al mejor de 3 |
+| Puntuación | 100% personalizable: puntos (24 en total, a 13 o cualquier número), games (5 en total, a 6, etc.) con tie-break opcional si empatan, o sets (1, mejor de 3 o de 5, a 4 o 6 games) con super tie opcional. Punto de oro o ventaja |
 | Criterio del ranking | Todos los puntos (cada jugador suma los puntos de su pareja, gane o pierda), Solo rondas ganadas, o Por victorias (3 por ganar, 1 por empate) |
 | Sorteo de parejas | Algoritmo balanceado: no repite compañero, reparte rivales y equilibra niveles. Quien descansa se elige por justicia (el que menos jugó) |
 | Pistas y horario | De 1 a 6 pistas. Calcula cuántas rondas caben en el horario del evento. Botón "¿Llueve?" que deja solo las pistas techadas |
@@ -56,10 +56,22 @@ Tras 5 PIN incorrectos seguidos, ese dispositivo espera 10 minutos.
 En el inicio, toca **Nuevo Americano**. El asistente tiene 5 pasos y guarda el borrador si se cierra la app.
 
 1. **Categoría:** Femenino, Masculino o Mixto, y el nivel (7ma a Open).
-2. **Formato:** Individual, Dupla fija o Mixto; cómo se puntúa (puntos, games con punto de oro o sets cortos) y el criterio del ranking.
+2. **Formato:** Individual, Dupla fija o Mixto; las reglas del partido (ver "Reglas de puntuación") y el criterio del ranking.
 3. **Pistas:** cuáles se usan, fecha, hora de inicio y fin, y minutos por ronda. La app muestra cuántas rondas caben. Si llueve, el botón **¿Llueve?** deja solo las pistas techadas.
 4. **Jugadores:** nombres (y género en Mixto), o parejas en Dupla fija. Avisa si falta gente o sobra para las pistas.
 5. **Listo:** revisa el resumen y crea el evento. Las rondas se sortean solas.
+
+### Reglas de puntuación
+
+En el paso Formato se elige cómo se cuenta y se escribe cualquier número. Los atajos cubren lo habitual y el contador permite el resto. Abajo siempre aparece el resumen, por ejemplo "5 games en total · si quedan 2-2, tie a 5 · punto de oro".
+
+| Método | Opciones | Ejemplo |
+| --- | --- | --- |
+| Puntos | En total o primero en llegar; de 4 a 99 puntos | "24 en total" (13-11) o "a 13" (13-9) |
+| Games | En total o primero en llegar; de 1 a 15 games; punto de oro o ventaja; tie-break opcional de 3 a 21 puntos | 5 games en total: si quedan 2-2, el último game es un tie a 5 (3-2, tie 5-3) |
+| Sets | 1 set, mejor de 3 o de 5; de 2 a 9 games por set; punto de oro o ventaja; super tie opcional en el set decisivo | Mejor de 3 a 6 games, 3er set super tie a 10 (6-4, 5-7, 10-8) |
+
+Al cargar el marcador, la app solo acepta resultados posibles con esas reglas y ofrece atajos con los finales válidos. Si el partido se definió en el tie-break, se puede anotar su marcador (es opcional y se muestra en la tarjeta de la pista). Si se acaba el tiempo antes de terminar, se puede guardar el marcador parcial.
 
 ### Durante el evento (staff)
 
@@ -164,7 +176,7 @@ cd lamarinasportclub
 npm install
 cp .env.example .env.local   # vacío = modo DEMO
 npm run dev                  # http://localhost:3000, PIN 1234
-npm test                     # 29 tests de lógica
+npm test                     # 37 tests de lógica
 ```
 
 ### 2. Crear las tablas en Supabase
@@ -252,12 +264,12 @@ Errores, siempre en JSON: `400` JSON mal formado, `401` sin sesión, `403` usuar
 
 ## Pruebas y solución de problemas
 
-Antes de entregar pasaron 29 tests de lógica (`npm test`), 22 pruebas en navegador real con Playwright, `tsc --noEmit` sin errores y el build de Next.js.
+Antes de entregar pasaron 37 tests de lógica (`npm test`), 22 pruebas en navegador real con Playwright, `tsc --noEmit` sin errores y el build de Next.js.
 
 | Prueba | Qué cubre |
 | --- | --- |
 | Rotación | Sin compañeros repetidos, descansos justos, Mixto siempre hombre + mujer, Dupla fija todos contra todos |
-| Puntuación | Marcadores imposibles rechazados, los 3 criterios de ranking, desempates |
+| Puntuación | Marcadores imposibles rechazados, puntos a 13, games en total con tie a 2-2, super tie, los 3 criterios de ranking, desempates |
 | Robustez | Dos dispositivos a la vez, reloj del celular atrasado, sin internet, datos locales corruptos, re-sorteos, borrado |
 | API | `401` sin sesión, PIN incorrecto, `429` al sexto intento, cookie falsa, `400`, `413`, `422`, `404` |
 | Pantallas | Celular, tablet, computador, TV 720p, 1080p, 4K y vertical |

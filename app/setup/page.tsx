@@ -16,7 +16,8 @@ import { categoriaLabel, FORMATOS, formatoDe, formatoLabel, METODOS, nivelLabel,
 import { crearEvento, generarRondas, nuevoId } from "@/lib/evento";
 import { sonar, vibrar } from "@/lib/feedback";
 import { partidosPorRonda, rondasSugeridas } from "@/lib/rotation";
-import { configPorDefecto, CRITERIOS, criterioDe } from "@/lib/scoring";
+import { configPorDefecto, CRITERIOS, criterioDe, descripcionPuntuacion } from "@/lib/scoring";
+import { ReglasPuntuacion } from "@/components/ReglasPuntuacion";
 import { aHora, aMinutos, DIAS, diaSemana, franjas, horaFinPrevista, horarioDelDia, nombrePista, rondasQueCaben, validarFranja } from "@/lib/horarios";
 import { useAmericanos } from "@/lib/store";
 import { hayBorrador, useBorrador, useLimpiarBorrador } from "@/hooks/useBorrador";
@@ -278,44 +279,7 @@ function Setup() {
                   ))}
                 </div>
 
-                <div className="glass mt-4 flex flex-wrap items-center justify-between gap-4 rounded-2xl p-4">
-                  {puntuacion.metodo === "PUNTOS_TOTALES" && (
-                    <>
-                      <span className="text-sm text-white/70">Puntos por partido</span>
-                      <div className="flex gap-2">
-                        {[16, 21, 24, 32].map((p) => (
-                          <Chip key={p} activo={puntuacion.puntosPorPartido === p} onClick={() => setPuntuacion({ ...puntuacion, puntosPorPartido: p })}>
-                            {p}
-                          </Chip>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                  {puntuacion.metodo === "GAMES_PUNTO_ORO" && (
-                    <>
-                      <span className="text-sm text-white/70">Games por partido</span>
-                      <div className="flex gap-2">
-                        {[4, 6, 9].map((g) => (
-                          <Chip key={g} activo={puntuacion.gamesPorPartido === g} onClick={() => setPuntuacion({ ...puntuacion, gamesPorPartido: g })}>
-                            {g}
-                          </Chip>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                  {puntuacion.metodo === "SETS_CORTOS" && (
-                    <>
-                      <span className="text-sm text-white/70">Sets</span>
-                      <div className="flex gap-2">
-                        {[1, 3].map((s) => (
-                          <Chip key={s} activo={puntuacion.setsMaximos === s} onClick={() => setPuntuacion({ ...puntuacion, setsMaximos: s })}>
-                            {s === 1 ? "1 set" : "Mejor de 3"}
-                          </Chip>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
+                <ReglasPuntuacion valor={puntuacion} onChange={setPuntuacion} />
                 <span className="label mt-8">¿Cómo se arma el ranking?</span>
                 <div className="grid gap-3 sm:grid-cols-3">
                   {CRITERIOS.map((c) => (
@@ -557,7 +521,7 @@ function Setup() {
                 <div className="mt-4 flex flex-wrap gap-2">
                   <span className="chip text-neon">{categoriaLabel({ rama, nivel })}</span>
                   <span className="chip">{formatoLabel(modalidad, rama)}</span>
-                  <span className="chip">{METODOS.find((m) => m.id === puntuacion.metodo)?.label}</span>
+                  <span className="chip">{descripcionPuntuacion(puntuacion)}</span>
                   <span className="chip">{pistas} pistas</span>
                   <span className="chip">{totalRondas} rondas × {duracion} min</span>
                   <span className="chip">
@@ -660,21 +624,6 @@ function Opcion({ activo, onClick, children, className }: { activo: boolean; onC
       )}
       {children}
     </motion.button>
-  );
-}
-
-function Chip({ activo, onClick, children }: { activo: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      onClick={() => {
-        vibrar(8);
-        onClick();
-      }}
-      className={clsx("rounded-xl px-4 py-2 text-sm font-bold transition", activo ? "bg-neon text-noche" : "bg-white/5 text-white/70 hover:bg-white/10")}
-    >
-      {children}
-    </button>
   );
 }
 

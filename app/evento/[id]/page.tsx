@@ -388,6 +388,7 @@ function PistaCard({
           <span className="chip border-neon/30 text-neon">
             <Check className="size-3" /> Final
             {res?.sets && res.sets.length > 0 && <span className="ml-1 text-white/60">{res.sets.map((s) => `${s.a}-${s.b}`).join(" ")}</span>}
+            {res?.tieBreak && <span className="ml-1 text-white/60">(tie {res.tieBreak.a}-{res.tieBreak.b})</span>}
           </span>
         ) : enJuego ? (
           <span className="chip">

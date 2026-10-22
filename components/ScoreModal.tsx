@@ -6,7 +6,7 @@ import { Crown, Minus, Plus, RotateCcw, Save, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AvatarPareja } from "@/components/Avatar";
 import { sonar, vibrar } from "@/lib/feedback";
-import { ganador, normalizarResultado, validarResultado } from "@/lib/scoring";
+import { descripcionPuntuacion, empateTieBreak, finalesDeSet, ganador, indiceSuperTie, metaDe, modoDe, normalizarResultado, validarResultado, validarSet, validarTie } from "@/lib/scoring";
 import type { ConfigPuntuacion, Jugador, Partido, Resultado, SetScore } from "@/types/americano";
 
 interface Props {
@@ -43,21 +43,37 @@ export function ScoreModal({ partido, config, nombrePista, jugadores, onClose, o
   const normal = normalizarResultado(config, r);
   const error = validarResultado(config, r);
   const g = error ? null : ganador(config, normal);
-  const total = config.puntosPorPartido ?? 24;
-  const maxGames = config.gamesPorPartido ?? (config.metodo === "SETS_CORTOS" ? 4 : 6);
+  const total = metaDe(config);
+  const maxGames = metaDe(config);
+  const modo = modoDe(config);
+  const autoTotal = config.metodo === "PUNTOS_TOTALES" && modo === "TOTAL";
+  const empate = empateTieBreak(config);
+  const enTie = empate !== null && Math.max(r.puntosA, r.puntosB) === empate + 1 && Math.min(r.puntosA, r.puntosB) === empate;
+  const superTie = indiceSuperTie(config);
+  const maxSet = (i: number) => (i === superTie ? 99 : maxGames >= 5 ? maxGames + 1 : maxGames);
+  const setTerminado = (z: SetScore, i: number) => (i === superTie ? !validarTie(config.superTie!, z.a, z.b) : validarSet(maxGames, z.a, z.b));
+  // Atajos de marcador final para games.
+  const finalesGames: [number, number][] =
+    modo === "TOTAL"
+      ? [
+          ...Array.from({ length: maxGames + 1 }, (_, k): [number, number] => [maxGames - k, k]).filter(([a, b]) => a > b),
+          ...(empate !== null && 2 * empate === maxGames ? [[empate + 1, empate] as [number, number]] : []),
+        ]
+      : Array.from({ length: maxGames }, (_, k): [number, number] => [maxGames, k]);
 
   function setPuntos(lado: "A" | "B", v: number) {
     vibrar(8);
     sonar("tap");
     setR((x) => {
       const n = Math.max(0, v);
-      if (config.metodo === "PUNTOS_TOTALES") {
+      if (autoTotal) {
         const val = Math.min(total, n);
         if (autoCompletar) return lado === "A" ? { puntosA: val, puntosB: total - val } : { puntosA: total - val, puntosB: val };
         return lado === "A" ? { ...x, puntosA: val } : { ...x, puntosB: val };
       }
-      const val = Math.min(maxGames, n);
-      return lado === "A" ? { ...x, puntosA: val } : { ...x, puntosB: val };
+      const val = Math.min(config.metodo === "PUNTOS_TOTALES" ? total : maxGames, n);
+      // Cambiar los games invalida el tie-break cargado.
+      return lado === "A" ? { puntosA: val, puntosB: x.puntosB } : { puntosA: x.puntosA, puntosB: val };
     });
   }
 
@@ -69,11 +85,12 @@ export function ScoreModal({ partido, config, nombrePista, jugadores, onClose, o
       sets[i] = s;
       // Si alguien ya ganó los sets necesarios, recorta; si no, ofrece el siguiente set.
       const necesarios = Math.floor((config.setsMaximos ?? 3) / 2) + 1;
-      const resumen = sets.slice(0, i + 1).reduce((acc, z) => ({ a: acc.a + (z.a === maxGames ? 1 : 0), b: acc.b + (z.b === maxGames ? 1 : 0) }), { a: 0, b: 0 });
+      const resumen = sets
+        .slice(0, i + 1)
+        .reduce((acc, z, j) => (setTerminado(z, j) ? { a: acc.a + (z.a > z.b ? 1 : 0), b: acc.b + (z.b > z.a ? 1 : 0) } : acc), { a: 0, b: 0 });
       const decidido = resumen.a >= necesarios || resumen.b >= necesarios;
-      const setTerminado = Math.max(s.a, s.b) === maxGames;
       if (decidido) sets.length = i + 1;
-      else if (setTerminado && i === sets.length - 1 && sets.length < (config.setsMaximos ?? 3)) sets.push({ a: 0, b: 0 });
+      else if (setTerminado(s, i) && i === sets.length - 1 && sets.length < (config.setsMaximos ?? 3)) sets.push({ a: 0, b: 0 });
       return { ...x, sets };
     });
   }
@@ -129,7 +146,7 @@ export function ScoreModal({ partido, config, nombrePista, jugadores, onClose, o
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-neon">{nombrePista} · Ronda {partido.rondaNumero}</p>
                 <p className="text-sm text-white/50">
-                  {config.metodo === "PUNTOS_TOTALES" ? `Partido a ${total} puntos` : config.metodo === "GAMES_PUNTO_ORO" ? `A ${maxGames} games · punto de oro` : `Sets cortos a ${maxGames}`}
+                  {descripcionPuntuacion(config)}
                 </p>
               </div>
               <button className="btn-ghost !p-2.5" onClick={onClose} aria-label="Cerrar">
@@ -181,30 +198,34 @@ export function ScoreModal({ partido, config, nombrePista, jugadores, onClose, o
                 </div>
                 {(r.sets ?? []).map((s, i) => (
                   <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-2xl p-3">
-                    <p className="mb-2 text-center text-[11px] font-bold uppercase tracking-widest text-white/40">Set {i + 1}</p>
+                    <p className="mb-2 text-center text-[11px] font-bold uppercase tracking-widest text-white/40">
+                      {i === superTie ? `Super tie a ${config.superTie}` : `Set ${i + 1}`}
+                    </p>
                     <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                      <SetStepper valor={s.a} max={maxGames} onChange={(a) => setSet(i, { ...s, a })} gana={s.a === maxGames && s.b < maxGames} />
+                      <SetStepper valor={s.a} max={maxSet(i)} onChange={(a) => setSet(i, { ...s, a })} gana={setTerminado(s, i) && s.a > s.b} />
                       <span className="text-white/30">–</span>
-                      <SetStepper valor={s.b} max={maxGames} onChange={(b) => setSet(i, { ...s, b })} gana={s.b === maxGames && s.a < maxGames} />
+                      <SetStepper valor={s.b} max={maxSet(i)} onChange={(b) => setSet(i, { ...s, b })} gana={setTerminado(s, i) && s.b > s.a} />
                     </div>
-                    <div className="mt-2 flex flex-wrap justify-center gap-1.5">
-                      {Array.from({ length: maxGames }, (_, k) => k).map((k) => (
-                        <button key={`a${k}`} className="rounded-lg bg-white/5 px-2 py-1 text-[11px] font-semibold text-white/60 hover:bg-neon/20 hover:text-neon" onClick={() => setSet(i, { a: maxGames, b: k })}>
-                          {maxGames}-{k}
-                        </button>
-                      ))}
-                      {Array.from({ length: maxGames }, (_, k) => k).map((k) => (
-                        <button key={`b${k}`} className="rounded-lg bg-white/5 px-2 py-1 text-[11px] font-semibold text-white/60 hover:bg-neon/20 hover:text-neon" onClick={() => setSet(i, { a: k, b: maxGames })}>
-                          {k}-{maxGames}
-                        </button>
-                      ))}
-                    </div>
+                    {i !== superTie && (
+                      <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+                        {finalesDeSet(maxGames).map(([w, l]) => (
+                          <button key={`a${w}-${l}`} className="rounded-lg bg-white/5 px-2 py-1 text-[11px] font-semibold text-white/60 hover:bg-neon/20 hover:text-neon" onClick={() => setSet(i, { a: w, b: l })}>
+                            {w}-{l}
+                          </button>
+                        ))}
+                        {finalesDeSet(maxGames).map(([w, l]) => (
+                          <button key={`b${w}-${l}`} className="rounded-lg bg-white/5 px-2 py-1 text-[11px] font-semibold text-white/60 hover:bg-neon/20 hover:text-neon" onClick={() => setSet(i, { a: l, b: w })}>
+                            {l}-{w}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </motion.div>
                 ))}
               </div>
             )}
 
-            {config.metodo === "PUNTOS_TOTALES" && (
+            {autoTotal && (
               <div className="mt-4 flex items-center justify-between text-sm">
                 <label className="flex cursor-pointer items-center gap-2 text-white/60">
                   <input type="checkbox" checked={autoCompletar} onChange={(e) => setAutoCompletar(e.target.checked)} className="size-4 accent-[#7FE302]" />
@@ -218,18 +239,33 @@ export function ScoreModal({ partido, config, nombrePista, jugadores, onClose, o
 
             {config.metodo === "GAMES_PUNTO_ORO" && (
               <div className="mt-4 flex flex-wrap justify-center gap-1.5">
-                {Array.from({ length: maxGames }, (_, k) => k).map((k) => (
-                  <button key={k} className="rounded-lg bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-white/60 hover:bg-neon/20 hover:text-neon" onClick={() => setR({ puntosA: maxGames, puntosB: k })}>
-                    {maxGames}-{k}
+                {finalesGames.map(([w, l]) => (
+                  <button key={`a${w}-${l}`} className="rounded-lg bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-white/60 hover:bg-neon/20 hover:text-neon" onClick={() => setR({ puntosA: w, puntosB: l })}>
+                    {w}-{l}
                   </button>
                 ))}
-                {Array.from({ length: maxGames }, (_, k) => k).map((k) => (
-                  <button key={`b${k}`} className="rounded-lg bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-white/60 hover:bg-neon/20 hover:text-neon" onClick={() => setR({ puntosA: k, puntosB: maxGames })}>
-                    {k}-{maxGames}
+                {finalesGames.map(([w, l]) => (
+                  <button key={`b${w}-${l}`} className="rounded-lg bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-white/60 hover:bg-neon/20 hover:text-neon" onClick={() => setR({ puntosA: l, puntosB: w })}>
+                    {l}-{w}
                   </button>
                 ))}
               </div>
             )}
+
+            <AnimatePresence>
+              {enTie && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                  <div className="glass mt-4 rounded-2xl p-3">
+                    <p className="mb-2 text-center text-[11px] font-bold uppercase tracking-widest text-white/40">Tie-break a {config.tieBreak} · opcional</p>
+                    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                      <SetStepper valor={r.tieBreak?.a ?? 0} max={99} onChange={(a) => setR((x) => ({ ...x, tieBreak: { a, b: x.tieBreak?.b ?? 0 } }))} gana={false} />
+                      <span className="text-white/30">–</span>
+                      <SetStepper valor={r.tieBreak?.b ?? 0} max={99} onChange={(b) => setR((x) => ({ ...x, tieBreak: { a: x.tieBreak?.a ?? 0, b } }))} gana={false} />
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <AnimatePresence>
               {error && (r.puntosA > 0 || r.puntosB > 0 || (r.sets ?? []).some((s) => s.a || s.b)) && (

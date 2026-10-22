@@ -4,7 +4,7 @@
  * en una Edge Function o en el backend de PadelReserve.
  */
 import type { ConfigClub, EventoAmericano } from "@/types/americano";
-import { validarResultado } from "./scoring.ts";
+import { LIMITES, validarResultado } from "./scoring.ts";
 
 const RAMAS = ["FEMENINO", "MASCULINO", "MIXTO"];
 const NIVELES = ["7MA", "6TA", "5TA", "4TA", "3RA", "OPEN"];
@@ -34,6 +34,19 @@ export function validarEvento(x: unknown): string[] {
   if (e.modalidad !== "INDIVIDUAL_ROTATIVO" && e.modalidad !== "DUPLA_FIJA") err("modalidad inválida.");
   if (!e.puntuacion || !METODOS.includes(e.puntuacion.metodo)) err("puntuacion.metodo inválido.");
   if (e.puntuacion?.criterio && !["PUNTOS_A_FAVOR", "SOLO_GANADOS", "VICTORIAS"].includes(e.puntuacion.criterio)) err("puntuacion.criterio inválido.");
+  if (e.puntuacion) {
+    const c = e.puntuacion;
+    if (c.modo !== undefined && c.modo !== "TOTAL" && c.modo !== "A_GANAR") err("puntuacion.modo debe ser TOTAL o A_GANAR.");
+    if (c.puntosPorPartido !== undefined && !esEntero(c.puntosPorPartido, LIMITES.puntos.min, LIMITES.puntos.max)) err(`puntosPorPartido debe estar entre ${LIMITES.puntos.min} y ${LIMITES.puntos.max}.`);
+    if (c.gamesPorPartido !== undefined) {
+      const l = c.metodo === "SETS_CORTOS" ? LIMITES.gamesSet : LIMITES.games;
+      if (!esEntero(c.gamesPorPartido, l.min, l.max)) err(`gamesPorPartido debe estar entre ${l.min} y ${l.max}.`);
+    }
+    if (c.setsMaximos !== undefined && ![1, 3, 5].includes(c.setsMaximos)) err("setsMaximos debe ser 1, 3 o 5.");
+    if (c.puntoDeOro !== undefined && typeof c.puntoDeOro !== "boolean") err("puntoDeOro debe ser true o false.");
+    for (const k of ["tieBreak", "superTie"] as const)
+      if (c[k] != null && !esEntero(c[k], LIMITES.tie.min, LIMITES.tie.max)) err(`${k} debe estar entre ${LIMITES.tie.min} y ${LIMITES.tie.max} puntos.`);
+  }
   if (!esEntero(e.pistas, 1, 6)) err("pistas debe estar entre 1 y 6.");
   if (!esEntero(e.duracionRondaMin, 1, 180)) err("duracionRondaMin fuera de rango.");
   if (!esEntero(e.totalRondas, 1, MAX_RONDAS)) err(`totalRondas debe estar entre 1 y ${MAX_RONDAS}.`);

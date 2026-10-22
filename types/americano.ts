@@ -70,6 +70,8 @@ export interface Resultado {
   puntosB: number;
   /** Solo en SETS_CORTOS. */
   sets?: SetScore[];
+  /** Puntos del tie-break que definió un partido a games (opcional, solo informativo). */
+  tieBreak?: SetScore | null;
 }
 
 export interface Partido {
@@ -104,6 +106,18 @@ export interface ConfigPuntuacion {
   gamesPorPartido?: number;
   /** SETS_CORTOS: cantidad máxima de sets (ej. 3 = al mejor de 3). */
   setsMaximos?: number;
+  /**
+   * TOTAL: se juegan N puntos/games entre las dos parejas (ej. 24 puntos → 13-11; 5 games → 3-2).
+   * A_GANAR: gana la primera pareja que llega a N (ej. a 13 puntos → 13-9; a 6 games → 6-4).
+   * Por defecto: TOTAL en puntos, A_GANAR en games.
+   */
+  modo?: ModoConteo;
+  /** Games y sets: 40-40 se define con un punto (true, por defecto) o con ventaja (false). */
+  puntoDeOro?: boolean;
+  /** Games: si empatan (ej. 2-2 jugando 5 games), el último game es un tie-break a estos puntos. */
+  tieBreak?: number | null;
+  /** Sets: el set decisivo se reemplaza por un super tie-break a estos puntos (ej. 10). */
+  superTie?: number | null;
   /** Cómo se ordena el ranking. Por defecto: PUNTOS_A_FAVOR en puntos totales, VICTORIAS en games/sets. */
   criterio?: CriterioRanking;
 }
@@ -113,6 +127,8 @@ export interface ConfigPuntuacion {
  * - SOLO_GANADOS: solo suma los puntos/games de los partidos que ganó.
  * - VICTORIAS: 3 por partido ganado, 1 por empate.
  */
+export type ModoConteo = "TOTAL" | "A_GANAR";
+
 export type CriterioRanking = "PUNTOS_A_FAVOR" | "SOLO_GANADOS" | "VICTORIAS";
 
 export interface FilaPosicion {

@@ -71,7 +71,7 @@ export function formatoLabel(modalidad: Modalidad, rama: Rama): string {
 }
 
 export const METODOS: { id: MetodoPuntuacion; label: string; descripcion: string }[] = [
-  { id: "PUNTOS_TOTALES", label: "Puntos Totales", descripcion: "Partido a un total fijo de puntos (ej. 24)." },
-  { id: "GAMES_PUNTO_ORO", label: "Games · Punto de Oro", descripcion: "Partido a N games, 40-40 se define con un punto." },
-  { id: "SETS_CORTOS", label: "Sets Cortos", descripcion: "Sets a 4 games, al mejor de 3." },
+  { id: "PUNTOS_TOTALES", label: "Puntos", descripcion: "Se cuentan puntos: 24 en total, a 13, o lo que quieran." },
+  { id: "GAMES_PUNTO_ORO", label: "Games", descripcion: "Se cuentan games, con tie-break opcional si empatan." },
+  { id: "SETS_CORTOS", label: "Sets", descripcion: "Sets a 4 o 6 games, al mejor de 3, con super tie opcional." },
 ];
