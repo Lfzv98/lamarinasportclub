@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, LayoutGrid, ListOrdered, Tv } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ModoBadge } from "@/components/ModoBadge";
+import { QRBoton } from "@/components/QRPopup";
 import { StaffChip } from "@/components/StaffGate";
 import { EstadoBadge } from "@/components/EventoCard";
 import { categoriaLabel } from "@/lib/categories";
@@ -38,7 +39,7 @@ export function EventoShell({ id, children }: { id: string; children: (evento: E
   const tabs = [
     { href: `/evento/${id}`, label: "Cuadro", icon: LayoutGrid },
     { href: `/evento/${id}/tabla`, label: "Ranking", icon: ListOrdered },
-    { href: `/evento/${id}/tv`, label: "Modo TV", icon: Tv },
+    { href: `/evento/${id}/tv`, label: "Modo TV", corto: "TV", icon: Tv },
   ];
 
   return (
@@ -66,13 +67,23 @@ export function EventoShell({ id, children }: { id: string; children: (evento: E
           {tabs.map((t) => {
             const activo = pathname === t.href;
             return (
-              <Link key={t.href} href={t.href} className={clsx("relative flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition", activo ? "text-noche" : "text-white/60 hover:text-white")}>
+              <Link key={t.href} href={t.href} className={clsx("relative flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm font-semibold transition sm:px-4", activo ? "text-noche" : "text-white/60 hover:text-white")}>
                 {activo && <motion.span layoutId="tab-activa" className="absolute inset-0 rounded-xl bg-neon" transition={{ type: "spring", stiffness: 500, damping: 35 }} />}
                 <t.icon className="relative size-4" />
-                <span className="relative">{t.label}</span>
+                <span className="relative">
+                  {"corto" in t ? (
+                    <>
+                      <span className="sm:hidden">{t.corto}</span>
+                      <span className="hidden sm:inline">{t.label}</span>
+                    </>
+                  ) : (
+                    t.label
+                  )}
+                </span>
               </Link>
             );
           })}
+          <QRBoton evento={evento} className="flex items-center rounded-xl px-3 py-2.5 text-white/60 transition hover:text-white" />
         </div>
       </nav>
     </div>

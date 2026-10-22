@@ -12,6 +12,7 @@ import { Leaderboard } from "@/components/Leaderboard";
 import { Logo } from "@/components/Logo";
 import { PistaLabel } from "@/components/PistaLabel";
 import { QR } from "@/components/QR";
+import { QRPopup, useUrlRanking } from "@/components/QRPopup";
 import { useReloj } from "@/hooks/useReloj";
 import { categoriaLabel } from "@/lib/categories";
 import { horaRonda } from "@/lib/horarios";
@@ -265,17 +266,20 @@ function PistaTV({ partido, evento, compacto = false }: { partido: Partido; even
 
 function SeguirQR({ evento }: { evento: EventoAmericano }) {
   const instagram = useAmericanos((s) => s.club.contacto.instagram);
-  const [url, setUrl] = useState("");
-  useEffect(() => setUrl(`${location.origin}/evento/${evento.id}/tabla`), [evento.id]);
+  const url = useUrlRanking(evento.id);
+  const [grande, setGrande] = useState(false);
   if (!url) return null;
   return (
-    <div className="glass flex items-center gap-3 rounded-2xl py-2 pl-2 pr-4">
-      <QR texto={url} size={72} className="overflow-hidden rounded-lg" />
-      <div className="leading-tight">
-        <p className="text-sm font-semibold">Sigue el ranking</p>
-        <p className="text-sm text-white/50">desde tu celular</p>
-        {instagram && <p className="mt-1 text-sm font-semibold text-neon">@{instagram}</p>}
-      </div>
-    </div>
+    <>
+      <button className="glass flex items-center gap-4 rounded-2xl py-2 pl-2 pr-5 text-left transition hover:bg-white/10" onClick={() => setGrande(true)} aria-label="Agrandar QR">
+        <QR texto={url} size={104} className="rounded-xl" />
+        <div className="leading-tight">
+          <p className="text-lg font-semibold">Sigue el ranking</p>
+          <p className="text-lg text-white/50">desde tu celular</p>
+          {instagram && <p className="mt-1 text-lg font-semibold text-neon">@{instagram}</p>}
+        </div>
+      </button>
+      <QRPopup evento={evento} abierto={grande} onClose={() => setGrande(false)} />
+    </>
   );
 }
