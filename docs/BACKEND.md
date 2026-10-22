@@ -1,5 +1,7 @@
 # Conexión con PadelReserve (para Juan)
 
+> Manual completo de uso e integración: [docs/MANUAL.md](MANUAL.md)
+
 La app funciona sola en **modo DEMO** (datos de `data/mockData.json`, guardados en memoria del servidor y en el `localStorage` de cada dispositivo). Para pasar a producción solo hay que conectar Supabase.
 
 ## 1. Variables de entorno (Vercel → Settings → Environment Variables)
