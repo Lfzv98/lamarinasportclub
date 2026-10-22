@@ -29,13 +29,14 @@ El club tiene 4 pistas techadas (1 a 4) y 1 sin techo (5); la app ya viene confi
 | Pistas y horario | De 1 a 6 pistas. Calcula cuántas rondas caben en el horario del evento. Botón "¿Llueve?" que deja solo las pistas techadas |
 | En vivo | Cronómetro por ronda (iniciar, pausar, reiniciar), modal táctil para cargar marcadores, deshacer, avance de ronda |
 | Ranking | Tabla animada en tiempo real con PJ, PG, PP, PF, PC y +/-, flechas de subida y bajada, podio al final |
-| Modo TV | Pantalla completa para el televisor del club: pistas en juego, ranking que rota cada 12 s y un QR para que los jugadores vean la tabla en su celular |
+| Modo TV | Pantalla completa para el televisor del club: pistas en juego, ranking que rota cada 12 s y un QR con el logo de La Marina para que los jugadores vean la tabla en su celular |
+| QR grande | Botón QR en la barra del evento (y tocando el QR en Modo TV): lo abre a pantalla completa para escanearlo fácil |
 | Cambios de plantel | Retirar a un jugador o pareja (lesión), sumar a quien llegó tarde o reincorporar. Lo jugado se conserva y se re-sortean solo las rondas que faltan |
 | Mi club | Pistas (techada o no), horario por día de la semana, minutos entre rondas y contacto |
 | Permisos | Solo el staff edita (PIN del club o usuario de PadelReserve). Los jugadores ven todo en modo espectador |
 | Sin señal | Todo se guarda en el dispositivo. Los cambios pendientes se suben solos al volver la conexión |
 | Varios dispositivos | Dos celulares pueden cargar pistas distintas a la vez sin pisarse |
-| Instalable | Se instala como app en iPhone, Android y computador, con ícono de La Marina y página sin conexión |
+| Instalable | Se instala como app en iPhone, Android y computador, con el logotipo oficial de La Marina como ícono, el isotipo "S." como favicon y página sin conexión |
 | Pantallas | Probada en celular, tablet, computador, TV 720p, 1080p, 4K y TV vertical |
 
 ## Manual de uso
@@ -84,11 +85,11 @@ Al cargar el marcador, la app solo acepta resultados posibles con esas reglas y 
 ### Ranking y Modo TV
 
 - Pestaña **Ranking**: tabla en vivo con PJ (jugados), PG (ganados), PP (perdidos), PF (puntos a favor), PC (en contra) y +/-. Abajo explica cómo se calcula. Al final muestra el podio y un botón para compartir.
-- Pestaña **Modo TV**: ábrela en el computador o Smart TV del club y ponla en pantalla completa. La pantalla no se apaga, el cursor se esconde y el ranking cambia de página cada 12 s. El QR lleva a la tabla en el celular.
+- Pestaña **Modo TV**: ábrela en el computador o Smart TV del club y ponla en pantalla completa. La pantalla no se apaga, el cursor se esconde y el ranking cambia de página cada 12 s. El QR lleva a la tabla en el celular; tocándolo se ve a pantalla completa.
 
 ### Jugadores (sin cuenta)
 
-Escanean el QR del Modo TV o abren el enlace compartido. Ven cuadro, ranking y su pista en "modo espectador", sin poder cambiar nada.
+Escanean el QR del Modo TV, el QR grande que muestra el staff (botón QR en la barra de abajo) o abren el enlace compartido. Ven cuadro, ranking y su pista en "modo espectador", sin poder cambiar nada.
 
 ### Mi club (staff)
 
