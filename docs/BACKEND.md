@@ -10,6 +10,10 @@ La app funciona sola en **modo DEMO** (datos de `data/mockData.json`, guardados 
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key (solo servidor) |
 | `SUPABASE_AMERICANOS_TABLE` | Opcional, por defecto `americanos_eventos` |
 | `SUPABASE_CLUB_TABLE` | Opcional, por defecto `club_config` |
+| `STAFF_PIN` | PIN del staff (4 a 8 dígitos). En DEMO, si falta, es `1234`. Con Supabase, si falta, el PIN queda desactivado |
+| `STAFF_SECRET` | Secreto (≥16 caracteres) para firmar la sesión de staff. **Obligatorio en producción** |
+| `STAFF_EMAILS` | Opcional: correos con permiso de staff, separados por coma |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Opcional: se usa para el login con usuario de PadelReserve (si falta, usa la service role) |
 
 Con las dos primeras definidas, `getRepository()` cambia de DEMO a SUPABASE automáticamente y el badge de la app pasa de "Demo" a "En línea".
 
@@ -36,7 +40,16 @@ Puntos de enganche útiles:
 - `EventoAmericano.reservaIds`: reservas que bloquean las pistas del evento en PadelReserve.
 - `EventoAmericano.canchas`: pistas físicas usadas (número, nombre, techada).
 
-## 3. Endpoints
+## 3. Permisos: solo el staff edita
+
+- **Lectura pública:** `GET` de eventos, ranking, Modo TV y el QR. Los jugadores no necesitan cuenta.
+- **Escritura solo staff:** `POST/PUT/DELETE /api/americanos*` y `POST /api/club` responden `401` sin sesión.
+- **Sesión:** `POST /api/staff/login` con `{ pin }` o `{ email, password }` deja una cookie `lm_staff` httpOnly, firmada con HMAC (`STAFF_SECRET`), válida 12 h. `GET /api/staff/me` dice quién es y qué métodos de ingreso hay; `POST /api/staff/logout` la borra.
+- **Usuario de PadelReserve:** se valida contra Supabase Auth (`/auth/v1/token?grant_type=password`). Entra quien tenga `app_metadata.role` (o `roles`) igual a `staff` o `admin`, o cuyo correo esté en `STAFF_EMAILS`. Para dar acceso a alguien: `update auth.users set raw_app_meta_data = raw_app_meta_data || '{"role":"staff"}' where email = '…';`
+- **Fuerza bruta:** 5 intentos fallidos por IP cada 10 minutos (luego `429`). En Vercel la memoria es por instancia; si quieres un límite global, muévelo a una tabla o a Upstash.
+- Si el staff pierde la sesión estando sin señal, sus cambios quedan pendientes en el dispositivo y se suben al volver a ingresar.
+
+## 4. Endpoints
 
 | Método | Ruta | Cuerpo / respuesta |
 | --- | --- | --- |
@@ -47,12 +60,18 @@ Puntos de enganche útiles:
 | DELETE | `/api/americanos/:id` | borrado lógico (`eliminado: true`), `204` |
 | GET | `/api/club` | `{ modo, club: ConfigClub }` |
 | POST | `/api/club` | `{ club }` → guarda si es más reciente que lo guardado |
+| POST | `/api/staff/login` | `{ pin }` o `{ email, password }` → `{ staff }` + cookie |
+| GET | `/api/staff/me` | `{ staff \| null, metodos: { pin, pinLargo, padelreserve } }` |
+| POST | `/api/staff/logout` | borra la cookie |
 
 ### Errores (siempre JSON)
 
 | Código | Cuándo | Cuerpo |
 | --- | --- | --- |
 | 400 | JSON mal formado | `{ error }` |
+| 401 | Sin sesión de staff (o PIN incorrecto) | `{ error }` |
+| 403 | Usuario de PadelReserve sin rol staff | `{ error }` |
+| 429 | Demasiados intentos de ingreso | `{ error }` |
 | 404 | Evento inexistente o eliminado | `{ error }` |
 | 413 | Cuerpo mayor a 1 MB | `{ error }` |
 | 422 | Falla la validación | `{ error, detalles: string[] }` con cada problema en español |
@@ -74,12 +93,13 @@ La validación (`lib/validacion.ts`) revisa formato de ids, fechas y horas, rang
 
 - [ ] Correr `supabase/schema.sql` (o implementar `AmericanosRepository` sobre las tablas de PadelReserve).
 - [ ] Definir `NEXT_PUBLIC_SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` en Vercel.
+- [ ] Definir `STAFF_SECRET` (cadena larga aleatoria) y un `STAFF_PIN` distinto de 1234, o dar rol `staff` a los usuarios del club.
 - [ ] Verificar: el badge de la app dice "En línea" y `GET /api/americanos` responde `"modo": "SUPABASE"`.
 - [ ] Correr `npm test` (lógica) y `node tests/e2e/robustez.e2e.mjs` contra el deploy (`APP_URL=https://…`) con una base de pruebas.
-- [ ] Opcional: proteger `POST/PUT/DELETE` con la sesión de staff de PadelReserve (hoy cualquiera con el link puede editar; el ranking es público a propósito para el QR).
+
 
 Toda la lógica de juego (rotación, validación de marcadores, tabla) es TypeScript puro en `lib/` y se puede reutilizar en el backend o en una Edge Function.
 
-## 4. Tiempo real
+## 5. Tiempo real
 
 Hoy la sincronización es: mismo navegador al instante (BroadcastChannel) y otros dispositivos cada 8 s (polling a `/api/americanos`). Con Supabase se puede cambiar el polling de `components/Providers.tsx` por una suscripción Realtime a `americanos_eventos` sin tocar el resto.

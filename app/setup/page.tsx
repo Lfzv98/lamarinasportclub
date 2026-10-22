@@ -8,14 +8,15 @@ import { ArrowLeft, ArrowRight, CalendarDays, Check, Clock, CloudRain, Dices, Su
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { Logo } from "@/components/Logo";
+import { StaffGate } from "@/components/StaffGate";
 import { Segmented } from "@/components/ui/Segmented";
 import { Stepper } from "@/components/ui/Stepper";
 import { toast } from "@/components/ui/Toaster";
-import { categoriaLabel, METODOS, MODALIDADES, nivelLabel, NIVELES, RAMAS } from "@/lib/categories";
+import { categoriaLabel, FORMATOS, formatoDe, formatoLabel, METODOS, nivelLabel, NIVELES, RAMAS, type Formato } from "@/lib/categories";
 import { crearEvento, generarRondas, nuevoId } from "@/lib/evento";
 import { sonar, vibrar } from "@/lib/feedback";
 import { partidosPorRonda, rondasSugeridas } from "@/lib/rotation";
-import { configPorDefecto } from "@/lib/scoring";
+import { configPorDefecto, CRITERIOS, criterioDe } from "@/lib/scoring";
 import { aHora, aMinutos, DIAS, diaSemana, franjas, horaFinPrevista, horarioDelDia, nombrePista, rondasQueCaben, validarFranja } from "@/lib/horarios";
 import { useAmericanos } from "@/lib/store";
 import { hayBorrador, useBorrador, useLimpiarBorrador } from "@/hooks/useBorrador";
@@ -35,6 +36,14 @@ const variantes = {
 };
 
 export default function SetupPage() {
+  return (
+    <StaffGate>
+      <Setup />
+    </StaffGate>
+  );
+}
+
+function Setup() {
   const router = useRouter();
   const guardar = useAmericanos((s) => s.guardar);
   const club = useAmericanos((s) => s.club);
@@ -125,6 +134,17 @@ export default function SetupPage() {
     vibrar(10);
     setDir(n > paso ? 1 : -1);
     setPaso(Math.max(0, Math.min(PASOS.length - 1, n)));
+  }
+
+  function elegirFormato(f: Formato) {
+    if (f === "DUPLA_FIJA") return setModalidad("DUPLA_FIJA");
+    setModalidad("INDIVIDUAL_ROTATIVO");
+    if (f === "MIXTO") cambiarRama("MIXTO");
+    else if (rama === "MIXTO") {
+      // Individual no mixto: se pasa a la rama más común; se puede cambiar en Categoría.
+      cambiarRama("MASCULINO");
+      toast("Categoría cambiada a Masculino. Cámbiala en el paso 1 si es Femenino.", "info");
+    }
   }
 
   function cambiarRama(r: Rama) {
@@ -228,18 +248,21 @@ export default function SetupPage() {
 
             {paso === 1 && (
               <Paso titulo="Formato y puntuación" sub="¿Cómo se forman las parejas y cómo se cuenta?">
-                <span className="label">Modalidad</span>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {MODALIDADES.map((m) => (
-                    <Opcion key={m.id} activo={modalidad === m.id} onClick={() => setModalidad(m.id)}>
+                <span className="label">Formato</span>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {FORMATOS.map((f) => (
+                    <Opcion key={f.id} activo={formatoDe(modalidad, rama) === f.id} onClick={() => elegirFormato(f.id)}>
                       <span className="flex items-center gap-2 font-semibold">
-                        {m.id === "INDIVIDUAL_ROTATIVO" ? <Shuffle className="size-4 text-neon" /> : <Users className="size-4 text-neon" />}
-                        {m.label}
+                        {f.id === "INDIVIDUAL" ? <Shuffle className="size-4 text-neon" /> : f.id === "DUPLA_FIJA" ? <Users className="size-4 text-neon" /> : <Venus className="size-4 text-neon" />}
+                        {f.label}
                       </span>
-                      <span className="mt-1 block text-xs leading-relaxed text-white/50">{m.descripcion}</span>
+                      <span className="mt-1 block text-xs leading-relaxed text-white/50">{f.descripcion}</span>
                     </Opcion>
                   ))}
                 </div>
+                {modalidad === "DUPLA_FIJA" && rama === "MIXTO" && (
+                  <p className="mt-2 text-xs text-white/50">Categoría Mixto: cada dupla es hombre + mujer.</p>
+                )}
 
                 <span className="label mt-8">Método de puntuación</span>
                 <div className="grid gap-3 sm:grid-cols-3">
@@ -247,7 +270,7 @@ export default function SetupPage() {
                     <Opcion
                       key={m.id}
                       activo={puntuacion.metodo === m.id}
-                      onClick={() => setPuntuacion(configPorDefecto(m.id as MetodoPuntuacion))}
+                      onClick={() => setPuntuacion({ ...configPorDefecto(m.id as MetodoPuntuacion), criterio: puntuacion.criterio })}
                     >
                       <span className="font-semibold">{m.label}</span>
                       <span className="mt-1 block text-xs leading-relaxed text-white/50">{m.descripcion}</span>
@@ -292,6 +315,15 @@ export default function SetupPage() {
                       </div>
                     </>
                   )}
+                </div>
+                <span className="label mt-8">¿Cómo se arma el ranking?</span>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {CRITERIOS.map((c) => (
+                    <Opcion key={c.id} activo={criterioDe(puntuacion) === c.id} onClick={() => setPuntuacion({ ...puntuacion, criterio: c.id })}>
+                      <span className="font-semibold">{c.label}</span>
+                      <span className="mt-1 block text-xs leading-relaxed text-white/50">{c.descripcion}</span>
+                    </Opcion>
+                  ))}
                 </div>
               </Paso>
             )}
@@ -524,7 +556,7 @@ export default function SetupPage() {
                 />
                 <div className="mt-4 flex flex-wrap gap-2">
                   <span className="chip text-neon">{categoriaLabel({ rama, nivel })}</span>
-                  <span className="chip">{MODALIDADES.find((m) => m.id === modalidad)?.label}</span>
+                  <span className="chip">{formatoLabel(modalidad, rama)}</span>
                   <span className="chip">{METODOS.find((m) => m.id === puntuacion.metodo)?.label}</span>
                   <span className="chip">{pistas} pistas</span>
                   <span className="chip">{totalRondas} rondas × {duracion} min</span>
@@ -622,7 +654,7 @@ function Opcion({ activo, onClick, children, className }: { activo: boolean; onC
       )}
     >
       {activo && (
-        <motion.span layoutId="opcion-check" className="absolute right-2 top-2 flex size-5 items-center justify-center rounded-full bg-neon text-noche">
+        <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute right-2 top-2 flex size-5 items-center justify-center rounded-full bg-neon text-noche">
           <Check className="size-3" strokeWidth={3} />
         </motion.span>
       )}

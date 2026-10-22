@@ -3,7 +3,7 @@
 import clsx from "clsx";
 import { useParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronRight, Coffee, Flag, Pause, Pencil, Play, RotateCcw, Trash2, Trophy, Users } from "lucide-react";
+import { Check, ChevronRight, Coffee, Eye, LockKeyhole, Flag, Pause, Pencil, Play, RotateCcw, Trash2, Trophy, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { PlantelSheet } from "@/components/PlantelSheet";
 import { useEffect, useRef, useState } from "react";
@@ -31,7 +31,7 @@ import { sonar, vibrar } from "@/lib/feedback";
 import { horaRonda, nombrePista } from "@/lib/horarios";
 import { PistaLabel } from "@/components/PistaLabel";
 import { calcularTabla, ganador } from "@/lib/scoring";
-import { useAmericanos } from "@/lib/store";
+import { useAmericanos, useEsStaff } from "@/lib/store";
 import type { EventoAmericano, Jugador, Partido } from "@/types/americano";
 
 export default function CuadroVivoPage() {
@@ -41,6 +41,8 @@ export default function CuadroVivoPage() {
 
 function CuadroVivo({ evento }: { evento: EventoAmericano }) {
   const actualizar = useAmericanos((s) => s.actualizar);
+  const esStaff = useEsStaff();
+  const setPedirLogin = useAmericanos((s) => s.setPedirLogin);
   const [vista, setVista] = useState(evento.rondaActual);
   const [abierto, setAbierto] = useState<Partido | null>(null);
   const [fiesta, setFiesta] = useState(false);
@@ -140,7 +142,17 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
             className="my-3"
           />
 
-          {evento.estado === "FINALIZADO" ? (
+          {!esStaff ? (
+            <div className="mt-1 flex w-full flex-col items-center gap-2 text-center">
+              <span className="chip">
+                <Eye className="size-3" /> Modo espectador
+              </span>
+              <p className="text-xs text-white/50">Estás viendo el cuadro en vivo. Solo el staff carga marcadores.</p>
+              <button className="btn-ghost w-full text-xs" onClick={() => setPedirLogin(true)}>
+                <LockKeyhole className="size-3.5" /> Soy staff
+              </button>
+            </div>
+          ) : evento.estado === "FINALIZADO" ? (
             <div className="mt-2 flex flex-col items-center gap-2 text-center">
               <Trophy className="size-8 text-neon" />
               <p className="font-semibold">Evento finalizado</p>
@@ -211,7 +223,7 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
               </div>
             </div>
           )}
-          <div className="mt-6 flex w-full gap-2">
+          {esStaff && <div className="mt-6 flex w-full gap-2">
             <button className="btn-ghost flex-1 !px-3 text-xs" onClick={() => setPlantel(true)}>
               <Users className="size-3.5" /> {evento.modalidad === "DUPLA_FIJA" ? "Parejas" : "Jugadores"}
             </button>
@@ -229,7 +241,7 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
             >
               <Trash2 className="size-3.5" />
             </button>
-          </div>
+          </div>}
         </aside>
 
         {/* Pistas activas */}
@@ -249,8 +261,13 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
                   evento={evento}
                   porId={porId}
                   index={i}
+                  soloLectura={!esStaff}
                   onClick={() => {
                     vibrar(10);
+                    if (!esStaff) {
+                      toast("Solo el staff carga marcadores", "info", { label: "Soy staff", fn: () => setPedirLogin(true) });
+                      return;
+                    }
                     if (ronda.numero > evento.rondaActual && p.estado !== "FINALIZADO") {
                       toast(`La ronda ${ronda.numero} aún no empieza. Estás en la ronda ${evento.rondaActual}.`, "info");
                       return;
@@ -261,7 +278,7 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
               ))}
             </motion.div>
           </AnimatePresence>
-          {pendientes > 0 && (
+          {esStaff && pendientes > 0 && (
             <p className="mt-4 text-center text-xs text-white/40">Toca una pista para cargar el marcador · {pendientes} pendiente(s)</p>
           )}
         </section>
@@ -314,12 +331,14 @@ function PistaCard({
   porId,
   index,
   onClick,
+  soloLectura = false,
 }: {
   partido: Partido;
   evento: EventoAmericano;
   porId: Map<string, Jugador>;
   index: number;
   onClick: () => void;
+  soloLectura?: boolean;
 }) {
   const res = partido.resultado;
   const g = res ? ganador(evento.puntuacion, res) : null;
@@ -384,9 +403,11 @@ function PistaCard({
         <span className="relative rounded-full border border-white/10 bg-noche-2 px-2.5 py-0.5 text-[10px] font-black tracking-widest text-white/40">VS</span>
       </div>
       <Lado lado="B" />
-      <div className="mt-2 flex items-center justify-center gap-1.5 rounded-xl bg-white/[0.03] py-2 text-xs font-semibold text-white/50 transition group-hover:bg-neon group-hover:text-noche">
-        <Pencil className="size-3.5" /> {terminado ? "Editar marcador" : "Cargar marcador"}
-      </div>
+      {!soloLectura && (
+        <div className="mt-2 flex items-center justify-center gap-1.5 rounded-xl bg-white/[0.03] py-2 text-xs font-semibold text-white/50 transition group-hover:bg-neon group-hover:text-noche">
+          <Pencil className="size-3.5" /> {terminado ? "Editar marcador" : "Cargar marcador"}
+        </div>
+      )}
     </motion.button>
   );
 }

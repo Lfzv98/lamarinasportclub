@@ -234,3 +234,17 @@ test("reloj del dispositivo atrasado: igual cada edición gana a la versión ant
   const avanzado = avanzarRonda(editado);
   assert.equal(fusionarEventos(editado, avanzado).rondaActual, 2);
 });
+
+test("criterios de ranking del rotativo", () => {
+  let e = base(8, { totalRondas: 1 });
+  const [p1] = e.rondas[0].partidos;
+  e = cargarResultado(e, p1.id, { puntosA: 15, puntosB: 9 });
+  const pts = (criterio: "PUNTOS_A_FAVOR" | "SOLO_GANADOS" | "VICTORIAS") => {
+    const t = calcularTabla({ ...e, puntuacion: { ...e.puntuacion, criterio } });
+    const fila = (id: string) => t.filas.find((f) => f.entidadId === id)!.puntos;
+    return [fila(p1.parejaA.jugadorIds[0]), fila(p1.parejaB.jugadorIds[0])];
+  };
+  assert.deepEqual(pts("PUNTOS_A_FAVOR"), [15, 9]); // ganador y perdedor suman lo suyo
+  assert.deepEqual(pts("SOLO_GANADOS"), [15, 0]); // el perdedor no suma
+  assert.deepEqual(pts("VICTORIAS"), [3, 0]);
+});

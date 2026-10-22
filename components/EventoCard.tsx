@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { CalendarDays, ChevronRight, LayoutGrid, Trophy, Users } from "lucide-react";
-import { categoriaLabel, METODOS, MODALIDADES } from "@/lib/categories";
+import { categoriaLabel, formatoLabel, METODOS } from "@/lib/categories";
 import { progresoEvento } from "@/lib/evento";
 import type { EventoAmericano } from "@/types/americano";
 
@@ -40,7 +40,7 @@ export function EventoCard({ evento, index = 0 }: { evento: EventoAmericano; ind
             </div>
             <h3 className="truncate font-display text-lg font-semibold">{evento.nombre}</h3>
             <p className="mt-1 text-sm text-white/50">
-              {MODALIDADES.find((m) => m.id === evento.modalidad)?.label} · {METODOS.find((m) => m.id === evento.puntuacion.metodo)?.label}
+              {formatoLabel(evento.modalidad, evento.categoria.rama)} · {METODOS.find((m) => m.id === evento.puntuacion.metodo)?.label}
             </p>
           </div>
           <ChevronRight className="mt-1 size-5 shrink-0 text-white/30 transition group-hover:translate-x-1 group-hover:text-neon" />

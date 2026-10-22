@@ -4,6 +4,7 @@ import { MotionConfig } from "framer-motion";
 import { useEffect } from "react";
 import { useAmericanos } from "@/lib/store";
 import { Toaster } from "./ui/Toaster";
+import { StaffLogin } from "./StaffLogin";
 
 const INTERVALO_SYNC_MS = 8000;
 
@@ -14,7 +15,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       .catch(() => undefined)
       .finally(() => {
         useAmericanos.setState({ hidratado: true });
-        useAmericanos.getState().sincronizar();
+        useAmericanos.getState().cargarStaff().finally(() => useAmericanos.getState().sincronizar());
       });
     const t = setInterval(() => document.visibilityState === "visible" && useAmericanos.getState().sincronizar(), INTERVALO_SYNC_MS);
 
@@ -27,6 +28,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <MotionConfig reducedMotion="user">
       {children}
+      <StaffLogin />
       <Toaster />
     </MotionConfig>
   );

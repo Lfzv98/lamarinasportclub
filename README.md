@@ -18,9 +18,17 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 ## Reglas soportadas
 
 - **Categorías:** Femenino, Masculino y Mixto en 7ma, 6ta, 5ta, 4ta, 3ra y Open (Open Mixto).
-- **Modalidades:** Individual Rotativo (americano tradicional) y Dupla Fija (todos contra todos).
+- **Formatos:** Individual (americano tradicional, cambias de pareja cada ronda), Dupla fija (todos contra todos) y Mixto (como Individual, pero cada pareja es siempre hombre + mujer). Internamente Mixto = `INDIVIDUAL_ROTATIVO` + categoría `MIXTO`.
 - **Puntuación:** Puntos totales (16/21/24/32), Games con punto de oro (4/6/9) y Sets cortos a 4 (1 set o mejor de 3).
 - **Rotación balanceada** (`lib/rotation.ts`): nadie repite compañero mientras sea posible, se minimizan rivales repetidos, se equilibra el nivel entre parejas, los descansos se reparten parejo y en Mixto cada pareja es hombre + mujer. Es determinista por semilla.
+
+## Permisos
+
+Los jugadores ven todo sin cuenta (cuadro, ranking, Modo TV y el QR). Crear eventos, cargar marcadores y configurar el club es solo para el staff: PIN del club (demo: `1234`, cámbialo con `STAFF_PIN`) o usuario de PadelReserve con rol staff.
+
+## Ranking del formato Individual
+
+Al crear el evento se elige cómo suma cada jugador: **todos los puntos** de su pareja en cada partido (americano clásico, por defecto), **solo los de las rondas ganadas**, o **por victorias** (3 por ganar, 1 por empate).
 
 ## A prueba de errores
 
@@ -37,8 +45,8 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 ```bash
 npm install
 npm run dev        # http://localhost:3000
-npm test           # 28 tests: rotación, marcadores, horarios, fusión, plantel, validación
-node tests/e2e/robustez.e2e.mjs   # 16 pruebas en navegador (con la app corriendo)
+npm test           # 29 tests: rotación, marcadores, horarios, fusión, plantel, validación
+node tests/e2e/robustez.e2e.mjs   # 22 pruebas en navegador (con la app corriendo)
 npm run typecheck
 npm run build
 ```
@@ -49,7 +57,7 @@ Sin variables de entorno corre en **modo DEMO** con `data/mockData.json` (regene
 
 1. Importa el repositorio en Vercel (framework Next.js, sin configuración extra).
 2. Asigna el dominio `lamarinasportclub.vercel.app` en Settings → Domains.
-3. (Producción) agrega las variables de Supabase de `.env.example`.
+3. Agrega `STAFF_PIN` y `STAFF_SECRET` (y luego las de Supabase) en Settings → Environment Variables. Ver `.env.example`.
 
 ## Estructura
 

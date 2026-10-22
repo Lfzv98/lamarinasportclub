@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, LayoutGrid, ListOrdered, Tv } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ModoBadge } from "@/components/ModoBadge";
+import { StaffChip } from "@/components/StaffGate";
 import { EstadoBadge } from "@/components/EventoCard";
 import { categoriaLabel } from "@/lib/categories";
 import { useAmericanos, useEvento } from "@/lib/store";
@@ -54,6 +55,7 @@ export function EventoShell({ id, children }: { id: string; children: (evento: E
           </div>
         </div>
         <ModoBadge />
+        <StaffChip />
         <Logo compacto className="hidden sm:block" />
       </header>
 

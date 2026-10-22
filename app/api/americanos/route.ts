@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { fusionarEventos } from "@/lib/evento";
+import { exigirStaff } from "@/lib/server/auth";
 import { ErrorApi, leerJson, manejar } from "@/lib/server/http";
 import { getRepository } from "@/lib/server/repository";
 import { validarEvento } from "@/lib/validacion";
@@ -25,6 +26,7 @@ export const GET = manejar(async (req: Request) => {
  * partido) para que dos dispositivos no se pisen. 201 si es nuevo, 200 si actualiza.
  */
 export const POST = manejar(async (req: Request) => {
+  exigirStaff(req);
   const body = (await leerJson(req)) as { evento?: unknown } | null;
   const errores = validarEvento(body?.evento);
   if (errores.length) throw new ErrorApi(422, "Evento inválido.", errores);

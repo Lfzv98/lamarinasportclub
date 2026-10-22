@@ -7,7 +7,8 @@ import { EventoCard } from "@/components/EventoCard";
 import { InstallButton } from "@/components/InstallButton";
 import { Logo } from "@/components/Logo";
 import { ModoBadge } from "@/components/ModoBadge";
-import { useAmericanos, useListaEventos } from "@/lib/store";
+import { StaffChip } from "@/components/StaffGate";
+import { useAmericanos, useEsStaff, useListaEventos } from "@/lib/store";
 
 const FEATURES = [
   { icon: Sparkles, t: "Rotación inteligente", d: "Nadie repite pareja y los descansos se reparten parejo." },
@@ -19,6 +20,14 @@ const FEATURES = [
 export default function Home() {
   const eventos = useListaEventos();
   const hidratado = useAmericanos((s) => s.hidratado);
+  const esStaff = useEsStaff();
+  const setPedirLogin = useAmericanos((s) => s.setPedirLogin);
+  // Sin sesión, "Nuevo Americano" abre el acceso staff en lugar del setup.
+  const soloStaff = (e: React.MouseEvent) => {
+    if (esStaff) return;
+    e.preventDefault();
+    setPedirLogin(true);
+  };
   const enVivo = eventos.filter((e) => e.estado !== "FINALIZADO");
   const pasados = eventos.filter((e) => e.estado === "FINALIZADO");
 
@@ -29,7 +38,8 @@ export default function Home() {
         <div className="flex items-center gap-2">
           <InstallButton />
           <ModoBadge />
-          <Link href="/club" className="btn-ghost !p-2.5" aria-label="Mi club" title="Mi club: pistas y horarios">
+          <StaffChip />
+          <Link href="/club" onClick={soloStaff} className="btn-ghost !p-2.5" aria-label="Mi club" title="Mi club: pistas y horarios">
             <Settings className="size-4" />
           </Link>
         </div>
@@ -52,7 +62,7 @@ export default function Home() {
           Elige categoría, pistas y jugadores. Nosotros armamos las parejas, el cuadro y el ranking en vivo.
         </motion.p>
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-8 flex flex-wrap gap-3">
-          <Link href="/setup" className="btn-neon animate-pulse-neon text-base">
+          <Link href="/setup" onClick={soloStaff} className="btn-neon animate-pulse-neon text-base">
             <Plus className="size-5" /> Nuevo Americano
           </Link>
           {enVivo[0] && (
@@ -75,7 +85,7 @@ export default function Home() {
             ))}
           </div>
         ) : enVivo.length === 0 ? (
-          <Link href="/setup" className="glass flex flex-col items-center gap-2 rounded-3xl border-dashed p-10 text-center text-white/60 hover:text-white">
+          <Link href="/setup" onClick={soloStaff} className="glass flex flex-col items-center gap-2 rounded-3xl border-dashed p-10 text-center text-white/60 hover:text-white">
             <Plus className="size-8 text-neon" />
             Aún no hay eventos. ¡Crea el primero!
           </Link>

@@ -40,15 +40,35 @@ export function categoriaLabel(c: Categoria): string {
 export const MODALIDADES: { id: Modalidad; label: string; descripcion: string }[] = [
   {
     id: "INDIVIDUAL_ROTATIVO",
-    label: "Individual Rotativo",
-    descripcion: "Americano tradicional: cambias de pareja cada ronda y sumas puntos individuales.",
+    label: "Individual",
+    descripcion: "Americano tradicional: cambias de pareja cada ronda y sumas puntos individuales. En categoría Mixto, siempre hombre + mujer.",
   },
   {
     id: "DUPLA_FIJA",
     label: "Dupla Fija",
-    descripcion: "Parejas inscritas que juegan todos contra todos.",
+    descripcion: "Parejas inscritas que juegan todos contra todos. En categoría Mixto, cada pareja es hombre + mujer.",
   },
 ];
+
+/** Formatos tal como los ve el staff. "Mixto" = Individual con parejas siempre hombre + mujer. */
+export type Formato = "INDIVIDUAL" | "DUPLA_FIJA" | "MIXTO";
+
+export const FORMATOS: { id: Formato; label: string; descripcion: string }[] = [
+  { id: "INDIVIDUAL", label: "Individual", descripcion: "Americano tradicional: cambias de pareja cada ronda y sumas puntos individuales." },
+  { id: "DUPLA_FIJA", label: "Dupla fija", descripcion: "Parejas inscritas que juegan todos contra todos." },
+  { id: "MIXTO", label: "Mixto", descripcion: "Como Individual, pero cada pareja es siempre un hombre + una mujer." },
+];
+
+export function formatoDe(modalidad: Modalidad, rama: Rama): Formato {
+  if (modalidad === "DUPLA_FIJA") return "DUPLA_FIJA";
+  return rama === "MIXTO" ? "MIXTO" : "INDIVIDUAL";
+}
+
+export function formatoLabel(modalidad: Modalidad, rama: Rama): string {
+  const f = formatoDe(modalidad, rama);
+  if (f === "DUPLA_FIJA" && rama === "MIXTO") return "Dupla fija mixta";
+  return FORMATOS.find((x) => x.id === f)!.label;
+}
 
 export const METODOS: { id: MetodoPuntuacion; label: string; descripcion: string }[] = [
   { id: "PUNTOS_TOTALES", label: "Puntos Totales", descripcion: "Partido a un total fijo de puntos (ej. 24)." },

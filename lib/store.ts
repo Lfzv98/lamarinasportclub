@@ -22,6 +22,11 @@ import type { ApiListaRespuesta, ConfigClub, EventoAmericano } from "@/types/ame
 
 type Modo = ApiListaRespuesta["modo"] | "OFFLINE";
 
+export interface Staff {
+  nombre: string;
+  metodo: "PIN" | "PADELRESERVE";
+}
+
 interface EstadoStore {
   eventos: Record<string, EventoAmericano>;
   club: ConfigClub;
@@ -36,6 +41,14 @@ interface EstadoStore {
   guardar: (evento: EventoAmericano) => void;
   actualizar: (id: string, fn: (e: EventoAmericano) => EventoAmericano) => void;
   guardarClub: (club: ConfigClub) => void;
+  /** Sesión de staff (las escrituras en el servidor la exigen). undefined = aún no se sabe. */
+  staff: Staff | null | undefined;
+  metodosLogin: { pin: boolean; pinLargo: number; padelreserve: boolean };
+  pedirLogin: boolean;
+  setPedirLogin: (v: boolean) => void;
+  cargarStaff: () => Promise<void>;
+  login: (datos: { pin: string } | { email: string; password: string }) => Promise<string | null>;
+  logout: () => Promise<void>;
 }
 
 const canal = typeof window !== "undefined" && "BroadcastChannel" in window ? new BroadcastChannel("lamarina-americanos") : null;
@@ -87,6 +100,11 @@ function unir(local: Record<string, EventoAmericano>, remotos: EventoAmericano[]
 async function enviar(evento: EventoAmericano): Promise<boolean> {
   try {
     const res = await fetch("/api/americanos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ evento }) });
+    if (res.status === 401) {
+      // La sesión expiró: el cambio queda pendiente y se sube al volver a ingresar.
+      if (useAmericanos.getState().staff) useAmericanos.setState({ staff: null, pedirLogin: true });
+      return false;
+    }
     if (!res.ok) return false;
     const data = (await res.json()) as { evento?: EventoAmericano };
     useAmericanos.setState((s) => ({
@@ -138,8 +156,9 @@ export const useAmericanos = create<EstadoStore>()(
           // Sube lo que quedó pendiente (sin internet) y lo que el servidor no tiene
           // (ej. el servidor demo se reinició).
           const remotos = new Map(data.eventos.map((e) => [e.id, e]));
-          const { eventos, pendientes } = get();
-          const aSubir = Object.values(eventos).filter((e) => {
+          const { eventos, pendientes, staff } = get();
+          // Solo el staff sube cambios; un espectador (QR) solo lee.
+          const aSubir = !staff ? [] : Object.values(eventos).filter((e) => {
             const r = remotos.get(e.id);
             return pendientes.includes(e.id) || !r || e.actualizadoEn > r.actualizadoEn;
           });
@@ -148,7 +167,7 @@ export const useAmericanos = create<EstadoStore>()(
           const rc = await fetch("/api/club", { cache: "no-store" });
           if (rc.ok) {
             const { club } = (await rc.json()) as { club: ConfigClub };
-            if (get().clubPendiente) get().guardarClub(get().club);
+            if (get().clubPendiente && get().staff) get().guardarClub(get().club);
             else if (club.actualizadoEn > get().club.actualizadoEn) set({ club: normalizarClub(club) });
           }
         } catch {
@@ -172,18 +191,55 @@ export const useAmericanos = create<EstadoStore>()(
         if (actual) get().guardar(fn(actual));
       },
 
+      staff: undefined,
+      metodosLogin: { pin: true, pinLargo: 4, padelreserve: false },
+      pedirLogin: false,
+      setPedirLogin: (v) => set({ pedirLogin: v }),
+
+      async cargarStaff() {
+        try {
+          const r = await fetch("/api/staff/me", { cache: "no-store" });
+          const d = (await r.json()) as { staff: Staff | null; metodos: EstadoStore["metodosLogin"] };
+          set({ staff: d.staff, metodosLogin: d.metodos });
+        } catch {
+          // Sin conexión: se mantiene lo último conocido (o espectador).
+          if (get().staff === undefined) set({ staff: null });
+        }
+      },
+
+      async login(datos) {
+        try {
+          const r = await fetch("/api/staff/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) });
+          const d = (await r.json()) as { staff?: Staff; error?: string };
+          if (!r.ok || !d.staff) return d.error ?? "No se pudo ingresar.";
+          set({ staff: d.staff, pedirLogin: false });
+          get().sincronizar();
+          return null;
+        } catch {
+          return "Sin conexión. Necesitas internet para ingresar.";
+        }
+      },
+
+      async logout() {
+        await fetch("/api/staff/logout", { method: "POST" }).catch(() => undefined);
+        set({ staff: null });
+      },
+
       guardarClub(club) {
         const nuevo = { ...club, actualizadoEn: despues(get().club.actualizadoEn) };
         set({ club: nuevo, clubPendiente: true });
         fetch("/api/club", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ club: nuevo }) })
-          .then((r) => r.ok && set({ clubPendiente: false }))
+          .then((r) => {
+            if (r.ok) set({ clubPendiente: false });
+            else if (r.status === 401) set({ staff: null, pedirLogin: true });
+          })
           .catch(() => set({ modo: "OFFLINE" }));
       },
     }),
     {
       name: "lamarina-americanos-v1",
       storage: createJSONStorage(() => almacenSeguro),
-      partialize: (s) => ({ eventos: s.eventos, club: s.club, pendientes: s.pendientes, clubPendiente: s.clubPendiente }),
+      partialize: (s) => ({ eventos: s.eventos, club: s.club, pendientes: s.pendientes, clubPendiente: s.clubPendiente, staff: s.staff }),
       skipHydration: true,
       merge: (guardado, actual) => {
         const g = guardado as Partial<EstadoStore> | undefined;
@@ -215,4 +271,9 @@ export function useListaEventos() {
 
 export function usePendientes() {
   return useAmericanos((s) => s.pendientes.length);
+}
+
+/** true = staff, false = espectador, undefined = verificando. */
+export function useEsStaff(): boolean | undefined {
+  return useAmericanos((s) => (s.staff === undefined ? undefined : !!s.staff));
 }

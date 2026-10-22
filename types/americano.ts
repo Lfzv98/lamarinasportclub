@@ -104,7 +104,16 @@ export interface ConfigPuntuacion {
   gamesPorPartido?: number;
   /** SETS_CORTOS: cantidad máxima de sets (ej. 3 = al mejor de 3). */
   setsMaximos?: number;
+  /** Cómo se ordena el ranking. Por defecto: PUNTOS_A_FAVOR en puntos totales, VICTORIAS en games/sets. */
+  criterio?: CriterioRanking;
 }
+
+/**
+ * - PUNTOS_A_FAVOR: cada jugador suma los puntos/games de su pareja en TODOS sus partidos (americano clásico).
+ * - SOLO_GANADOS: solo suma los puntos/games de los partidos que ganó.
+ * - VICTORIAS: 3 por partido ganado, 1 por empate.
+ */
+export type CriterioRanking = "PUNTOS_A_FAVOR" | "SOLO_GANADOS" | "VICTORIAS";
 
 export interface FilaPosicion {
   /** jugadorId (individual) o parejaId (dupla fija). */

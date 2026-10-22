@@ -1,5 +1,6 @@
 // Prueba en navegador de usos indebidos y fallos (dos celulares, sin internet, recargas, etc.).
 // Requiere la app corriendo en modo DEMO recién iniciada:  npm run build && npm start
+// (STAFF_PIN si se cambió el PIN de demo 1234)
 // y Playwright:  npx -y playwright@1.56 install chromium  (o PW_CHROMIUM=/ruta/a/chromium)
 //   node tests/e2e/robustez.e2e.mjs
 import { chromium } from "playwright";
@@ -12,6 +13,32 @@ const ok = (c, m) => { if (!c) fallos++; console.log((c ? "PASS " : "FAIL ") + m
 const nuevo = async (ctx) => { const p = await ctx.newPage(); p.on("pageerror", (e) => errs.push(e.message)); p.on("dialog", (d) => d.accept(d.type() === "prompt" ? "ELIMINAR" : undefined)); return p; };
 const vp = { viewport: { width: 390, height: 844 } };
 const A = await b.newContext(vp), B = await b.newContext(vp);
+const PIN = process.env.STAFF_PIN ?? "1234";
+
+// 0) Espectador (jugador que escanea el QR): ve todo, no puede editar
+{
+  const E = await b.newContext(vp);
+  const pe = await nuevo(E);
+  await pe.goto(`${U}/evento/evt_demo_mixto`, { waitUntil: "networkidle" }); await pe.waitForTimeout(1200);
+  ok(await pe.locator("text=Modo espectador").count() > 0, "espectador: ve 'Modo espectador'");
+  ok(await pe.locator("text=Cargar marcador").count() === 0, "espectador: no ve botones de carga");
+  await pe.locator("text=Pista 2").first().click(); await pe.waitForTimeout(400);
+  ok(await pe.locator("text=Guardar resultado").count() === 0, "espectador: tocar una pista no abre el marcador");
+  const st = await pe.evaluate(async () => (await fetch("/api/americanos/evt_demo_mixto", { method: "DELETE" })).status);
+  ok(st === 401, `espectador: la API rechaza cambios (${st})`);
+  await pe.goto(`${U}/setup`, { waitUntil: "networkidle" }); await pe.waitForTimeout(800);
+  ok(await pe.locator("text=Acceso staff").count() > 0, "espectador: crear evento pide acceso staff");
+  for (const d of "0000") await pe.getByLabel(d, { exact: true }).click();
+  await pe.waitForTimeout(800);
+  ok(await pe.locator("text=PIN o credenciales incorrectas").count() > 0, "PIN incorrecto: avisa y no entra");
+  await E.close();
+}
+
+// Staff ingresa en los dos celulares
+for (const ctx of [A, B]) {
+  const r = await ctx.request.post(`${U}/api/staff/login`, { data: { pin: PIN } });
+  if (!r.ok()) throw new Error("No se pudo ingresar como staff: " + (await r.text()));
+}
 const pa = await nuevo(A), pb = await nuevo(B);
 const ev = "evt_demo_mixto";
 await pa.goto(`${U}/evento/${ev}`, { waitUntil: "networkidle" });

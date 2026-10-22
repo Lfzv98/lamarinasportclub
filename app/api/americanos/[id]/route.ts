@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { eliminarEvento, fusionarEventos } from "@/lib/evento";
 import { calcularTabla } from "@/lib/scoring";
+import { exigirStaff } from "@/lib/server/auth";
 import { ErrorApi, leerJson, manejar } from "@/lib/server/http";
 import { getRepository } from "@/lib/server/repository";
 import { validarEvento } from "@/lib/validacion";
@@ -24,6 +25,7 @@ export const GET = manejar(async (_req: Request, { params }: Ctx) => {
 
 /** PUT /api/americanos/:id  body: { evento } (mismo comportamiento de fusión que POST) */
 export const PUT = manejar(async (req: Request, { params }: Ctx) => {
+  exigirStaff(req);
   const { id } = await params;
   const body = (await leerJson(req)) as { evento?: unknown } | null;
   const errores = validarEvento(body?.evento);
@@ -38,7 +40,8 @@ export const PUT = manejar(async (req: Request, { params }: Ctx) => {
 });
 
 /** DELETE /api/americanos/:id → borrado lógico (eliminado: true), 204. */
-export const DELETE = manejar(async (_req: Request, { params }: Ctx) => {
+export const DELETE = manejar(async (req: Request, { params }: Ctx) => {
+  exigirStaff(req);
   const evento = await buscar((await params).id);
   await getRepository().guardar(eliminarEvento(evento));
   return new NextResponse(null, { status: 204 });

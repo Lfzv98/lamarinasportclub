@@ -33,6 +33,7 @@ export function validarEvento(x: unknown): string[] {
   if (!e.categoria || !RAMAS.includes(e.categoria.rama) || !NIVELES.includes(e.categoria.nivel)) err("categoria inválida.");
   if (e.modalidad !== "INDIVIDUAL_ROTATIVO" && e.modalidad !== "DUPLA_FIJA") err("modalidad inválida.");
   if (!e.puntuacion || !METODOS.includes(e.puntuacion.metodo)) err("puntuacion.metodo inválido.");
+  if (e.puntuacion?.criterio && !["PUNTOS_A_FAVOR", "SOLO_GANADOS", "VICTORIAS"].includes(e.puntuacion.criterio)) err("puntuacion.criterio inválido.");
   if (!esEntero(e.pistas, 1, 6)) err("pistas debe estar entre 1 y 6.");
   if (!esEntero(e.duracionRondaMin, 1, 180)) err("duracionRondaMin fuera de rango.");
   if (!esEntero(e.totalRondas, 1, MAX_RONDAS)) err(`totalRondas debe estar entre 1 y ${MAX_RONDAS}.`);

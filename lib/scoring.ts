@@ -8,6 +8,7 @@
  */
 import type {
   ConfigPuntuacion,
+  CriterioRanking,
   EventoAmericano,
   FilaPosicion,
   Jugador,
@@ -15,6 +16,16 @@ import type {
   Resultado,
   TablaPosiciones,
 } from "@/types/americano";
+
+export function criterioDe(cfg: ConfigPuntuacion): CriterioRanking {
+  return cfg.criterio ?? (cfg.metodo === "PUNTOS_TOTALES" ? "PUNTOS_A_FAVOR" : "VICTORIAS");
+}
+
+export const CRITERIOS: { id: CriterioRanking; label: string; descripcion: string }[] = [
+  { id: "PUNTOS_A_FAVOR", label: "Todos los puntos", descripcion: "Cada jugador suma lo que hizo su pareja en cada partido, gane o pierda (americano clásico)." },
+  { id: "SOLO_GANADOS", label: "Solo rondas ganadas", descripcion: "Solo suma el marcador de los partidos que ganó." },
+  { id: "VICTORIAS", label: "Por victorias", descripcion: "3 puntos por partido ganado y 1 por empate." },
+];
 
 export function configPorDefecto(metodo: ConfigPuntuacion["metodo"]): ConfigPuntuacion {
   switch (metodo) {
@@ -106,6 +117,7 @@ export function calcularTabla(evento: EventoAmericano): TablaPosiciones {
   const porJugador = evento.modalidad === "INDIVIDUAL_ROTATIVO";
   const jugadores = new Map(evento.jugadores.map((j) => [j.id, j]));
   const filas = new Map<string, FilaPosicion>();
+  const ganados = new Map<string, number>();
 
   if (porJugador) {
     for (const j of evento.jugadores) filas.set(j.id, { ...filaVacia(j.id, nombreJugador(j), [j.fotoUrl]), retirado: !!j.retirado });
@@ -131,17 +143,21 @@ export function calcularTabla(evento: EventoAmericano): TablaPosiciones {
         f.pj++;
         f.puntosAFavor += lado.pf;
         f.puntosEnContra += lado.pc;
-        if (lado.res > 0) f.pg++;
+        if (lado.res > 0) {
+          f.pg++;
+          ganados.set(id, (ganados.get(id) ?? 0) + lado.pf);
+        }
         else if (lado.res < 0) f.pp++;
         else f.pe++;
       }
     }
   }
 
+  const criterio = criterioDe(cfg);
   const lista = [...filas.values()].map((f) => ({
     ...f,
     diferencia: f.puntosAFavor - f.puntosEnContra,
-    puntos: cfg.metodo === "PUNTOS_TOTALES" ? f.puntosAFavor : f.pg * 3 + f.pe,
+    puntos: criterio === "PUNTOS_A_FAVOR" ? f.puntosAFavor : criterio === "SOLO_GANADOS" ? (ganados.get(f.entidadId) ?? 0) : f.pg * 3 + f.pe,
   }));
   lista.sort(
     (x, y) =>
@@ -152,8 +168,16 @@ export function calcularTabla(evento: EventoAmericano): TablaPosiciones {
   return { eventoId: evento.id, tipo: porJugador ? "JUGADOR" : "PAREJA", filas: lista, generadaEn: new Date().toISOString() };
 }
 
-export function etiquetaPuntos(cfg: ConfigPuntuacion): { corto: string; largo: string } {
-  return cfg.metodo === "PUNTOS_TOTALES" ? { corto: "PTS", largo: "Puntos" } : { corto: "PTS", largo: "Puntos (3·PG + PE)" };
+export function explicacionRanking(cfg: ConfigPuntuacion): string {
+  const unidad = cfg.metodo === "PUNTOS_TOTALES" ? "puntos" : "games";
+  switch (criterioDe(cfg)) {
+    case "PUNTOS_A_FAVOR":
+      return `PTS = ${unidad} a favor en todos los partidos (gane o pierda). Desempate: diferencia, luego ${unidad} a favor.`;
+    case "SOLO_GANADOS":
+      return `PTS = ${unidad} sumados solo en los partidos ganados. Desempate: diferencia, luego ${unidad} a favor.`;
+    default:
+      return `PTS = 3 por victoria y 1 por empate. Desempate: diferencia de ${unidad}, luego ${unidad} a favor.`;
+  }
 }
 
 export function etiquetaMarcador(cfg: ConfigPuntuacion): string {

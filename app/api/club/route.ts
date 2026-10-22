@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { normalizarClub } from "@/lib/horarios";
+import { exigirStaff } from "@/lib/server/auth";
 import { ErrorApi, leerJson, manejar } from "@/lib/server/http";
 import { getRepository } from "@/lib/server/repository";
 import { validarClub } from "@/lib/validacion";
@@ -15,6 +16,7 @@ export const GET = manejar(async () => {
 
 /** POST /api/club  body: { club } → guarda si es más reciente que lo guardado. */
 export const POST = manejar(async (req: Request) => {
+  exigirStaff(req);
   const body = (await leerJson(req)) as { club?: unknown } | null;
   const errores = validarClub(body?.club);
   if (errores.length) throw new ErrorApi(422, "Configuración inválida.", errores);

@@ -10,7 +10,7 @@ import { EventoShell } from "@/components/EventoShell";
 import { Leaderboard } from "@/components/Leaderboard";
 import { CompartirButton } from "@/components/CompartirButton";
 import { Confetti } from "@/components/ui/Confetti";
-import { calcularTabla, nombresDeFila } from "@/lib/scoring";
+import { calcularTabla, explicacionRanking, nombresDeFila } from "@/lib/scoring";
 import type { EventoAmericano } from "@/types/americano";
 
 export default function TablaPage() {
@@ -66,9 +66,7 @@ function Tabla({ evento }: { evento: EventoAmericano }) {
 
       <p className="mt-4 flex items-start gap-2 text-xs text-white/40">
         <Info className="mt-0.5 size-3.5 shrink-0" />
-        {evento.puntuacion.metodo === "PUNTOS_TOTALES"
-          ? "Clasificación por puntos totales a favor. Desempate: diferencia, luego puntos a favor."
-          : "3 puntos por victoria y 1 por empate. Desempate: diferencia de games, luego games a favor."}{" "}
+        {explicacionRanking(evento.puntuacion)}{" "}
         PJ jugados · PG ganados · PP perdidos · PF a favor · PC en contra.
       </p>
     </div>

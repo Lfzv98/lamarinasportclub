@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, AtSign, Copy, MapPin, MessageCircle, Plus, Save, Sun, Trash2, Warehouse } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
+import { StaffGate } from "@/components/StaffGate";
 import { Stepper } from "@/components/ui/Stepper";
 import { toast } from "@/components/ui/Toaster";
 import { aMinutos, DIAS, ORDEN_DIAS } from "@/lib/horarios";
@@ -14,6 +15,14 @@ import { useAmericanos } from "@/lib/store";
 import type { ConfigClub, ContactoClub, HorarioDia, PistaClub } from "@/types/americano";
 
 export default function ClubPage() {
+  return (
+    <StaffGate>
+      <Club />
+    </StaffGate>
+  );
+}
+
+function Club() {
   const club = useAmericanos((s) => s.club);
   const hidratado = useAmericanos((s) => s.hidratado);
   const guardarClub = useAmericanos((s) => s.guardarClub);
