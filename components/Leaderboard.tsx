@@ -118,6 +118,7 @@ export function Leaderboard({ tabla, nombresPorFila, modoTV = false, limite }: {
                 <span className={clsx("flex min-w-0 items-center", modoTV ? "gap-3" : "gap-2")}>
                   <AvatarPareja nombres={nombresPorFila(f)} fotos={f.fotoUrls} size={modoTV ? 48 : 28} />
                   <span className={clsx("min-w-0 truncate font-semibold", modoTV ? "text-2xl" : "text-[13px] sm:text-sm")}>{f.nombre}</span>
+                  {f.retirado && <span className="chip shrink-0 !px-2 !py-0.5 text-[10px] text-white/50">Retiro</span>}
                   {f.posicion === 1 && f.pj > 0 && <Crown className={clsx("shrink-0 text-neon", modoTV ? "size-6" : "size-4")} />}
                   <Delta v={delta} grande={modoTV} />
                 </span>

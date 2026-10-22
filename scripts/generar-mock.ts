@@ -56,6 +56,7 @@ function jugarRonda(e: EventoAmericano): EventoAmericano {
 }
 
 const hoy = "2026-10-24";
+// Las marcas actualizadoEn de la demo están en el pasado: cualquier edición real es más reciente.
 let mixto = crearEvento({
   nombre: "Americano Viernes Neón", fecha: hoy, horaInicio: "20:00", horaFin: "22:00", categoria: { rama: "MIXTO", nivel: "5TA" }, modalidad: "INDIVIDUAL_ROTATIVO",
   puntuacion: { metodo: "PUNTOS_TOTALES", puntosPorPartido: 24 }, pistas: 3, canchas: cancha(1, 2, 5), duracionRondaMin: 15, totalRondas: 6, jugadores: mixtos, semilla: 1105,
@@ -83,6 +84,6 @@ for (let i = 0; i < 7; i++) masc = jugarRonda(masc);
 masc.id = "evt_demo_open";
 
 const fijar = (e: EventoAmericano, t: string) => ({ ...e, creadoEn: t, actualizadoEn: t });
-const data = { version: 1, eventos: [fijar(mixto, "2026-10-24T20:30:00.000Z"), fijar(fem, "2026-10-24T19:00:00.000Z"), fijar(masc, "2026-10-17T23:00:00.000Z")] };
+const data = { version: 1, eventos: [fijar(mixto, "2026-10-01T20:30:00.000Z"), fijar(fem, "2026-10-01T19:00:00.000Z"), fijar(masc, "2026-09-26T23:00:00.000Z")] };
 writeFileSync(new URL("../data/mockData.json", import.meta.url), JSON.stringify(data, null, 2) + "\n");
 console.log("mockData.json:", data.eventos.map((e) => `${e.nombre} (${e.estado}, ronda ${e.rondaActual})`).join(" | "));

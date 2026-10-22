@@ -26,6 +26,12 @@ export interface OpcionesRotacion {
   rondas: number;
   semilla: number;
   mixto?: boolean;
+  /** Rondas ya jugadas: alimentan el historial al re-sortear (jugador retirado o tardío). */
+  previas?: Ronda[];
+  /** Número de la primera ronda a generar (por defecto 1). */
+  desde?: number;
+  /** Sufijo para los ids de partido, evita confundir un re-sorteo con el cuadro anterior. */
+  sufijo?: string;
 }
 
 const COSTO_COMPANERO_REPETIDO = 1000;
@@ -67,7 +73,7 @@ export function crearParejaRotativa(a: Jugador, b: Jugador): Pareja {
 }
 
 class Contador {
-  private m = new Map<string, number>();
+  m = new Map<string, number>();
   get(k: string) {
     return this.m.get(k) ?? 0;
   }
@@ -176,9 +182,26 @@ export function generarRondasIndividual(jugadores: Jugador[], opts: OpcionesRota
   if (nPartidos === 0) return [];
 
   const h: Historial = { companeros: new Contador(), rivales: new Contador(), jugados: new Contador(), descansos: new Contador() };
+  for (const r of opts.previas ?? []) {
+    for (const p of r.partidos) {
+      h.companeros.inc(clave(...p.parejaA.jugadorIds));
+      h.companeros.inc(clave(...p.parejaB.jugadorIds));
+      for (const x of p.parejaA.jugadorIds) for (const y of p.parejaB.jugadorIds) h.rivales.inc(clave(x, y));
+      [...p.parejaA.jugadorIds, ...p.parejaB.jugadorIds].forEach((id) => h.jugados.inc(id));
+    }
+    r.descansanIds.forEach((id) => h.descansos.inc(id));
+  }
+  // Un jugador que llega tarde arranca con el promedio jugado: no acapara todas las rondas siguientes.
+  if (opts.previas?.length) {
+    const conHistorial = jugadores.filter((j) => h.jugados.get(j.id) + h.descansos.get(j.id) > 0);
+    const prom = conHistorial.length ? Math.floor(conHistorial.reduce((s, j) => s + h.jugados.get(j.id), 0) / conHistorial.length) : 0;
+    for (const j of jugadores) if (!conHistorial.includes(j)) for (let i = 0; i < prom; i++) h.jugados.inc(j.id);
+  }
   const rondas: Ronda[] = [];
+  const desde = opts.desde ?? 1;
+  const sufijo = opts.sufijo ? `-${opts.sufijo}` : "";
 
-  for (let n = 1; n <= opts.rondas; n++) {
+  for (let n = desde; n < desde + opts.rondas; n++) {
     let activos: Jugador[];
     if (mixto) {
       const porGenero = (g: Genero) => elegirActivos(jugadores.filter((j) => j.genero === g), nPartidos * 2, h, rng);
@@ -200,7 +223,7 @@ export function generarRondasIndividual(jugadores: Jugador[], opts: OpcionesRota
       h.companeros.inc(clave(b0.id, b1.id));
       for (const x of [a0, a1]) for (const y of [b0, b1]) h.rivales.inc(clave(x.id, y.id));
       return {
-        id: `r${n}-p${idx + 1}`,
+        id: `r${n}-p${idx + 1}${sufijo}`,
         rondaNumero: n,
         pista: idx + 1,
         parejaA: crearParejaRotativa(a0, a1),
@@ -245,15 +268,39 @@ export function generarRondasDuplaFija(parejas: Pareja[], opts: OpcionesRotacion
   const orden = barajar(parejas, rng);
   const porRonda = Math.max(1, Math.min(opts.pistas, Math.floor(n / 2)));
   const jugados = new Contador();
+  const indice = new Map(orden.map((p, i) => [p.id, i]));
+
+  // Cruces ya disputados (re-sorteo): no se repiten hasta completar la vuelta.
+  const yaJugados = new Contador();
+  for (const r of opts.previas ?? [])
+    for (const p of r.partidos) {
+      const a = indice.get(p.parejaA.id);
+      const b = indice.get(p.parejaB.id);
+      if (a !== undefined) jugados.inc(String(a));
+      if (b !== undefined) jugados.inc(String(b));
+      if (a !== undefined && b !== undefined) yaJugados.inc(clave(String(a), String(b)));
+    }
 
   let cola: [number, number][] = [];
   const recargar = () => {
-    cola = cola.concat(roundRobin(n).flat());
+    const vuelta = roundRobin(n).flat();
+    const pendientes = vuelta.filter(([a, b]) => {
+      const k = clave(String(a), String(b));
+      if (yaJugados.get(k) > 0) {
+        // consume una ocurrencia
+        yaJugados.m.set(k, yaJugados.get(k) - 1);
+        return false;
+      }
+      return true;
+    });
+    cola = cola.concat(pendientes.length ? pendientes : vuelta);
   };
   recargar();
 
   const rondas: Ronda[] = [];
-  for (let r = 1; r <= opts.rondas; r++) {
+  const desde = opts.desde ?? 1;
+  const sufijo = opts.sufijo ? `-${opts.sufijo}` : "";
+  for (let r = desde; r < desde + opts.rondas; r++) {
     if (cola.length < porRonda) recargar();
     const enRonda = new Set<number>();
     const elegidos: [number, number][] = [];
@@ -279,7 +326,7 @@ export function generarRondasDuplaFija(parejas: Pareja[], opts: OpcionesRotacion
       numero: r,
       estado: "PENDIENTE",
       partidos: elegidos.map(([a, b], idx) => ({
-        id: `r${r}-p${idx + 1}`,
+        id: `r${r}-p${idx + 1}${sufijo}`,
         rondaNumero: r,
         pista: idx + 1,
         parejaA: orden[a],

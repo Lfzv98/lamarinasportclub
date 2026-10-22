@@ -22,12 +22,23 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 - **Puntuación:** Puntos totales (16/21/24/32), Games con punto de oro (4/6/9) y Sets cortos a 4 (1 set o mejor de 3).
 - **Rotación balanceada** (`lib/rotation.ts`): nadie repite compañero mientras sea posible, se minimizan rivales repetidos, se equilibra el nivel entre parejas, los descansos se reparten parejo y en Mixto cada pareja es hombre + mujer. Es determinista por semilla.
 
+## A prueba de errores
+
+- **Dos o más celulares a la vez:** cada marcador se fusiona por partido; nadie pisa lo que cargó otro.
+- **Sin señal en pista:** todo se guarda en el dispositivo y se sube solo al volver la conexión (el badge muestra cuántos cambios faltan subir).
+- **Recargar o cerrar la app:** el cronómetro sigue (se basa en la hora de inicio) y el setup a medio armar se recupera.
+- **Errores de carga:** marcadores imposibles bloqueados con mensaje claro, doble toque ignorado, "Deshacer" al guardar, corregir, borrar y cerrar ronda; no se puede cargar una ronda que aún no empieza.
+- **Cambios de plantel:** retirar a alguien (conserva sus puntos) o sumar a quien llegó tarde; se re-sortean solo las rondas que faltan, sin repetir compañeros.
+- **Borrar evento:** doble confirmación y borrado lógico que se propaga a todos los dispositivos.
+- **Datos locales dañados o almacenamiento lleno:** la app arranca igual y sigue trabajando contra la API.
+
 ## Desarrollo
 
 ```bash
 npm install
 npm run dev        # http://localhost:3000
-npm test           # tests del algoritmo, marcadores y horarios
+npm test           # 28 tests: rotación, marcadores, horarios, fusión, plantel, validación
+node tests/e2e/robustez.e2e.mjs   # 16 pruebas en navegador (con la app corriendo)
 npm run typecheck
 npm run build
 ```

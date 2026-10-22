@@ -3,7 +3,9 @@
 import clsx from "clsx";
 import { useParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronRight, Coffee, Flag, Pause, Pencil, Play, RotateCcw, Trophy } from "lucide-react";
+import { Check, ChevronRight, Coffee, Flag, Pause, Pencil, Play, RotateCcw, Trash2, Trophy, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { PlantelSheet } from "@/components/PlantelSheet";
 import { useEffect, useRef, useState } from "react";
 import { AvatarPareja } from "@/components/Avatar";
 import { Cronometro } from "@/components/Cronometro";
@@ -16,6 +18,8 @@ import {
   avanzarRonda,
   borrarResultado,
   cargarResultado,
+  despues,
+  eliminarEvento,
   iniciarRonda,
   pausarRonda,
   progresoEvento,
@@ -40,6 +44,8 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
   const [vista, setVista] = useState(evento.rondaActual);
   const [abierto, setAbierto] = useState<Partido | null>(null);
   const [fiesta, setFiesta] = useState(false);
+  const [plantel, setPlantel] = useState(false);
+  const router = useRouter();
   const rondaPrevia = useRef(evento.rondaActual);
 
   // Sigue a la ronda actual cuando avanza (también si avanza desde otro dispositivo).
@@ -63,16 +69,29 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
 
   function avanzar() {
     if (pendientes > 0 && !confirm(`Quedan ${pendientes} partido(s) sin resultado en esta ronda. ¿Avanzar igual?`)) return;
+    const antesRonda = evento.rondaActual;
+    const antesEstado = evento.estado;
+    const r0 = evento.rondas.find((r) => r.numero === antesRonda);
     act(avanzarRonda);
+    const deshacer = () =>
+      act((e) => ({
+        ...e,
+        rondaActual: antesRonda,
+        estado: antesEstado,
+        actualizadoEn: despues(e.actualizadoEn),
+        rondas: e.rondas.map((r) =>
+          r.numero === antesRonda && r0 ? { ...r, estado: r0.estado, inicioEn: r0.inicioEn, segundosAcumulados: r0.segundosAcumulados } : r,
+        ),
+      }));
     setFiesta(true);
     setTimeout(() => setFiesta(false), 3200);
     sonar("ok");
     vibrar([30, 50, 30, 50, 80]);
     if (ultima) {
       const campeon = calcularTabla(evento).filas[0];
-      toast(`🏆 ¡${campeon?.nombre ?? "Campeón"} gana el evento!`);
+      toast(`🏆 ¡${campeon?.nombre ?? "Campeón"} gana el evento!`, "ok", { label: "Deshacer", fn: deshacer });
     } else {
-      toast(`¡Ronda ${evento.rondaActual} cerrada! Vamos con la ${evento.rondaActual + 1}`);
+      toast(`Ronda ${evento.rondaActual} cerrada`, "ok", { label: "Deshacer", fn: deshacer });
     }
   }
 
@@ -192,6 +211,25 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
               </div>
             </div>
           )}
+          <div className="mt-6 flex w-full gap-2">
+            <button className="btn-ghost flex-1 !px-3 text-xs" onClick={() => setPlantel(true)}>
+              <Users className="size-3.5" /> {evento.modalidad === "DUPLA_FIJA" ? "Parejas" : "Jugadores"}
+            </button>
+            <button
+              className="btn-ghost !px-3 text-xs text-coral"
+              aria-label="Eliminar evento"
+              title="Eliminar evento"
+              onClick={() => {
+                if (!confirm(`¿Eliminar "${evento.nombre}"? Se borra en todos los dispositivos.`)) return;
+                if (evento.estado !== "BORRADOR" && prompt('Escribe ELIMINAR para confirmar') !== "ELIMINAR") return;
+                act(eliminarEvento);
+                toast("Evento eliminado", "info");
+                router.push("/");
+              }}
+            >
+              <Trash2 className="size-3.5" />
+            </button>
+          </div>
         </aside>
 
         {/* Pistas activas */}
@@ -213,6 +251,10 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
                   index={i}
                   onClick={() => {
                     vibrar(10);
+                    if (ronda.numero > evento.rondaActual && p.estado !== "FINALIZADO") {
+                      toast(`La ronda ${ronda.numero} aún no empieza. Estás en la ronda ${evento.rondaActual}.`, "info");
+                      return;
+                    }
                     setAbierto(p);
                   }}
                 />
@@ -225,6 +267,16 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
         </section>
       </div>
 
+      <PlantelSheet
+        evento={evento}
+        abierto={plantel}
+        onClose={() => setPlantel(false)}
+        onCambio={(fn, mensaje) => {
+          act(fn);
+          toast(mensaje, "info");
+        }}
+      />
+
       <ScoreModal
         partido={abierto}
         config={evento.puntuacion}
@@ -232,13 +284,23 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
         jugadores={evento.jugadores}
         onClose={() => setAbierto(null)}
         onGuardar={(r) => {
-          act((e) => cargarResultado(e, abierto!.id, r));
-          toast(`${nombrePista(evento, abierto!.pista)}: resultado guardado`);
+          if (!abierto) return; // doble toque
+          const p = abierto;
+          const previo = p.resultado;
+          act((e) => cargarResultado(e, p.id, r));
+          toast(`${nombrePista(evento, p.pista)}: ${previo ? "marcador corregido" : "resultado guardado"}`, "ok", {
+            label: "Deshacer",
+            fn: () => act((e) => (previo ? cargarResultado(e, p.id, previo) : borrarResultado(e, p.id))),
+          });
           setAbierto(null);
         }}
         onBorrar={() => {
-          act((e) => borrarResultado(e, abierto!.id));
-          toast("Resultado borrado", "info");
+          if (!abierto) return;
+          const p = abierto;
+          const previo = p.resultado;
+          if (!confirm(`¿Borrar el resultado de ${nombrePista(evento, p.pista)}?`)) return;
+          act((e) => borrarResultado(e, p.id));
+          toast("Resultado borrado", "info", previo ? { label: "Deshacer", fn: () => act((e) => cargarResultado(e, p.id, previo)) } : undefined);
           setAbierto(null);
         }}
       />

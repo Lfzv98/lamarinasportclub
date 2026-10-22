@@ -118,21 +118,3 @@ export function getRepository(): AmericanosRepository {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   return url && key ? supabaseRepository(url, key) : demoRepository;
 }
-
-/** Validación mínima del payload antes de persistir. */
-export function esEventoValido(e: unknown): e is EventoAmericano {
-  if (!e || typeof e !== "object") return false;
-  const x = e as Partial<EventoAmericano>;
-  return (
-    typeof x.id === "string" &&
-    typeof x.nombre === "string" &&
-    !!x.categoria &&
-    (x.modalidad === "INDIVIDUAL_ROTATIVO" || x.modalidad === "DUPLA_FIJA") &&
-    !!x.puntuacion &&
-    typeof x.pistas === "number" &&
-    x.pistas >= 1 &&
-    x.pistas <= 6 &&
-    Array.isArray(x.jugadores) &&
-    Array.isArray(x.rondas)
-  );
-}

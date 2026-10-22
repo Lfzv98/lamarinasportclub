@@ -45,6 +45,8 @@ export interface Jugador {
   rating?: number;
   /** id del usuario en PadelReserve, si existe. */
   usuarioId?: string | null;
+  /** Se retiró a mitad del evento: conserva sus puntos pero no entra en nuevas rondas. */
+  retirado?: boolean;
 }
 
 export interface Pareja {
@@ -52,6 +54,8 @@ export interface Pareja {
   jugadorIds: [string, string];
   /** Nombre visible, ej. "Ana / Lucía". */
   nombre?: string;
+  /** Dupla fija retirada a mitad del evento. */
+  retirada?: boolean;
 }
 
 export interface SetScore {
@@ -117,6 +121,8 @@ export interface FilaPosicion {
   diferencia: number;
   /** Puntos de clasificación (ver lib/scoring.ts). */
   puntos: number;
+  /** Se retiró del evento (sigue en la tabla con lo que sumó). */
+  retirado?: boolean;
 }
 
 export interface TablaPosiciones {
@@ -195,6 +201,8 @@ export interface EventoAmericano {
   semilla: number;
   creadoEn: string;
   actualizadoEn: string;
+  /** Borrado lógico: se sincroniza a todos los dispositivos. */
+  eliminado?: boolean;
 }
 
 /** Payload del POST /api/americanos */

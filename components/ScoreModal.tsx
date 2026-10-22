@@ -78,11 +78,16 @@ export function ScoreModal({ partido, config, nombrePista, jugadores, onClose, o
     });
   }
 
+  const [guardando, setGuardando] = useState(false);
+  useEffect(() => setGuardando(false), [partido?.id]);
+
   function guardar() {
+    if (guardando) return;
     if (error) {
       vibrar([30, 40, 30]);
       return;
     }
+    setGuardando(true);
     sonar("ok");
     vibrar([15, 30, 15]);
     onGuardar(r);
@@ -244,7 +249,7 @@ export function ScoreModal({ partido, config, nombrePista, jugadores, onClose, o
                   <RotateCcw className="size-4" />
                 </button>
               )}
-              <button className="btn-neon flex-1 py-4 text-base" onClick={guardar} disabled={!!error}>
+              <button className="btn-neon flex-1 py-4 text-base" onClick={guardar} disabled={!!error || guardando}>
                 <Save className="size-5" /> Guardar resultado
               </button>
             </div>

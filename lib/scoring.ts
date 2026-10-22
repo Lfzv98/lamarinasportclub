@@ -108,11 +108,11 @@ export function calcularTabla(evento: EventoAmericano): TablaPosiciones {
   const filas = new Map<string, FilaPosicion>();
 
   if (porJugador) {
-    for (const j of evento.jugadores) filas.set(j.id, filaVacia(j.id, nombreJugador(j), [j.fotoUrl]));
+    for (const j of evento.jugadores) filas.set(j.id, { ...filaVacia(j.id, nombreJugador(j), [j.fotoUrl]), retirado: !!j.retirado });
   } else {
     for (const p of evento.parejas) {
       const [a, b] = p.jugadorIds.map((id) => jugadores.get(id));
-      filas.set(p.id, filaVacia(p.id, p.nombre ?? `${a?.nombre ?? "?"} / ${b?.nombre ?? "?"}`, [a?.fotoUrl, b?.fotoUrl]));
+      filas.set(p.id, { ...filaVacia(p.id, p.nombre ?? `${a?.nombre ?? "?"} / ${b?.nombre ?? "?"}`, [a?.fotoUrl, b?.fotoUrl]), retirado: !!p.retirada });
     }
   }
 

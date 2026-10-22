@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, CalendarDays, Check, Clock, CloudRain, Dices, Sun, Warehouse, Settings2, Mars, Plus, Rocket, Shuffle, Trash2, UserPlus, Users, Venus, X } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { Logo } from "@/components/Logo";
 import { Segmented } from "@/components/ui/Segmented";
@@ -18,6 +18,7 @@ import { partidosPorRonda, rondasSugeridas } from "@/lib/rotation";
 import { configPorDefecto } from "@/lib/scoring";
 import { aHora, aMinutos, DIAS, diaSemana, franjas, horaFinPrevista, horarioDelDia, nombrePista, rondasQueCaben, validarFranja } from "@/lib/horarios";
 import { useAmericanos } from "@/lib/store";
+import { hayBorrador, useBorrador, useLimpiarBorrador } from "@/hooks/useBorrador";
 import type { ConfigPuntuacion, Genero, Jugador, MetodoPuntuacion, Modalidad, Nivel, Pareja, Rama } from "@/types/americano";
 
 const PASOS = ["Categoría", "Formato", "Pistas", "Jugadores", "Listo"];
@@ -39,31 +40,42 @@ export default function SetupPage() {
   const club = useAmericanos((s) => s.club);
 
   const [paso, setPaso] = useState(0);
+  const limpiarBorrador = useLimpiarBorrador();
+  useEffect(() => {
+    if (hayBorrador())
+      toast("Recuperamos el evento que estabas armando", "info", {
+        label: "Empezar de cero",
+        fn: () => {
+          limpiarBorrador();
+          location.reload();
+        },
+      });
+  }, [limpiarBorrador]);
   const [dir, setDir] = useState(1);
 
-  const [rama, setRama] = useState<Rama>("MIXTO");
-  const [nivel, setNivel] = useState<Nivel>("5TA");
-  const [modalidad, setModalidad] = useState<Modalidad>("INDIVIDUAL_ROTATIVO");
-  const [puntuacion, setPuntuacion] = useState<ConfigPuntuacion>(configPorDefecto("PUNTOS_TOTALES"));
+  const [rama, setRama] = useBorrador<Rama>("rama", "MIXTO");
+  const [nivel, setNivel] = useBorrador<Nivel>("nivel", "5TA");
+  const [modalidad, setModalidad] = useBorrador<Modalidad>("modalidad", "INDIVIDUAL_ROTATIVO");
+  const [puntuacion, setPuntuacion] = useBorrador<ConfigPuntuacion>("puntuacion", configPorDefecto("PUNTOS_TOTALES"));
   const pistasActivas = club.pistas.filter((c) => c.activa);
-  const [seleccion, setSeleccion] = useState<number[]>(() => club.pistas.filter((c) => c.activa && c.techada).map((c) => c.numero));
+  const [seleccion, setSeleccion] = useBorrador<number[]>("seleccion", () => club.pistas.filter((c) => c.activa && c.techada).map((c) => c.numero));
   // Techadas primero (la primera recibe el partido de mayor nivel), luego por número.
   const canchas = pistasActivas
     .filter((c) => seleccion.includes(c.numero))
     .sort((a, b) => Number(b.techada) - Number(a.techada) || a.numero - b.numero);
   const pistas = Math.max(1, canchas.length);
-  const [duracion, setDuracion] = useState(15);
-  const [rondasManual, setRondasManual] = useState<number | null>(null);
-  const [jugadores, setJugadores] = useState<Jugador[]>([]);
-  const [parejas, setParejas] = useState<Pareja[]>([]);
-  const [nombre, setNombre] = useState("");
+  const [duracion, setDuracion] = useBorrador("duracion", 15);
+  const [rondasManual, setRondasManual] = useBorrador<number | null>("rondasManual", null);
+  const [jugadores, setJugadores] = useBorrador<Jugador[]>("jugadores", []);
+  const [parejas, setParejas] = useBorrador<Pareja[]>("parejas", []);
+  const [nombre, setNombre] = useBorrador("nombre", "");
   const [semilla, setSemilla] = useState(() => Math.floor(Math.random() * 2 ** 31));
-  const [fecha, setFecha] = useState(() => {
+  const [fecha, setFecha] = useBorrador("fecha", () => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   });
-  const [horaInicio, setHoraInicio] = useState("19:00");
-  const [horaFin, setHoraFin] = useState("22:00");
+  const [horaInicio, setHoraInicio] = useBorrador("horaInicio", "19:00");
+  const [horaFin, setHoraFin] = useBorrador("horaFin", "22:00");
 
   const horarioDia = horarioDelDia(club, fecha);
   const slots = franjas(horarioDia);
@@ -137,11 +149,13 @@ export default function SetupPage() {
       canchas,
       duracionRondaMin: duracion,
       totalRondas,
-      jugadores,
-      parejas,
+      // En dupla fija solo cuentan los jugadores que están en alguna pareja.
+      jugadores: modalidad === "DUPLA_FIJA" ? jugadores.filter((j) => parejas.some((p) => p.jugadorIds.includes(j.id))) : jugadores,
+      parejas: modalidad === "DUPLA_FIJA" ? parejas : [],
       semilla,
     });
     guardar(evento);
+    limpiarBorrador();
     sonar("ok");
     vibrar([20, 40, 60]);
     toast("¡Evento creado! A jugar 🎾");
@@ -704,7 +718,19 @@ function EditorJugadores({
   const g = generoFijo ?? genero;
 
   function agregar() {
-    const nombres = texto.split(/[,\n]/).map((s) => s.trim()).filter(Boolean);
+    const existentes = new Set(jugadores.map((j) => `${j.nombre} ${j.apellido ?? ""}`.trim().toLowerCase()));
+    const todos = texto.split(/[,\n;]/).map((s) => s.trim().replace(/\s+/g, " ")).filter(Boolean);
+    const nombres = todos.filter((n) => {
+      const k = n.toLowerCase();
+      if (existentes.has(k)) return false;
+      existentes.add(k);
+      return true;
+    });
+    if (todos.length > nombres.length) toast(`Nombre repetido omitido: agrega el apellido para distinguirlos`, "error");
+    if (jugadores.length + nombres.length > 48) {
+      toast("Máximo 48 jugadores por evento", "error");
+      return;
+    }
     if (!nombres.length) return;
     vibrar(10);
     sonar("tap");

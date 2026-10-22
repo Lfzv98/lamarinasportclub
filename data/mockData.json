@@ -167,8 +167,8 @@
       ],
       "parejas": [],
       "semilla": 1105,
-      "creadoEn": "2026-10-24T20:30:00.000Z",
-      "actualizadoEn": "2026-10-24T20:30:00.000Z",
+      "creadoEn": "2026-10-01T20:30:00.000Z",
+      "actualizadoEn": "2026-10-01T20:30:00.000Z",
       "rondas": [
         {
           "numero": 1,
@@ -179,33 +179,6 @@
               "rondaNumero": 1,
               "pista": 1,
               "parejaA": {
-                "id": "jug_003+jug_004",
-                "jugadorIds": [
-                  "jug_003",
-                  "jug_004"
-                ],
-                "nombre": "Camila / Mateo"
-              },
-              "parejaB": {
-                "id": "jug_006+jug_007",
-                "jugadorIds": [
-                  "jug_006",
-                  "jug_007"
-                ],
-                "nombre": "Andrés / Sofía"
-              },
-              "estado": "FINALIZADO",
-              "resultado": {
-                "puntosA": 11,
-                "puntosB": 13
-              },
-              "actualizadoEn": "2026-10-22T04:59:46.701Z"
-            },
-            {
-              "id": "r1-p2",
-              "rondaNumero": 1,
-              "pista": 2,
-              "parejaA": {
                 "id": "jug_001+jug_012",
                 "jugadorIds": [
                   "jug_001",
@@ -214,46 +187,73 @@
                 "nombre": "Valeria / Sebastián"
               },
               "parejaB": {
-                "id": "jug_002+jug_009",
+                "id": "jug_004+jug_005",
+                "jugadorIds": [
+                  "jug_004",
+                  "jug_005"
+                ],
+                "nombre": "Mateo / Lucía"
+              },
+              "estado": "FINALIZADO",
+              "resultado": {
+                "puntosA": 11,
+                "puntosB": 13
+              },
+              "actualizadoEn": "2026-10-22T05:19:12.553Z"
+            },
+            {
+              "id": "r1-p2",
+              "rondaNumero": 1,
+              "pista": 2,
+              "parejaA": {
+                "id": "jug_002+jug_003",
                 "jugadorIds": [
                   "jug_002",
-                  "jug_009"
+                  "jug_003"
                 ],
-                "nombre": "Diego / Isabella"
+                "nombre": "Diego / Camila"
+              },
+              "parejaB": {
+                "id": "jug_007+jug_008",
+                "jugadorIds": [
+                  "jug_007",
+                  "jug_008"
+                ],
+                "nombre": "Sofía / Tomás"
               },
               "estado": "FINALIZADO",
               "resultado": {
                 "puntosA": 10,
                 "puntosB": 14
               },
-              "actualizadoEn": "2026-10-22T04:59:46.701Z"
+              "actualizadoEn": "2026-10-22T05:19:12.554Z"
             },
             {
               "id": "r1-p3",
               "rondaNumero": 1,
               "pista": 5,
               "parejaA": {
-                "id": "jug_008+jug_011",
+                "id": "jug_009+jug_010",
                 "jugadorIds": [
-                  "jug_008",
-                  "jug_011"
-                ],
-                "nombre": "Tomás / Martina"
-              },
-              "parejaB": {
-                "id": "jug_005+jug_010",
-                "jugadorIds": [
-                  "jug_005",
+                  "jug_009",
                   "jug_010"
                 ],
-                "nombre": "Lucía / Joaquín"
+                "nombre": "Isabella / Joaquín"
+              },
+              "parejaB": {
+                "id": "jug_006+jug_011",
+                "jugadorIds": [
+                  "jug_006",
+                  "jug_011"
+                ],
+                "nombre": "Andrés / Martina"
               },
               "estado": "FINALIZADO",
               "resultado": {
                 "puntosA": 14,
                 "puntosB": 10
               },
-              "actualizadoEn": "2026-10-22T04:59:46.701Z"
+              "actualizadoEn": "2026-10-22T05:19:12.555Z"
             }
           ],
           "descansanIds": [],
@@ -269,33 +269,6 @@
               "rondaNumero": 2,
               "pista": 1,
               "parejaA": {
-                "id": "jug_009+jug_012",
-                "jugadorIds": [
-                  "jug_009",
-                  "jug_012"
-                ],
-                "nombre": "Isabella / Sebastián"
-              },
-              "parejaB": {
-                "id": "jug_007+jug_008",
-                "jugadorIds": [
-                  "jug_007",
-                  "jug_008"
-                ],
-                "nombre": "Sofía / Tomás"
-              },
-              "estado": "FINALIZADO",
-              "resultado": {
-                "puntosA": 14,
-                "puntosB": 10
-              },
-              "actualizadoEn": "2026-10-22T04:59:46.701Z"
-            },
-            {
-              "id": "r2-p2",
-              "rondaNumero": 2,
-              "pista": 2,
-              "parejaA": {
                 "id": "jug_004+jug_011",
                 "jugadorIds": [
                   "jug_004",
@@ -304,46 +277,73 @@
                 "nombre": "Mateo / Martina"
               },
               "parejaB": {
-                "id": "jug_002+jug_003",
+                "id": "jug_002+jug_005",
                 "jugadorIds": [
                   "jug_002",
-                  "jug_003"
+                  "jug_005"
                 ],
-                "nombre": "Diego / Camila"
+                "nombre": "Diego / Lucía"
+              },
+              "estado": "FINALIZADO",
+              "resultado": {
+                "puntosA": 14,
+                "puntosB": 10
+              },
+              "actualizadoEn": "2026-10-22T05:19:12.558Z"
+            },
+            {
+              "id": "r2-p2",
+              "rondaNumero": 2,
+              "pista": 2,
+              "parejaA": {
+                "id": "jug_006+jug_009",
+                "jugadorIds": [
+                  "jug_006",
+                  "jug_009"
+                ],
+                "nombre": "Andrés / Isabella"
+              },
+              "parejaB": {
+                "id": "jug_003+jug_012",
+                "jugadorIds": [
+                  "jug_003",
+                  "jug_012"
+                ],
+                "nombre": "Camila / Sebastián"
               },
               "estado": "FINALIZADO",
               "resultado": {
                 "puntosA": 7,
                 "puntosB": 17
               },
-              "actualizadoEn": "2026-10-22T04:59:46.701Z"
+              "actualizadoEn": "2026-10-22T05:19:12.559Z"
             },
             {
               "id": "r2-p3",
               "rondaNumero": 2,
               "pista": 5,
               "parejaA": {
-                "id": "jug_005+jug_006",
+                "id": "jug_007+jug_010",
                 "jugadorIds": [
-                  "jug_005",
-                  "jug_006"
-                ],
-                "nombre": "Lucía / Andrés"
-              },
-              "parejaB": {
-                "id": "jug_001+jug_010",
-                "jugadorIds": [
-                  "jug_001",
+                  "jug_007",
                   "jug_010"
                 ],
-                "nombre": "Valeria / Joaquín"
+                "nombre": "Sofía / Joaquín"
+              },
+              "parejaB": {
+                "id": "jug_001+jug_008",
+                "jugadorIds": [
+                  "jug_001",
+                  "jug_008"
+                ],
+                "nombre": "Valeria / Tomás"
               },
               "estado": "FINALIZADO",
               "resultado": {
                 "puntosA": 8,
                 "puntosB": 16
               },
-              "actualizadoEn": "2026-10-22T04:59:46.702Z"
+              "actualizadoEn": "2026-10-22T05:19:12.560Z"
             }
           ],
           "descansanIds": [],
@@ -359,47 +359,47 @@
               "rondaNumero": 3,
               "pista": 1,
               "parejaA": {
-                "id": "jug_004+jug_005",
+                "id": "jug_001+jug_004",
                 "jugadorIds": [
-                  "jug_004",
-                  "jug_005"
+                  "jug_001",
+                  "jug_004"
                 ],
-                "nombre": "Mateo / Lucía"
+                "nombre": "Valeria / Mateo"
               },
               "parejaB": {
-                "id": "jug_003+jug_012",
+                "id": "jug_006+jug_007",
                 "jugadorIds": [
-                  "jug_003",
-                  "jug_012"
+                  "jug_006",
+                  "jug_007"
                 ],
-                "nombre": "Camila / Sebastián"
+                "nombre": "Andrés / Sofía"
               },
               "estado": "FINALIZADO",
               "resultado": {
                 "puntosA": 13,
                 "puntosB": 11
               },
-              "actualizadoEn": "2026-10-22T04:59:46.702Z"
+              "actualizadoEn": "2026-10-22T05:19:12.563Z"
             },
             {
               "id": "r3-p2",
               "rondaNumero": 3,
               "pista": 2,
               "parejaA": {
-                "id": "jug_007+jug_010",
+                "id": "jug_005+jug_010",
                 "jugadorIds": [
-                  "jug_007",
+                  "jug_005",
                   "jug_010"
                 ],
-                "nombre": "Sofía / Joaquín"
+                "nombre": "Lucía / Joaquín"
               },
               "parejaB": {
-                "id": "jug_001+jug_002",
+                "id": "jug_002+jug_009",
                 "jugadorIds": [
-                  "jug_001",
-                  "jug_002"
+                  "jug_002",
+                  "jug_009"
                 ],
-                "nombre": "Valeria / Diego"
+                "nombre": "Diego / Isabella"
               },
               "estado": "EN_JUEGO",
               "resultado": null
@@ -409,20 +409,20 @@
               "rondaNumero": 3,
               "pista": 5,
               "parejaA": {
-                "id": "jug_006+jug_011",
+                "id": "jug_003+jug_008",
                 "jugadorIds": [
-                  "jug_006",
-                  "jug_011"
+                  "jug_003",
+                  "jug_008"
                 ],
-                "nombre": "Andrés / Martina"
+                "nombre": "Camila / Tomás"
               },
               "parejaB": {
-                "id": "jug_008+jug_009",
+                "id": "jug_011+jug_012",
                 "jugadorIds": [
-                  "jug_008",
-                  "jug_009"
+                  "jug_011",
+                  "jug_012"
                 ],
-                "nombre": "Tomás / Isabella"
+                "nombre": "Martina / Sebastián"
               },
               "estado": "EN_JUEGO",
               "resultado": null
@@ -441,20 +441,20 @@
               "rondaNumero": 4,
               "pista": 1,
               "parejaA": {
-                "id": "jug_001+jug_004",
+                "id": "jug_001+jug_002",
                 "jugadorIds": [
                   "jug_001",
-                  "jug_004"
+                  "jug_002"
                 ],
-                "nombre": "Valeria / Mateo"
+                "nombre": "Valeria / Diego"
               },
               "parejaB": {
-                "id": "jug_003+jug_008",
+                "id": "jug_009+jug_012",
                 "jugadorIds": [
-                  "jug_003",
-                  "jug_008"
+                  "jug_009",
+                  "jug_012"
                 ],
-                "nombre": "Camila / Tomás"
+                "nombre": "Isabella / Sebastián"
               },
               "estado": "PENDIENTE",
               "resultado": null
@@ -464,20 +464,20 @@
               "rondaNumero": 4,
               "pista": 2,
               "parejaA": {
-                "id": "jug_002+jug_005",
+                "id": "jug_004+jug_007",
                 "jugadorIds": [
-                  "jug_002",
-                  "jug_005"
+                  "jug_004",
+                  "jug_007"
                 ],
-                "nombre": "Diego / Lucía"
+                "nombre": "Mateo / Sofía"
               },
               "parejaB": {
-                "id": "jug_006+jug_009",
+                "id": "jug_010+jug_011",
                 "jugadorIds": [
-                  "jug_006",
-                  "jug_009"
+                  "jug_010",
+                  "jug_011"
                 ],
-                "nombre": "Andrés / Isabella"
+                "nombre": "Joaquín / Martina"
               },
               "estado": "PENDIENTE",
               "resultado": null
@@ -487,20 +487,20 @@
               "rondaNumero": 4,
               "pista": 5,
               "parejaA": {
-                "id": "jug_010+jug_011",
+                "id": "jug_003+jug_006",
                 "jugadorIds": [
-                  "jug_010",
-                  "jug_011"
+                  "jug_003",
+                  "jug_006"
                 ],
-                "nombre": "Joaquín / Martina"
+                "nombre": "Camila / Andrés"
               },
               "parejaB": {
-                "id": "jug_007+jug_012",
+                "id": "jug_005+jug_008",
                 "jugadorIds": [
-                  "jug_007",
-                  "jug_012"
+                  "jug_005",
+                  "jug_008"
                 ],
-                "nombre": "Sofía / Sebastián"
+                "nombre": "Lucía / Tomás"
               },
               "estado": "PENDIENTE",
               "resultado": null
@@ -519,12 +519,12 @@
               "rondaNumero": 5,
               "pista": 1,
               "parejaA": {
-                "id": "jug_005+jug_008",
+                "id": "jug_001+jug_006",
                 "jugadorIds": [
-                  "jug_005",
-                  "jug_008"
+                  "jug_001",
+                  "jug_006"
                 ],
-                "nombre": "Lucía / Tomás"
+                "nombre": "Valeria / Andrés"
               },
               "parejaB": {
                 "id": "jug_002+jug_007",
@@ -542,20 +542,20 @@
               "rondaNumero": 5,
               "pista": 2,
               "parejaA": {
+                "id": "jug_008+jug_011",
+                "jugadorIds": [
+                  "jug_008",
+                  "jug_011"
+                ],
+                "nombre": "Tomás / Martina"
+              },
+              "parejaB": {
                 "id": "jug_004+jug_009",
                 "jugadorIds": [
                   "jug_004",
                   "jug_009"
                 ],
                 "nombre": "Mateo / Isabella"
-              },
-              "parejaB": {
-                "id": "jug_003+jug_010",
-                "jugadorIds": [
-                  "jug_003",
-                  "jug_010"
-                ],
-                "nombre": "Camila / Joaquín"
               },
               "estado": "PENDIENTE",
               "resultado": null
@@ -565,20 +565,20 @@
               "rondaNumero": 5,
               "pista": 5,
               "parejaA": {
-                "id": "jug_001+jug_006",
+                "id": "jug_003+jug_010",
                 "jugadorIds": [
-                  "jug_001",
-                  "jug_006"
+                  "jug_003",
+                  "jug_010"
                 ],
-                "nombre": "Valeria / Andrés"
+                "nombre": "Camila / Joaquín"
               },
               "parejaB": {
-                "id": "jug_011+jug_012",
+                "id": "jug_005+jug_012",
                 "jugadorIds": [
-                  "jug_011",
+                  "jug_005",
                   "jug_012"
                 ],
-                "nombre": "Martina / Sebastián"
+                "nombre": "Lucía / Sebastián"
               },
               "estado": "PENDIENTE",
               "resultado": null
@@ -597,20 +597,20 @@
               "rondaNumero": 6,
               "pista": 1,
               "parejaA": {
-                "id": "jug_004+jug_007",
+                "id": "jug_007+jug_012",
                 "jugadorIds": [
-                  "jug_004",
-                  "jug_007"
-                ],
-                "nombre": "Mateo / Sofía"
-              },
-              "parejaB": {
-                "id": "jug_005+jug_012",
-                "jugadorIds": [
-                  "jug_005",
+                  "jug_007",
                   "jug_012"
                 ],
-                "nombre": "Lucía / Sebastián"
+                "nombre": "Sofía / Sebastián"
+              },
+              "parejaB": {
+                "id": "jug_008+jug_009",
+                "jugadorIds": [
+                  "jug_008",
+                  "jug_009"
+                ],
+                "nombre": "Tomás / Isabella"
               },
               "estado": "PENDIENTE",
               "resultado": null
@@ -620,20 +620,20 @@
               "rondaNumero": 6,
               "pista": 2,
               "parejaA": {
-                "id": "jug_002+jug_011",
-                "jugadorIds": [
-                  "jug_002",
-                  "jug_011"
-                ],
-                "nombre": "Diego / Martina"
-              },
-              "parejaB": {
-                "id": "jug_003+jug_006",
+                "id": "jug_003+jug_004",
                 "jugadorIds": [
                   "jug_003",
-                  "jug_006"
+                  "jug_004"
                 ],
-                "nombre": "Camila / Andrés"
+                "nombre": "Camila / Mateo"
+              },
+              "parejaB": {
+                "id": "jug_001+jug_010",
+                "jugadorIds": [
+                  "jug_001",
+                  "jug_010"
+                ],
+                "nombre": "Valeria / Joaquín"
               },
               "estado": "PENDIENTE",
               "resultado": null
@@ -643,20 +643,20 @@
               "rondaNumero": 6,
               "pista": 5,
               "parejaA": {
-                "id": "jug_001+jug_008",
+                "id": "jug_002+jug_011",
                 "jugadorIds": [
-                  "jug_001",
-                  "jug_008"
+                  "jug_002",
+                  "jug_011"
                 ],
-                "nombre": "Valeria / Tomás"
+                "nombre": "Diego / Martina"
               },
               "parejaB": {
-                "id": "jug_009+jug_010",
+                "id": "jug_005+jug_006",
                 "jugadorIds": [
-                  "jug_009",
-                  "jug_010"
+                  "jug_005",
+                  "jug_006"
                 ],
-                "nombre": "Isabella / Joaquín"
+                "nombre": "Lucía / Andrés"
               },
               "estado": "PENDIENTE",
               "resultado": null
@@ -849,8 +849,8 @@
         }
       ],
       "semilla": 77,
-      "creadoEn": "2026-10-24T19:00:00.000Z",
-      "actualizadoEn": "2026-10-24T19:00:00.000Z",
+      "creadoEn": "2026-10-01T19:00:00.000Z",
+      "actualizadoEn": "2026-10-01T19:00:00.000Z",
       "rondas": [
         {
           "numero": 1,
@@ -861,39 +861,39 @@
               "rondaNumero": 1,
               "pista": 3,
               "parejaA": {
-                "id": "par_4",
-                "jugadorIds": [
-                  "jug_019",
-                  "jug_020"
-                ],
-                "nombre": "Julieta / Mía"
-              },
-              "parejaB": {
-                "id": "par_3",
-                "jugadorIds": [
-                  "jug_017",
-                  "jug_018"
-                ],
-                "nombre": "Florencia / Elena"
-              },
-              "estado": "FINALIZADO",
-              "resultado": {
-                "puntosA": 6,
-                "puntosB": 4
-              },
-              "actualizadoEn": "2026-10-22T04:59:46.702Z"
-            },
-            {
-              "id": "r1-p2",
-              "rondaNumero": 1,
-              "pista": 4,
-              "parejaA": {
                 "id": "par_5",
                 "jugadorIds": [
                   "jug_021",
                   "jug_022"
                 ],
                 "nombre": "Agustina / Carla"
+              },
+              "parejaB": {
+                "id": "par_2",
+                "jugadorIds": [
+                  "jug_015",
+                  "jug_016"
+                ],
+                "nombre": "Renata / Antonia"
+              },
+              "estado": "FINALIZADO",
+              "resultado": {
+                "puntosA": 6,
+                "puntosB": 4
+              },
+              "actualizadoEn": "2026-10-22T05:19:12.555Z"
+            },
+            {
+              "id": "r1-p2",
+              "rondaNumero": 1,
+              "pista": 4,
+              "parejaA": {
+                "id": "par_4",
+                "jugadorIds": [
+                  "jug_019",
+                  "jug_020"
+                ],
+                "nombre": "Julieta / Mía"
               },
               "parejaB": {
                 "id": "par_1",
@@ -908,11 +908,11 @@
                 "puntosA": 1,
                 "puntosB": 6
               },
-              "actualizadoEn": "2026-10-22T04:59:46.702Z"
+              "actualizadoEn": "2026-10-22T05:19:12.556Z"
             }
           ],
           "descansanIds": [
-            "par_2"
+            "par_3"
           ],
           "inicioEn": null,
           "segundosAcumulados": 0
@@ -926,20 +926,20 @@
               "rondaNumero": 2,
               "pista": 3,
               "parejaA": {
-                "id": "par_3",
-                "jugadorIds": [
-                  "jug_017",
-                  "jug_018"
-                ],
-                "nombre": "Florencia / Elena"
-              },
-              "parejaB": {
                 "id": "par_2",
                 "jugadorIds": [
                   "jug_015",
                   "jug_016"
                 ],
                 "nombre": "Renata / Antonia"
+              },
+              "parejaB": {
+                "id": "par_3",
+                "jugadorIds": [
+                  "jug_017",
+                  "jug_018"
+                ],
+                "nombre": "Florencia / Elena"
               },
               "estado": "PENDIENTE",
               "resultado": null
@@ -949,20 +949,20 @@
               "rondaNumero": 2,
               "pista": 4,
               "parejaA": {
-                "id": "par_5",
-                "jugadorIds": [
-                  "jug_021",
-                  "jug_022"
-                ],
-                "nombre": "Agustina / Carla"
-              },
-              "parejaB": {
                 "id": "par_4",
                 "jugadorIds": [
                   "jug_019",
                   "jug_020"
                 ],
                 "nombre": "Julieta / Mía"
+              },
+              "parejaB": {
+                "id": "par_5",
+                "jugadorIds": [
+                  "jug_021",
+                  "jug_022"
+                ],
+                "nombre": "Agustina / Carla"
               },
               "estado": "PENDIENTE",
               "resultado": null
@@ -983,12 +983,12 @@
               "rondaNumero": 3,
               "pista": 3,
               "parejaA": {
-                "id": "par_2",
+                "id": "par_3",
                 "jugadorIds": [
-                  "jug_015",
-                  "jug_016"
+                  "jug_017",
+                  "jug_018"
                 ],
-                "nombre": "Renata / Antonia"
+                "nombre": "Florencia / Elena"
               },
               "parejaB": {
                 "id": "par_1",
@@ -1006,27 +1006,27 @@
               "rondaNumero": 3,
               "pista": 4,
               "parejaA": {
-                "id": "par_3",
+                "id": "par_2",
                 "jugadorIds": [
-                  "jug_017",
-                  "jug_018"
+                  "jug_015",
+                  "jug_016"
                 ],
-                "nombre": "Florencia / Elena"
+                "nombre": "Renata / Antonia"
               },
               "parejaB": {
-                "id": "par_5",
+                "id": "par_4",
                 "jugadorIds": [
-                  "jug_021",
-                  "jug_022"
+                  "jug_019",
+                  "jug_020"
                 ],
-                "nombre": "Agustina / Carla"
+                "nombre": "Julieta / Mía"
               },
               "estado": "PENDIENTE",
               "resultado": null
             }
           ],
           "descansanIds": [
-            "par_4"
+            "par_5"
           ],
           "inicioEn": null,
           "segundosAcumulados": 0
@@ -1040,12 +1040,12 @@
               "rondaNumero": 4,
               "pista": 3,
               "parejaA": {
-                "id": "par_4",
+                "id": "par_5",
                 "jugadorIds": [
-                  "jug_019",
-                  "jug_020"
+                  "jug_021",
+                  "jug_022"
                 ],
-                "nombre": "Julieta / Mía"
+                "nombre": "Agustina / Carla"
               },
               "parejaB": {
                 "id": "par_1",
@@ -1063,27 +1063,27 @@
               "rondaNumero": 4,
               "pista": 4,
               "parejaA": {
-                "id": "par_5",
+                "id": "par_4",
                 "jugadorIds": [
-                  "jug_021",
-                  "jug_022"
+                  "jug_019",
+                  "jug_020"
                 ],
-                "nombre": "Agustina / Carla"
+                "nombre": "Julieta / Mía"
               },
               "parejaB": {
-                "id": "par_2",
+                "id": "par_3",
                 "jugadorIds": [
-                  "jug_015",
-                  "jug_016"
+                  "jug_017",
+                  "jug_018"
                 ],
-                "nombre": "Renata / Antonia"
+                "nombre": "Florencia / Elena"
               },
               "estado": "PENDIENTE",
               "resultado": null
             }
           ],
           "descansanIds": [
-            "par_3"
+            "par_2"
           ],
           "inicioEn": null,
           "segundosAcumulados": 0
@@ -1097,20 +1097,20 @@
               "rondaNumero": 5,
               "pista": 3,
               "parejaA": {
-                "id": "par_2",
+                "id": "par_3",
                 "jugadorIds": [
-                  "jug_015",
-                  "jug_016"
+                  "jug_017",
+                  "jug_018"
                 ],
-                "nombre": "Renata / Antonia"
+                "nombre": "Florencia / Elena"
               },
               "parejaB": {
-                "id": "par_4",
+                "id": "par_5",
                 "jugadorIds": [
-                  "jug_019",
-                  "jug_020"
+                  "jug_021",
+                  "jug_022"
                 ],
-                "nombre": "Julieta / Mía"
+                "nombre": "Agustina / Carla"
               },
               "estado": "PENDIENTE",
               "resultado": null
@@ -1128,19 +1128,19 @@
                 "nombre": "Daniela / Paula"
               },
               "parejaB": {
-                "id": "par_3",
+                "id": "par_2",
                 "jugadorIds": [
-                  "jug_017",
-                  "jug_018"
+                  "jug_015",
+                  "jug_016"
                 ],
-                "nombre": "Florencia / Elena"
+                "nombre": "Renata / Antonia"
               },
               "estado": "PENDIENTE",
               "resultado": null
             }
           ],
           "descansanIds": [
-            "par_5"
+            "par_4"
           ],
           "inicioEn": null,
           "segundosAcumulados": 0
@@ -1268,8 +1268,8 @@
       ],
       "parejas": [],
       "semilla": 3,
-      "creadoEn": "2026-10-17T23:00:00.000Z",
-      "actualizadoEn": "2026-10-17T23:00:00.000Z",
+      "creadoEn": "2026-09-26T23:00:00.000Z",
+      "actualizadoEn": "2026-09-26T23:00:00.000Z",
       "rondas": [
         {
           "numero": 1,
@@ -1310,7 +1310,7 @@
                   }
                 ]
               },
-              "actualizadoEn": "2026-10-22T04:59:46.830Z"
+              "actualizadoEn": "2026-10-22T05:19:12.683Z"
             },
             {
               "id": "r1-p2",
@@ -1347,7 +1347,7 @@
                   }
                 ]
               },
-              "actualizadoEn": "2026-10-22T04:59:46.830Z"
+              "actualizadoEn": "2026-10-22T05:19:12.684Z"
             }
           ],
           "descansanIds": [],
@@ -1393,7 +1393,7 @@
                   }
                 ]
               },
-              "actualizadoEn": "2026-10-22T04:59:46.830Z"
+              "actualizadoEn": "2026-10-22T05:19:12.687Z"
             },
             {
               "id": "r2-p2",
@@ -1430,7 +1430,7 @@
                   }
                 ]
               },
-              "actualizadoEn": "2026-10-22T04:59:46.830Z"
+              "actualizadoEn": "2026-10-22T05:19:12.688Z"
             }
           ],
           "descansanIds": [],
@@ -1476,7 +1476,7 @@
                   }
                 ]
               },
-              "actualizadoEn": "2026-10-22T04:59:46.830Z"
+              "actualizadoEn": "2026-10-22T05:19:12.691Z"
             },
             {
               "id": "r3-p2",
@@ -1513,7 +1513,7 @@
                   }
                 ]
               },
-              "actualizadoEn": "2026-10-22T04:59:46.830Z"
+              "actualizadoEn": "2026-10-22T05:19:12.692Z"
             }
           ],
           "descansanIds": [],
@@ -1559,7 +1559,7 @@
                   }
                 ]
               },
-              "actualizadoEn": "2026-10-22T04:59:46.830Z"
+              "actualizadoEn": "2026-10-22T05:19:12.695Z"
             },
             {
               "id": "r4-p2",
@@ -1596,7 +1596,7 @@
                   }
                 ]
               },
-              "actualizadoEn": "2026-10-22T04:59:46.830Z"
+              "actualizadoEn": "2026-10-22T05:19:12.696Z"
             }
           ],
           "descansanIds": [],
@@ -1612,20 +1612,20 @@
               "rondaNumero": 5,
               "pista": 1,
               "parejaA": {
-                "id": "jug_024+jug_027",
-                "jugadorIds": [
-                  "jug_024",
-                  "jug_027"
-                ],
-                "nombre": "Gabriel / Felipe"
-              },
-              "parejaB": {
                 "id": "jug_023+jug_029",
                 "jugadorIds": [
                   "jug_023",
                   "jug_029"
                 ],
                 "nombre": "Nicolás / Emilio"
+              },
+              "parejaB": {
+                "id": "jug_024+jug_027",
+                "jugadorIds": [
+                  "jug_024",
+                  "jug_027"
+                ],
+                "nombre": "Gabriel / Felipe"
               },
               "estado": "FINALIZADO",
               "resultado": {
@@ -1642,27 +1642,27 @@
                   }
                 ]
               },
-              "actualizadoEn": "2026-10-22T04:59:46.830Z"
+              "actualizadoEn": "2026-10-22T05:19:12.699Z"
             },
             {
               "id": "r5-p2",
               "rondaNumero": 5,
               "pista": 2,
               "parejaA": {
-                "id": "jug_025+jug_030",
-                "jugadorIds": [
-                  "jug_025",
-                  "jug_030"
-                ],
-                "nombre": "Martín / Ignacio"
-              },
-              "parejaB": {
                 "id": "jug_026+jug_028",
                 "jugadorIds": [
                   "jug_026",
                   "jug_028"
                 ],
                 "nombre": "Lucas / Bruno"
+              },
+              "parejaB": {
+                "id": "jug_025+jug_030",
+                "jugadorIds": [
+                  "jug_025",
+                  "jug_030"
+                ],
+                "nombre": "Martín / Ignacio"
               },
               "estado": "FINALIZADO",
               "resultado": {
@@ -1679,7 +1679,7 @@
                   }
                 ]
               },
-              "actualizadoEn": "2026-10-22T04:59:46.830Z"
+              "actualizadoEn": "2026-10-22T05:19:12.700Z"
             }
           ],
           "descansanIds": [],
@@ -1725,27 +1725,27 @@
                   }
                 ]
               },
-              "actualizadoEn": "2026-10-22T04:59:46.830Z"
+              "actualizadoEn": "2026-10-22T05:19:12.703Z"
             },
             {
               "id": "r6-p2",
               "rondaNumero": 6,
               "pista": 2,
               "parejaA": {
-                "id": "jug_024+jug_028",
-                "jugadorIds": [
-                  "jug_024",
-                  "jug_028"
-                ],
-                "nombre": "Gabriel / Bruno"
-              },
-              "parejaB": {
                 "id": "jug_026+jug_027",
                 "jugadorIds": [
                   "jug_026",
                   "jug_027"
                 ],
                 "nombre": "Lucas / Felipe"
+              },
+              "parejaB": {
+                "id": "jug_024+jug_028",
+                "jugadorIds": [
+                  "jug_024",
+                  "jug_028"
+                ],
+                "nombre": "Gabriel / Bruno"
               },
               "estado": "FINALIZADO",
               "resultado": {
@@ -1762,7 +1762,7 @@
                   }
                 ]
               },
-              "actualizadoEn": "2026-10-22T04:59:46.830Z"
+              "actualizadoEn": "2026-10-22T05:19:12.704Z"
             }
           ],
           "descansanIds": [],
@@ -1778,20 +1778,20 @@
               "rondaNumero": 7,
               "pista": 1,
               "parejaA": {
-                "id": "jug_027+jug_029",
-                "jugadorIds": [
-                  "jug_027",
-                  "jug_029"
-                ],
-                "nombre": "Felipe / Emilio"
-              },
-              "parejaB": {
                 "id": "jug_025+jug_026",
                 "jugadorIds": [
                   "jug_025",
                   "jug_026"
                 ],
                 "nombre": "Martín / Lucas"
+              },
+              "parejaB": {
+                "id": "jug_027+jug_029",
+                "jugadorIds": [
+                  "jug_027",
+                  "jug_029"
+                ],
+                "nombre": "Felipe / Emilio"
               },
               "estado": "FINALIZADO",
               "resultado": {
@@ -1808,27 +1808,27 @@
                   }
                 ]
               },
-              "actualizadoEn": "2026-10-22T04:59:46.830Z"
+              "actualizadoEn": "2026-10-22T05:19:12.707Z"
             },
             {
               "id": "r7-p2",
               "rondaNumero": 7,
               "pista": 2,
               "parejaA": {
-                "id": "jug_023+jug_024",
-                "jugadorIds": [
-                  "jug_023",
-                  "jug_024"
-                ],
-                "nombre": "Nicolás / Gabriel"
-              },
-              "parejaB": {
                 "id": "jug_028+jug_030",
                 "jugadorIds": [
                   "jug_028",
                   "jug_030"
                 ],
                 "nombre": "Bruno / Ignacio"
+              },
+              "parejaB": {
+                "id": "jug_023+jug_024",
+                "jugadorIds": [
+                  "jug_023",
+                  "jug_024"
+                ],
+                "nombre": "Nicolás / Gabriel"
               },
               "estado": "FINALIZADO",
               "resultado": {
@@ -1845,7 +1845,7 @@
                   }
                 ]
               },
-              "actualizadoEn": "2026-10-22T04:59:46.830Z"
+              "actualizadoEn": "2026-10-22T05:19:12.708Z"
             }
           ],
           "descansanIds": [],
