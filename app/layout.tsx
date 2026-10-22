@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "La Marina", statusBarStyle: "black-translucent" },
   icons: {
     icon: [
-      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/isotipo-256.png", sizes: "256x256", type: "image/png" },
       { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
     ],
     apple: "/icons/apple-touch-icon.png",

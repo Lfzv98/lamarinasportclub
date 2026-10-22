@@ -59,7 +59,7 @@ export function QR({ texto, size = 96, className, logo = true }: { texto: string
         {lado > 0 && (
           <>
             <rect x={ini + borde} y={ini + borde} width={lado} height={lado} rx={lado * 0.22} fill="#FFFFFF" />
-            <image href="/icons/icon-192.png" x={ini + borde + 0.6} y={ini + borde + 0.6} width={lado - 1.2} height={lado - 1.2} preserveAspectRatio="xMidYMid meet" />
+            <image href="/icons/isotipo-256.png" x={ini + borde + 0.6} y={ini + borde + 0.6} width={lado - 1.2} height={lado - 1.2} preserveAspectRatio="xMidYMid meet" />
           </>
         )}
       </g>

@@ -3,7 +3,7 @@
  * - Estáticos (_next/static, iconos, fuentes): cache-first.
  * - /api: siempre red (el cliente guarda su propio estado en localStorage).
  */
-const VERSION = "lm-v1";
+const VERSION = "lm-v2";
 const SHELL = ["/", "/setup", "/offline", "/manifest.json", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {
