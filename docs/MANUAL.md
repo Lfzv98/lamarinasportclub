@@ -29,7 +29,7 @@ El club tiene 4 pistas techadas (1 a 4) y 1 sin techo (5); la app ya viene confi
 | Pistas y horario | De 1 a 6 pistas. Calcula cuántas rondas caben en el horario del evento. Botón "¿Llueve?" que deja solo las pistas techadas |
 | En vivo | Cronómetro por ronda (iniciar, pausar, reiniciar), modal táctil para cargar marcadores, deshacer, avance de ronda |
 | Ranking | Tabla animada en tiempo real con PJ, PG, PP, PF, PC y +/-, flechas de subida y bajada, podio al final |
-| Modo TV | Pantalla completa para el televisor del club: pistas en juego, ranking que rota cada 12 s y un QR con el logo de La Marina para que los jugadores vean la tabla en su celular |
+| Modo TV | Pantalla completa para el televisor del club: pistas en juego, ranking que rota cada 12 s y un QR con la marca PR de PadelReserve para que los jugadores vean la tabla en su celular |
 | QR grande | Botón QR en la barra del evento (y tocando el QR en Modo TV): lo abre a pantalla completa para escanearlo fácil |
 | Cambios de plantel | Retirar a un jugador o pareja (lesión), sumar a quien llegó tarde o reincorporar. Lo jugado se conserva y se re-sortean solo las rondas que faltan |
 | Mi club | Pistas (techada o no), horario por día de la semana, minutos entre rondas y contacto |
