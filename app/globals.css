@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+@theme {
+  --color-noche: #0b0f19;
+  --color-noche-2: #121829;
+  --color-noche-3: #1a2236;
+  --color-neon: #7fe302;
+  --color-neon-soft: #9bf03a;
+  --color-lima: #d2ff00;
+  --color-coral: #ff5c7a;
+  --color-cielo: #5cc8ff;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --animate-pulse-neon: pulse-neon 2.4s ease-in-out infinite;
+
+  @keyframes pulse-neon {
+    0%, 100% { box-shadow: 0 0 0 0 rgb(127 227 2 / 0.45); }
+    50% { box-shadow: 0 0 0 10px rgb(127 227 2 / 0); }
+  }
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: var(--color-noche);
+  color: #fff;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+body {
+  background-image:
+    radial-gradient(60rem 40rem at 110% -10%, rgb(127 227 2 / 0.09), transparent 60%),
+    radial-gradient(50rem 40rem at -20% 110%, rgb(92 200 255 / 0.08), transparent 60%);
+  background-attachment: fixed;
+  min-height: 100dvh;
+}
+
+@utility glass {
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background-color: rgb(255 255 255 / 0.04);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 0.06), 0 20px 50px -20px rgb(0 0 0 / 0.6);
+}
+
+@utility glass-strong {
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background-color: rgb(18 24 41 / 0.85);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold transition select-none active:scale-[0.97] disabled:pointer-events-none disabled:opacity-40;
+}
+
+@utility btn-neon {
+  @apply btn bg-neon text-noche hover:bg-neon-soft;
+  box-shadow: 0 10px 30px -10px rgb(127 227 2 / 0.6);
+}
+
+@utility btn-ghost {
+  @apply btn border border-white/10 bg-white/5 text-white hover:bg-white/10;
+}
+
+@utility chip {
+  @apply inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-white/80;
+}
+
+@utility label {
+  @apply mb-2 block text-[11px] font-semibold tracking-[0.18em] text-white/50 uppercase;
+}
+
+@utility input {
+  @apply w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-white/30 focus:border-neon/60 focus:bg-white/[0.07];
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

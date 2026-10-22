@@ -1,0 +1,281 @@
+"use client";
+
+import clsx from "clsx";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowLeft, Coffee, Maximize, Minimize, Trophy } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AvatarPareja } from "@/components/Avatar";
+import { Cronometro } from "@/components/Cronometro";
+import { Leaderboard } from "@/components/Leaderboard";
+import { Logo } from "@/components/Logo";
+import { PistaLabel } from "@/components/PistaLabel";
+import { QR } from "@/components/QR";
+import { useReloj } from "@/hooks/useReloj";
+import { categoriaLabel } from "@/lib/categories";
+import { horaRonda } from "@/lib/horarios";
+import { calcularTabla, ganador, nombresDeFila } from "@/lib/scoring";
+import { useAmericanos, useEvento } from "@/lib/store";
+import type { EventoAmericano, Partido } from "@/types/americano";
+
+const FILAS_POR_PAGINA = 10;
+const SEGUNDOS_POR_PAGINA = 12;
+
+export default function ModoTVPage() {
+  const { id } = useParams<{ id: string }>();
+  const evento = useEvento(id);
+  const hidratado = useAmericanos((s) => s.hidratado);
+
+  if (!evento)
+    return (
+      <main className="flex min-h-dvh items-center justify-center">
+        {hidratado ? <Link href="/" className="btn-neon">Evento no encontrado · Volver</Link> : <div className="size-12 animate-spin rounded-full border-2 border-white/10 border-t-neon" />}
+      </main>
+    );
+  return <TV evento={evento} />;
+}
+
+function useFullscreenYWakeLock() {
+  const [full, setFull] = useState(false);
+  useEffect(() => {
+    const h = () => setFull(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", h);
+    // Evita que la pantalla del bar se apague.
+    let lock: { release: () => Promise<void> } | null = null;
+    const pedir = () =>
+      (navigator as Navigator & { wakeLock?: { request: (t: "screen") => Promise<{ release: () => Promise<void> }> } }).wakeLock
+        ?.request("screen")
+        .then((l) => (lock = l))
+        .catch(() => undefined);
+    pedir();
+    document.addEventListener("visibilitychange", pedir);
+    return () => {
+      document.removeEventListener("fullscreenchange", h);
+      document.removeEventListener("visibilitychange", pedir);
+      lock?.release().catch(() => undefined);
+    };
+  }, []);
+  const alternar = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => undefined);
+  return { full, alternar };
+}
+
+function useCursorOculto() {
+  const [oculto, setOculto] = useState(false);
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout>;
+    const mover = () => {
+      setOculto(false);
+      clearTimeout(t);
+      t = setTimeout(() => setOculto(true), 3000);
+    };
+    mover();
+    window.addEventListener("mousemove", mover);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("mousemove", mover);
+    };
+  }, []);
+  return oculto;
+}
+
+function Reloj() {
+  const [h, setH] = useState("");
+  useEffect(() => {
+    const f = () => setH(new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" }));
+    f();
+    const t = setInterval(f, 10_000);
+    return () => clearInterval(t);
+  }, []);
+  return <span className="font-display text-3xl font-semibold tabular text-white/70">{h}</span>;
+}
+
+function TV({ evento }: { evento: EventoAmericano }) {
+  const { full, alternar } = useFullscreenYWakeLock();
+  const cursorOculto = useCursorOculto();
+  const tabla = useMemo(() => calcularTabla(evento), [evento]);
+  const ronda = evento.rondas.find((r) => r.numero === evento.rondaActual);
+  const reloj = useReloj(evento.estado !== "FINALIZADO" ? ronda : undefined, evento.duracionRondaMin);
+  const porId = useMemo(() => new Map(evento.jugadores.map((j) => [j.id, j])), [evento.jugadores]);
+
+  // Paginación automática del ranking cuando hay muchos jugadores.
+  const paginas = Math.max(1, Math.ceil(tabla.filas.length / FILAS_POR_PAGINA));
+  const [pagina, setPagina] = useState(0);
+  useEffect(() => {
+    if (paginas <= 1) return setPagina(0);
+    const t = setInterval(() => setPagina((p) => (p + 1) % paginas), SEGUNDOS_POR_PAGINA * 1000);
+    return () => clearInterval(t);
+  }, [paginas]);
+  const tablaPagina = { ...tabla, filas: tabla.filas.slice(pagina * FILAS_POR_PAGINA, (pagina + 1) * FILAS_POR_PAGINA) };
+
+  const terminado = evento.estado === "FINALIZADO";
+  const campeon = tabla.filas[0];
+  const descansan = ronda?.descansanIds.map((id) => (evento.modalidad === "DUPLA_FIJA" ? evento.parejas.find((p) => p.id === id)?.nombre : porId.get(id)?.nombre)) ?? [];
+
+  return (
+    <Escenario oculto={cursorOculto}>
+      <header className="flex items-center gap-6">
+        <Logo className="!h-14" />
+        <div className="h-12 w-px bg-white/10" />
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate font-display text-3xl font-bold xl:text-4xl">{evento.nombre}</h1>
+          <p className="text-lg text-white/50">
+            {categoriaLabel(evento.categoria)} · {evento.pistas} pistas
+          </p>
+        </div>
+        <SeguirQR evento={evento} />
+        <Reloj />
+        <div className={clsx("flex gap-2 transition-opacity", cursorOculto && "opacity-0")}>
+          <Link href={`/evento/${evento.id}`} className="btn-ghost !p-3" aria-label="Salir del modo TV">
+            <ArrowLeft className="size-5" />
+          </Link>
+          <button className="btn-ghost !p-3" onClick={alternar} aria-label="Pantalla completa">
+            {full ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
+          </button>
+        </div>
+      </header>
+
+      <AnimatePresence mode="wait">
+        {terminado && campeon ? (
+          <motion.section key="campeon" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="grid flex-1 grid-cols-[1fr_1.3fr] items-center gap-10">
+            <div className="flex flex-col items-center text-center">
+              <motion.div animate={{ rotate: [0, -8, 8, 0] }} transition={{ repeat: Infinity, duration: 3 }}>
+                <Trophy className="size-28 text-neon drop-shadow-[0_0_40px_rgba(127,227,2,0.6)]" />
+              </motion.div>
+              <p className="mt-6 text-2xl font-semibold uppercase tracking-[0.3em] text-white/50">Campeón</p>
+              <div className="mt-6">
+                <AvatarPareja nombres={nombresDeFila(evento, campeon)} fotos={campeon.fotoUrls} size={120} />
+              </div>
+              <p className="mt-6 font-display text-6xl font-bold">{campeon.nombre}</p>
+              <p className="mt-2 font-display text-4xl font-bold text-neon">{campeon.puntos} pts</p>
+            </div>
+            <Leaderboard tabla={{ ...tabla, filas: tabla.filas.slice(0, FILAS_POR_PAGINA) }} nombresPorFila={(f) => nombresDeFila(evento, f)} modoTV />
+          </motion.section>
+        ) : (
+          <motion.section key="vivo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] gap-8">
+            <div className="flex min-h-0 flex-col gap-6">
+              <div className="glass flex items-center gap-8 rounded-[2rem] p-6">
+                <Cronometro restantes={reloj.restantes} progreso={reloj.progreso} corriendo={reloj.corriendo} size={200} />
+                <div>
+                  <p className="text-xl font-semibold uppercase tracking-[0.25em] text-white/40">Ronda</p>
+                  <p className="font-display text-8xl font-bold leading-none">
+                    {evento.rondaActual}
+                    <span className="text-4xl text-white/30">/{evento.totalRondas}</span>
+                  </p>
+                  {ronda && <p className="mt-2 text-xl text-white/50">Inicio {horaRonda(evento, ronda.numero)}</p>}
+                </div>
+              </div>
+              <div className={clsx("grid min-h-0 flex-1 auto-rows-fr gap-4", (ronda?.partidos.length ?? 0) > 2 ? "grid-cols-2" : "grid-cols-1")}>
+                {ronda?.partidos.map((p) => <PistaTV key={p.id} partido={p} evento={evento} compacto={(ronda?.partidos.length ?? 0) > 4} />)}
+              </div>
+              {descansan.length > 0 && (
+                <p className="flex items-center gap-3 text-xl text-white/50">
+                  <Coffee className="size-6" /> Descansan: <span className="font-semibold text-white/80">{descansan.join(" · ")}</span>
+                </p>
+              )}
+            </div>
+            <div className="flex min-h-0 flex-col">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="font-display text-3xl font-bold">Ranking en vivo</h2>
+                {paginas > 1 && (
+                  <div className="flex gap-2">
+                    {Array.from({ length: paginas }, (_, i) => (
+                      <span key={i} className={clsx("h-2 rounded-full transition-all", i === pagina ? "w-8 bg-neon" : "w-2 bg-white/20")} />
+                    ))}
+                  </div>
+                )}
+              </div>
+              <AnimatePresence mode="wait">
+                <motion.div key={pagina} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}>
+                  <Leaderboard tabla={tablaPagina} nombresPorFila={(f) => nombresDeFila(evento, f)} modoTV />
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </motion.section>
+        )}
+      </AnimatePresence>
+    </Escenario>
+  );
+}
+
+/**
+ * Lienzo fijo de 1920×1080 escalado para llenar cualquier pantalla (proyector
+ * 720p, TV Full HD o 4K, monitor vertical) sin que cambie el diseño.
+ */
+function Escenario({ oculto, children }: { oculto: boolean; children: React.ReactNode }) {
+  const [escala, setEscala] = useState(1);
+  useEffect(() => {
+    const ajustar = () => setEscala(Math.min(window.innerWidth / 1920, window.innerHeight / 1080));
+    ajustar();
+    window.addEventListener("resize", ajustar);
+    return () => window.removeEventListener("resize", ajustar);
+  }, []);
+  return (
+    <main className={clsx("fixed inset-0 flex items-center justify-center overflow-hidden", oculto && "cursor-none")}>
+      <div
+        className="flex shrink-0 flex-col gap-6 p-10"
+        style={{ width: 1920, height: 1080, transform: `scale(${escala})`, transformOrigin: "center" }}
+      >
+        {children}
+      </div>
+    </main>
+  );
+}
+
+function PistaTV({ partido, evento, compacto = false }: { partido: Partido; evento: EventoAmericano; compacto?: boolean }) {
+  const porId = new Map(evento.jugadores.map((j) => [j.id, j]));
+  const res = partido.resultado;
+  const g = res ? ganador(evento.puntuacion, res) : null;
+  const lado = (l: "A" | "B") => {
+    const par = l === "A" ? partido.parejaA : partido.parejaB;
+    const nombres = par.jugadorIds.map((id) => porId.get(id)?.nombre ?? "?");
+    const gana = g === (l === "A" ? 1 : -1);
+    return (
+      <div className={clsx("flex items-center gap-4", res && !gana && "opacity-50")}>
+        <AvatarPareja nombres={nombres} fotos={par.jugadorIds.map((id) => porId.get(id)?.fotoUrl)} size={compacto ? 38 : 52} />
+        <div className="min-w-0 flex-1">
+          {nombres.map((n, i) => (
+            <p key={i} className={clsx("truncate font-semibold leading-tight", compacto ? "text-lg" : "text-2xl")}>
+              {n}
+            </p>
+          ))}
+        </div>
+        {res && <span className={clsx("font-display font-bold tabular", compacto ? "text-4xl" : "text-5xl", gana ? "text-neon" : "text-white")}>{l === "A" ? res.puntosA : res.puntosB}</span>}
+      </div>
+    );
+  };
+  return (
+    <motion.div layout className={clsx("glass flex min-h-0 flex-col justify-center rounded-[2rem]", compacto ? "gap-1.5 p-4" : "gap-3 p-6", partido.estado === "FINALIZADO" && "border-neon/30")}>
+      <div className="flex items-center justify-between">
+        <PistaLabel evento={evento} numero={partido.pista} className="text-xl tracking-[0.25em]" icono="size-5" />
+        {partido.estado === "FINALIZADO" ? (
+          <span className="text-lg font-semibold text-neon">Final</span>
+        ) : partido.estado === "EN_JUEGO" ? (
+          <span className="flex items-center gap-2 text-lg text-white/60">
+            <span className="size-2.5 animate-pulse rounded-full bg-neon" /> En juego
+          </span>
+        ) : null}
+      </div>
+      {lado("A")}
+      <div className="h-px bg-white/10" />
+      {lado("B")}
+    </motion.div>
+  );
+}
+
+function SeguirQR({ evento }: { evento: EventoAmericano }) {
+  const instagram = useAmericanos((s) => s.club.contacto.instagram);
+  const [url, setUrl] = useState("");
+  useEffect(() => setUrl(`${location.origin}/evento/${evento.id}/tabla`), [evento.id]);
+  if (!url) return null;
+  return (
+    <div className="glass flex items-center gap-3 rounded-2xl py-2 pl-2 pr-4">
+      <QR texto={url} size={72} className="overflow-hidden rounded-lg" />
+      <div className="leading-tight">
+        <p className="text-sm font-semibold">Sigue el ranking</p>
+        <p className="text-sm text-white/50">desde tu celular</p>
+        {instagram && <p className="mt-1 text-sm font-semibold text-neon">@{instagram}</p>}
+      </div>
+    </div>
+  );
+}
