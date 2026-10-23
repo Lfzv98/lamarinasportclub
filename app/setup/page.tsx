@@ -15,7 +15,7 @@ import { toast } from "@/components/ui/Toaster";
 import { categoriaLabel, FORMATOS, formatoDe, formatoLabel, METODOS, nivelLabel, NIVELES, RAMAS, type Formato } from "@/lib/categories";
 import { crearEvento, generarRondas, nuevoId } from "@/lib/evento";
 import { sonar, vibrar } from "@/lib/feedback";
-import { partidosPorRonda, rondasSugeridas } from "@/lib/rotation";
+import { maxRondasSinRepetirPareja, partidosPorRonda, rondasSugeridas } from "@/lib/rotation";
 import { configPorDefecto, CRITERIOS, criterioDe, descripcionPuntuacion } from "@/lib/scoring";
 import { ReglasPuntuacion } from "@/components/ReglasPuntuacion";
 import { aHora, aMinutos, DIAS, diaSemana, franjas, horaFinPrevista, horarioDelDia, nombrePista, rondasQueCaben, validarFranja } from "@/lib/horarios";
@@ -95,7 +95,8 @@ function Setup() {
   const mixto = rama === "MIXTO";
   const generoFijo: Genero | null = rama === "FEMENINO" ? "F" : rama === "MASCULINO" ? "M" : null;
   const unidades = modalidad === "DUPLA_FIJA" ? parejas.length : jugadores.length;
-  const sugeridas = rondasSugeridas(unidades || (modalidad === "DUPLA_FIJA" ? pistas * 2 : pistas * 4), modalidad, pistas);
+  const generoCuenta = mixto && modalidad !== "DUPLA_FIJA" && jugadores.length ? { hombres: jugadores.filter((j) => j.genero === "M").length, mujeres: jugadores.filter((j) => j.genero === "F").length } : undefined;
+  const sugeridas = rondasSugeridas(unidades || (modalidad === "DUPLA_FIJA" ? pistas * 2 : pistas * 4), modalidad, pistas, generoCuenta);
   // Con franja válida, las rondas salen del horario; si no, de la cantidad de jugadores.
   const automaticas = !errorHorario && caben > 0 ? caben : sugeridas;
   const totalRondas = rondasManual ?? automaticas;
@@ -106,6 +107,12 @@ function Setup() {
   const nF = jugadores.length - nH;
   const porRonda = modalidad === "DUPLA_FIJA" ? Math.min(pistas, Math.floor(parejas.length / 2)) : partidosPorRonda(jugadores, pistas, mixto);
   const descansan = modalidad === "DUPLA_FIJA" ? parejas.length - porRonda * 2 : jugadores.length - porRonda * 4;
+
+  // Aviso si con estas rondas alguien tendrá que repetir compañero (o cruce en dupla fija).
+  const sinRepetir =
+    modalidad === "DUPLA_FIJA"
+      ? porRonda > 0 ? Math.ceil((parejas.length * (parejas.length - 1)) / 2 / porRonda) : 0
+      : maxRondasSinRepetirPareja(jugadores.length, pistas, generoCuenta);
 
   const errorJugadores = useMemo(() => {
     if (modalidad === "DUPLA_FIJA") {
@@ -529,6 +536,17 @@ function Setup() {
                   </span>
                   <span className="chip">{modalidad === "DUPLA_FIJA" ? `${parejas.length} parejas` : `${jugadores.length} jugadores`}</span>
                 </div>
+
+                {sinRepetir > 0 && totalRondas > sinRepetir && (
+                  <div className="mt-4 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-200">
+                    {modalidad === "DUPLA_FIJA"
+                      ? `Con ${parejas.length} parejas, todos contra todos se completa en ${sinRepetir} rondas. Desde la ronda ${sinRepetir + 1} empieza una segunda vuelta y se repiten cruces.`
+                      : `Con ${generoCuenta ? `${generoCuenta.hombres} hombres y ${generoCuenta.mujeres} mujeres` : `${jugadores.length} jugadores`} caben ${sinRepetir} rondas sin repetir compañero. Desde la ronda ${sinRepetir + 1} alguien va a repetir pareja.`}{" "}
+                    <button className="font-semibold text-amber-100 underline underline-offset-2" onClick={() => setRondasManual(sinRepetir)}>
+                      Usar {sinRepetir} rondas
+                    </button>
+                  </div>
+                )}
 
                 {preview && (
                   <div className="mt-8">

@@ -95,3 +95,31 @@ test("horarios: rondas que caben y hora de cada ronda", () => {
   assert.equal(horaRonda({ horaInicio: "19:00", duracionRondaMin: 15, minutosEntreRondas: 3 }, 3), "19:36");
   assert.equal(validarFranja({ abierto: true, apertura: "08:00", cierre: "22:00" }, "21:00", "23:00"), "El club cierra a las 22:00.");
 });
+
+test("dupla fija: nunca repite un cruce antes de completar todos contra todos", async () => {
+  const { generarRondasDuplaFija, rondasSugeridas } = await import("../lib/rotation.ts");
+  for (const n of [5, 6, 7, 8, 9, 10]) for (const pistas of [2, 3, 4]) {
+    if (Math.floor(n / 2) < pistas) continue;
+    const ps = Array.from({ length: n }, (_, i) => ({ id: `p${i}`, jugadorIds: [`a${i}`, `b${i}`] as [string, string] }));
+    const rondas = rondasSugeridas(n, "DUPLA_FIJA", pistas);
+    for (let s = 1; s <= 5; s++) {
+      const vistos = new Set<string>();
+      for (const r of generarRondasDuplaFija(ps, { pistas, rondas, semilla: s })) {
+        const claves = r.partidos.map((p) => [p.parejaA.id, p.parejaB.id].sort().join());
+        const repetidos = claves.filter((k) => vistos.has(k));
+        claves.forEach((k) => vistos.add(k));
+        // Un cruce solo puede repetirse si en esa ronda ya se completó la vuelta.
+        if (repetidos.length) assert.equal(vistos.size, (n * (n - 1)) / 2, `${n} parejas, ${pistas} pistas: cruce ${repetidos[0]} repetido`);
+      }
+    }
+  }
+});
+
+test("mixto: las rondas sugeridas no obligan a repetir compañero", async () => {
+  const { generarRondasIndividual, rondasSugeridas, metricasRotacion } = await import("../lib/rotation.ts");
+  for (const n of [8, 10, 12, 16]) {
+    const js = Array.from({ length: n }, (_, i) => ({ id: `j${i}`, nombre: `J${i}`, genero: (i % 2 ? "F" : "M") as "F" | "M", nivel: "4TA" as const, fotoUrl: null }));
+    const rondas = rondasSugeridas(n, "INDIVIDUAL_ROTATIVO", 2, { hombres: n / 2, mujeres: n / 2 });
+    assert.equal(metricasRotacion(generarRondasIndividual(js, { pistas: 2, rondas, semilla: 3, mixto: true })).companerosRepetidos, 0, `${n} jugadores, ${rondas} rondas`);
+  }
+});

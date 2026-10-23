@@ -37,6 +37,7 @@ export interface OpcionesRotacion {
 const COSTO_COMPANERO_REPETIDO = 1000;
 const COSTO_RIVAL_REPETIDO = 40;
 const COSTO_DESBALANCE = 12;
+const COSTO_PISTA_REPETIDA = 20;
 
 /* ---------- utilidades ---------- */
 
@@ -95,7 +96,12 @@ export function partidosPorRonda(jugadores: Jugador[], pistas: number, mixto = f
 }
 
 /** Rondas sugeridas: idealmente cada jugador comparte pareja con todos (N−1), acotado a una tarde razonable. */
-export function rondasSugeridas(nJugadoresOParejas: number, modalidad: "INDIVIDUAL_ROTATIVO" | "DUPLA_FIJA", pistas: number): number {
+export function rondasSugeridas(
+  nJugadoresOParejas: number,
+  modalidad: "INDIVIDUAL_ROTATIVO" | "DUPLA_FIJA",
+  pistas: number,
+  genero?: { hombres: number; mujeres: number },
+): number {
   if (modalidad === "DUPLA_FIJA") {
     const n = nJugadoresOParejas;
     if (n < 2) return 1;
@@ -103,10 +109,28 @@ export function rondasSugeridas(nJugadoresOParejas: number, modalidad: "INDIVIDU
     const porRonda = Math.max(1, Math.min(pistas, Math.floor(n / 2)));
     return Math.max(1, Math.min(15, Math.ceil(total / porRonda)));
   }
-  return Math.max(3, Math.min(8, nJugadoresOParejas - 1));
+  return Math.max(3, Math.min(8, nJugadoresOParejas - 1, maxRondasSinRepetirPareja(nJugadoresOParejas, pistas, genero)));
+}
+
+/**
+ * Máximo de rondas en que nadie repite compañero, por capacidad: cada jugador
+ * necesita un compañero nuevo por partido. En mixto solo puede formar pareja con
+ * el otro género (4 hombres y 4 mujeres → cada uno tiene solo 4 compañeros posibles).
+ */
+export function maxRondasSinRepetirPareja(nJugadores: number, pistas: number, genero?: { hombres: number; mujeres: number }): number {
+  if (genero) {
+    const k = Math.max(0, Math.min(pistas, Math.floor(genero.hombres / 2), Math.floor(genero.mujeres / 2)));
+    if (k === 0) return 0;
+    // Con descansos el reparto no siempre es perfecto: no pasar de un compañero distinto por persona del otro género.
+    return Math.min(Math.floor((genero.hombres * genero.mujeres) / (2 * k)), Math.min(genero.hombres, genero.mujeres));
+  }
+  const k = Math.max(0, Math.min(pistas, Math.floor(nJugadores / 4)));
+  if (k === 0) return 0;
+  return Math.floor((nJugadores * (nJugadores - 1)) / (4 * k));
 }
 
 interface Historial {
+  pistas?: Contador;
   companeros: Contador;
   rivales: Contador;
   jugados: Contador;
@@ -118,6 +142,8 @@ function costoDisposicion(disp: Jugador[], h: Historial): number {
   let costo = 0;
   for (let i = 0; i < disp.length; i += 4) {
     const [a0, a1, b0, b1] = disp.slice(i, i + 4);
+    // Pista = posición del grupo: suma las veces que cada uno ya jugó en ella (reparte las pistas).
+    if (h.pistas && disp.length > 4) for (const j of [a0, a1, b0, b1]) costo += COSTO_PISTA_REPETIDA * h.pistas.get(`${j.id}|${i / 4 + 1}`);
     costo += COSTO_COMPANERO_REPETIDO * h.companeros.get(clave(a0.id, a1.id));
     costo += COSTO_COMPANERO_REPETIDO * h.companeros.get(clave(b0.id, b1.id));
     for (const x of [a0, a1]) for (const y of [b0, b1]) costo += COSTO_RIVAL_REPETIDO * h.rivales.get(clave(x.id, y.id));
@@ -175,15 +201,75 @@ function elegirActivos(pool: Jugador[], cupos: number, h: Historial, rng: () => 
     .slice(0, cupos);
 }
 
+/**
+ * Reparte los partidos de una ronda entre las pistas para que nadie repita pista
+ * de más (ej. que no le toque siempre la pista sin techo). Prueba todas las
+ * asignaciones (máx. 6 pistas = 720) y, a igual costo, deja el orden recibido
+ * (el partido de mayor nivel en la primera pista).
+ */
+function asignarPistas<T>(grupos: T[], ids: (g: T) => string[], usoPistas: Contador): T[] {
+  const k = grupos.length;
+  if (k <= 1) return grupos;
+  const costo = (g: T, pista: number) => ids(g).reduce((t, id) => t + usoPistas.get(`${id}|${pista}`) ** 2, 0);
+  let mejor: number[] = Array.from({ length: k }, (_, i) => i);
+  let mejorCosto = Infinity;
+  const perm: number[] = [];
+  const usado = new Array<boolean>(k).fill(false);
+  const rec = (acum: number) => {
+    if (acum >= mejorCosto) return;
+    if (perm.length === k) {
+      mejorCosto = acum;
+      mejor = [...perm];
+      return;
+    }
+    for (let g = 0; g < k; g++) {
+      if (usado[g]) continue;
+      usado[g] = true;
+      perm.push(g);
+      rec(acum + costo(grupos[g], perm.length));
+      perm.pop();
+      usado[g] = false;
+    }
+  };
+  rec(0);
+  const out = mejor.map((g) => grupos[g]);
+  out.forEach((g, i) => ids(g).forEach((id) => usoPistas.inc(`${id}|${i + 1}`)));
+  return out;
+}
+
+/**
+ * Genera el cuadro individual. Si el cuadro tiene compañeros repetidos que se
+ * podrían evitar, lo vuelve a armar con otra semilla (hasta 8 intentos) y se
+ * queda con el que menos repite compañeros y luego rivales.
+ */
 export function generarRondasIndividual(jugadores: Jugador[], opts: OpcionesRotacion): Ronda[] {
+  const base = metricasRotacion(opts.previas ?? []);
+  let mejor: Ronda[] = [];
+  let mejorCosto = Infinity;
+  for (let intento = 0; intento < 8; intento++) {
+    const rondas = generarIndividualUnaVez(jugadores, { ...opts, semilla: opts.semilla + intento * 104729 });
+    const m = metricasRotacion([...(opts.previas ?? []), ...rondas]);
+    const costo = (m.companerosRepetidos - base.companerosRepetidos) * 1000 + (m.rivalesRepetidos - base.rivalesRepetidos);
+    if (costo < mejorCosto) {
+      mejorCosto = costo;
+      mejor = rondas;
+    }
+    if (m.companerosRepetidos === base.companerosRepetidos) break;
+  }
+  return mejor;
+}
+
+function generarIndividualUnaVez(jugadores: Jugador[], opts: OpcionesRotacion): Ronda[] {
   const rng = crearRng(opts.semilla);
   const mixto = !!opts.mixto;
   const nPartidos = partidosPorRonda(jugadores, opts.pistas, mixto);
   if (nPartidos === 0) return [];
 
-  const h: Historial = { companeros: new Contador(), rivales: new Contador(), jugados: new Contador(), descansos: new Contador() };
+  const usoPistas = new Contador();
+  const h: Historial = { companeros: new Contador(), rivales: new Contador(), jugados: new Contador(), descansos: new Contador(), pistas: usoPistas };
   for (const r of opts.previas ?? []) {
     for (const p of r.partidos) {
+      [...p.parejaA.jugadorIds, ...p.parejaB.jugadorIds].forEach((id) => usoPistas.inc(`${id}|${p.pista}`));
       h.companeros.inc(clave(...p.parejaA.jugadorIds));
       h.companeros.inc(clave(...p.parejaB.jugadorIds));
       for (const x of p.parejaA.jugadorIds) for (const y of p.parejaB.jugadorIds) h.rivales.inc(clave(x, y));
@@ -215,10 +301,11 @@ export function generarRondasIndividual(jugadores: Jugador[], opts: OpcionesRota
     const disp = mejorDisposicion(activos, h, mixto, rng);
     const grupos: Jugador[][] = [];
     for (let i = 0; i < disp.length; i += 4) grupos.push(disp.slice(i, i + 4));
-    // El partido de mayor nivel va a la pista 1 (pista central).
+    // Orden base: el partido de mayor nivel primero; luego se reparte para que nadie repita pista de más.
     grupos.sort((x, y) => x.reduce((s, j) => s + ratingJugador(j), 0) - y.reduce((s, j) => s + ratingJugador(j), 0)).reverse();
+    const enPistas = asignarPistas(grupos, (g) => g.map((j) => j.id), usoPistas);
 
-    const partidos: Partido[] = grupos.map(([a0, a1, b0, b1], idx) => {
+    const partidos: Partido[] = enPistas.map(([a0, a1, b0, b1], idx) => {
       h.companeros.inc(clave(a0.id, a1.id));
       h.companeros.inc(clave(b0.id, b1.id));
       for (const x of [a0, a1]) for (const y of [b0, b1]) h.rivales.inc(clave(x.id, y.id));
@@ -272,8 +359,11 @@ export function generarRondasDuplaFija(parejas: Pareja[], opts: OpcionesRotacion
 
   // Cruces ya disputados (re-sorteo): no se repiten hasta completar la vuelta.
   const yaJugados = new Contador();
+  const usoPistas = new Contador();
   for (const r of opts.previas ?? [])
     for (const p of r.partidos) {
+      usoPistas.inc(`${p.parejaA.id}|${p.pista}`);
+      usoPistas.inc(`${p.parejaB.id}|${p.pista}`);
       const a = indice.get(p.parejaA.id);
       const b = indice.get(p.parejaB.id);
       if (a !== undefined) jugados.inc(String(a));
@@ -281,8 +371,13 @@ export function generarRondasDuplaFija(parejas: Pareja[], opts: OpcionesRotacion
       if (a !== undefined && b !== undefined) yaJugados.inc(clave(String(a), String(b)));
     }
 
+  // Cada cruce lleva su número de vuelta: nunca se adelanta uno de la vuelta siguiente
+  // mientras quede alguno pendiente de la actual (así no se repiten cruces).
   let cola: [number, number][] = [];
+  const vueltaDe = new Map<[number, number], number>();
+  let vueltas = 0;
   const recargar = () => {
+    vueltas++;
     const vuelta = roundRobin(n).flat();
     const pendientes = vuelta.filter(([a, b]) => {
       const k = clave(String(a), String(b));
@@ -293,7 +388,9 @@ export function generarRondasDuplaFija(parejas: Pareja[], opts: OpcionesRotacion
       }
       return true;
     });
-    cola = cola.concat(pendientes.length ? pendientes : vuelta);
+    const nuevos = pendientes.length ? pendientes : vuelta;
+    nuevos.forEach((m) => vueltaDe.set(m, vueltas));
+    cola = cola.concat(nuevos);
   };
   recargar();
 
@@ -301,20 +398,41 @@ export function generarRondasDuplaFija(parejas: Pareja[], opts: OpcionesRotacion
   const desde = opts.desde ?? 1;
   const sufijo = opts.sufijo ? `-${opts.sufijo}` : "";
   for (let r = desde; r < desde + opts.rondas; r++) {
-    if (cola.length < porRonda) recargar();
-    const enRonda = new Set<number>();
-    const elegidos: [number, number][] = [];
-    // Prioriza los cruces cuyas parejas han jugado menos (equidad de descansos).
-    const candidatos = cola
-      .map((m, idx) => ({ m, idx, carga: jugados.get(String(m[0])) + jugados.get(String(m[1])) }))
-      .sort((x, y) => x.carga - y.carga || x.idx - y.idx);
-    for (const c of candidatos) {
-      if (elegidos.length >= porRonda) break;
-      if (enRonda.has(c.m[0]) || enRonda.has(c.m[1])) continue;
-      elegidos.push(c.m);
-      enRonda.add(c.m[0]);
-      enRonda.add(c.m[1]);
+    if (cola.length === 0) recargar();
+    const vueltaActual = Math.min(...cola.map((m) => vueltaDe.get(m)!));
+    const actuales = cola.filter((m) => vueltaDe.get(m) === vueltaActual);
+    // Arma la ronda con la vuelta actual. Prueba varios órdenes y se queda con el que llena más pistas,
+    // priorizando a las parejas que han jugado menos (equidad de descansos).
+    const armar = (orden: [number, number][]) => {
+      const enR = new Set<number>();
+      const sel: [number, number][] = [];
+      for (const m of orden) {
+        if (sel.length >= porRonda) break;
+        if (enR.has(m[0]) || enR.has(m[1])) continue;
+        sel.push(m);
+        enR.add(m[0]);
+        enR.add(m[1]);
+      }
+      return sel;
+    };
+    const carga = (m: [number, number]) => jugados.get(String(m[0])) + jugados.get(String(m[1]));
+    // Grado: cuántos cruces pendientes tiene cada pareja; las más cargadas van primero para no dejarlas al final.
+    const grado = new Contador();
+    actuales.forEach(([x, y]) => (grado.inc(String(x)), grado.inc(String(y))));
+    const presion = (m: [number, number]) => grado.get(String(m[0])) + grado.get(String(m[1]));
+    let elegidos = armar([...actuales].sort((x, y) => carga(x) - carga(y) || presion(y) - presion(x)));
+    for (let intento = 0; intento < 40 && elegidos.length < Math.min(porRonda, actuales.length); intento++) {
+      const prueba = armar(barajar(actuales, rng).sort((x, y) => carga(x) - carga(y)));
+      if (prueba.length > elegidos.length) elegidos = prueba;
     }
+    // Si la vuelta actual no alcanza para llenar las pistas y ya está por terminar, completa con la siguiente.
+    if (elegidos.length < porRonda && actuales.length === cola.length && elegidos.length === actuales.length) {
+      recargar();
+      const ocupados = new Set(elegidos.flat());
+      const extra = armar(cola.filter((m) => vueltaDe.get(m) === vueltas && !ocupados.has(m[0]) && !ocupados.has(m[1])).sort((x, y) => carga(x) - carga(y)));
+      elegidos = elegidos.concat(extra.slice(0, porRonda - elegidos.length));
+    }
+    const enRonda = new Set<number>(elegidos.flat());
     const usados = new Set(elegidos);
     cola = cola.filter((m) => !usados.has(m));
     elegidos.forEach(([a, b]) => {
@@ -325,7 +443,7 @@ export function generarRondasDuplaFija(parejas: Pareja[], opts: OpcionesRotacion
     rondas.push({
       numero: r,
       estado: "PENDIENTE",
-      partidos: elegidos.map(([a, b], idx) => ({
+      partidos: asignarPistas(elegidos, ([a, b]) => [orden[a].id, orden[b].id], usoPistas).map(([a, b], idx) => ({
         id: `r${r}-p${idx + 1}${sufijo}`,
         rondaNumero: r,
         pista: idx + 1,
@@ -369,7 +487,7 @@ export function metricasRotacion(rondas: Ronda[]) {
   return {
     companerosRepetidos,
     rivalesRepetidos,
-    minPartidos: Math.min(...valores),
-    maxPartidos: Math.max(...valores),
+    minPartidos: valores.length ? Math.min(...valores) : 0,
+    maxPartidos: valores.length ? Math.max(...valores) : 0,
   };
 }
