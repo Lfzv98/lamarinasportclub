@@ -66,9 +66,9 @@ export function DatosPrueba({ onCambio }: { onCambio?: () => void }) {
             toque y no toca lo tuyo.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid gap-2 sm:grid-cols-2">
           <button
-            className="btn-neon flex-1 !py-3"
+            className="btn-neon !py-3"
             disabled={!!ocupado}
             onClick={() => hacer("cargar")}
           >

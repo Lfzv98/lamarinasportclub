@@ -46,14 +46,14 @@ function Arbitros({ torneo }: { torneo: Torneo }) {
   return (
     <div className="space-y-8 pt-2">
       <section className="glass flex flex-wrap items-center gap-3 rounded-[2rem] p-5">
-        <span className="flex size-12 items-center justify-center rounded-2xl bg-lima text-marino-2">
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-lima text-marino-2">
           <Flag className="size-6" />
         </span>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 basis-[14rem]">
           <p className="font-display text-xl font-bold">Árbitros del torneo</p>
           <p className="text-sm text-white/55">Los árbitros son del club: se registran una vez y sirven para todos los torneos. Aquí repartes sus turnos y ves lo que anotó cada uno en este torneo.</p>
         </div>
-        <Link href="/club#arbitros" className="btn-ghost !py-2.5">
+        <Link href="/club#arbitros" className="btn-ghost w-full !py-2.5 sm:w-auto">
           <Settings className="size-4" /> PIN y plantel en Ajustes
         </Link>
       </section>
