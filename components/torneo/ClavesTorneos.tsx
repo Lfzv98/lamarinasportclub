@@ -3,10 +3,10 @@
 import clsx from "clsx";
 import Link from "next/link";
 import { useState } from "react";
-import { Check, Copy, Eye, EyeOff, KeyRound, Lock, LockOpen, RefreshCw, Share2 } from "lucide-react";
+import { Check, Copy, Eye, EyeOff, Flag, KeyRound, Lock, LockOpen, RefreshCw, Share2 } from "lucide-react";
 import { toast } from "@/components/ui/Toaster";
 import { vibrar } from "@/lib/feedback";
-import { claveAleatoria, claveVigente, venceAlTerminar, ZONA_CLUB } from "@/lib/torneo/acceso";
+import { claveAleatoria, claveVigente, pinAleatorio, venceAlTerminar, ZONA_CLUB } from "@/lib/torneo/acceso";
 import { useListaTorneos, useTorneos } from "@/lib/torneosStore";
 import type { Torneo } from "@/types/torneo";
 import { rangoFechas } from "./TorneoShell";
@@ -33,7 +33,7 @@ export function ClavesTorneos() {
     <>
       <h2 className="label mt-10">Claves de torneos</h2>
       <p className="-mt-1 mb-3 text-sm text-white/50">
-        Los participantes entran con esta clave mientras dure el torneo. Al vencer, ya no pueden ver cuadros ni horarios. El staff entra siempre con su PIN.
+        Los participantes entran con esta clave mientras dure el torneo. Al vencer, ya no pueden ver cuadros ni horarios. Los árbitros tienen su propio PIN, que solo sirve para anotar. El staff entra siempre con su PIN.
       </p>
       {torneos.length ? (
         <ul className="space-y-2">
@@ -179,6 +179,78 @@ function FilaClave({ torneo }: { torneo: Torneo }) {
           <KeyRound className="size-3.5" /> Proteger con clave
         </button>
       )}
+      <PinArbitros torneo={torneo} />
     </li>
+  );
+}
+
+/** PIN de árbitros: rol aparte que solo anota (Inicio → Árbitros). Vence con el torneo. */
+function PinArbitros({ torneo }: { torneo: Torneo }) {
+  const actualizar = useTorneos((s) => s.actualizar);
+  const [ver, setVer] = useState(false);
+  const arb = torneo.arbitros?.pin ? torneo.arbitros : null;
+  const vigente = claveVigente(arb);
+  const guardar = (a: Torneo["arbitros"], msg: string) => {
+    actualizar(torneo.id, (t) => ({ ...t, arbitros: a }));
+    vibrar(12);
+    toast(msg);
+  };
+  const compartir = async () => {
+    if (!arb) return;
+    const texto = `Árbitros de ${torneo.nombre}\nEntra en ${location.origin}/arbitro con tu nombre y el PIN ${arb.pin}`;
+    try {
+      if (navigator.share) await navigator.share({ title: `Árbitros · ${torneo.nombre}`, text: texto });
+      else {
+        await navigator.clipboard.writeText(texto);
+        toast("PIN copiado", "info");
+      }
+    } catch {
+      /* el usuario canceló */
+    }
+  };
+  return (
+    <div className="mt-4 border-t border-white/5 pt-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Flag className={clsx("size-4", arb && vigente ? "text-lima" : "text-white/35")} />
+        <span className="text-sm font-semibold">PIN de árbitros</span>
+        {arb ? (
+          <>
+            <button className="rounded-lg bg-white/5 px-3 py-1 font-display text-lg font-bold tracking-[0.3em]" onClick={() => setVer((v) => !v)} title={ver ? "Ocultar" : "Ver"}>
+              {ver ? arb.pin : "•".repeat(arb.pin.length)}
+            </button>
+            {!vigente && <span className="chip !text-coral">Vencido</span>}
+            <span className="flex-1" />
+            <button className="btn-ghost !p-2" onClick={compartir} aria-label="Compartir PIN de árbitros">
+              {typeof navigator !== "undefined" && "share" in navigator ? <Share2 className="size-4" /> : <Copy className="size-4" />}
+            </button>
+            <button
+              className="btn-ghost !p-2"
+              aria-label="PIN nuevo"
+              onClick={() => {
+                if (!confirm("¿PIN nuevo? Los árbitros que entraron con el actual tendrán que volver a entrar.")) return;
+                guardar({ pin: pinAleatorio(), vence: venceAlTerminar(torneo.dias) }, "PIN de árbitros nuevo");
+                setVer(true);
+              }}
+            >
+              <RefreshCw className="size-4" />
+            </button>
+            <button className="text-xs text-white/40 hover:text-coral" onClick={() => confirm("¿Quitar el PIN? Solo el staff podrá anotar.") && guardar(null, "PIN de árbitros quitado")}>
+              Quitar
+            </button>
+          </>
+        ) : (
+          <button
+            className="btn-ghost !py-1.5 text-xs"
+            onClick={() => {
+              guardar({ pin: pinAleatorio(), vence: venceAlTerminar(torneo.dias) }, "PIN de árbitros creado");
+              setVer(true);
+            }}
+          >
+            <KeyRound className="size-3.5" /> Crear PIN de árbitros
+          </button>
+        )}
+      </div>
+      <p className="mt-1 text-xs text-white/40">Sirve solo para anotar en Inicio → Árbitros. No da acceso a cuadros, horarios ni ajustes. Vence al terminar el torneo.</p>
+    </div>
   );
 }

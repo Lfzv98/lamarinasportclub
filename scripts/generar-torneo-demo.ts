@@ -63,7 +63,7 @@ let t: Torneo = crearTorneo({
   canchas: CLUB_POR_DEFECTO.pistas,
   categorias: categorias.map((c) => c.cat),
 });
-t = { ...t, id: "t-open-2026", creadoEn: "2026-10-10T14:00:00.000Z", acceso: { clave: "MARINA", vence: new Date(`2026-10-25T23:59:00${ZONA}`).toISOString() } };
+t = { ...t, id: "t-open-2026", creadoEn: "2026-10-10T14:00:00.000Z", acceso: { clave: "MARINA", vence: new Date(`2026-10-25T23:59:00${ZONA}`).toISOString() }, arbitros: { pin: "2468", vence: new Date(`2026-10-25T23:59:00${ZONA}`).toISOString() } };
 
 const fuerza = new Map<string, number>();
 for (const c of categorias) {

@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { use, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Lightbulb, Search, Target, TrendingDown, TrendingUp, Zap } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
@@ -33,6 +33,11 @@ function Estadisticas({ torneo }: { torneo: Torneo }) {
   const esStaff = useEsStaff();
   const [buscar, setBuscar] = useState("");
   const [abierto, setAbierto] = useState<string | null>(null);
+  // ?jugador=ID abre directo su ficha (enlace desde la página de un partido).
+  useEffect(() => {
+    const j = new URLSearchParams(location.search).get("jugador");
+    if (j) setAbierto(j);
+  }, []);
 
   const filas = useMemo<Fila[]>(() => {
     const porJugador = new Map<string, StatsJugador[]>();

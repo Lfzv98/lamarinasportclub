@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, BookOpen, Settings, Shuffle, Trophy } from "lucide-react";
+import { ArrowRight, BookOpen, Flag, Settings, Shuffle, Trophy } from "lucide-react";
 import { InstallButton } from "@/components/InstallButton";
 import { Logo } from "@/components/Logo";
 import { StaffChip } from "@/components/StaffGate";
 import { useAmericanos, useEsStaff, useListaEventos } from "@/lib/store";
 import { useListaTorneos } from "@/lib/torneosStore";
 
-/** Inicio: dos puertas, Americanos y Torneos. */
+/** Inicio: tres puertas, Americanos, Torneos y Árbitros. */
 export default function Home() {
   const eventos = useListaEventos();
   const torneos = useListaTorneos();
@@ -18,6 +18,7 @@ export default function Home() {
   const americanosVivos = eventos.filter((e) => e.estado === "EN_CURSO").length;
   const torneosVivos = torneos.filter((t) => t.estado === "EN_JUEGO").length;
   const torneosProximos = torneos.filter((t) => t.estado !== "FINALIZADO").length;
+  const partidosEnJuego = torneos.reduce((n, t) => n + t.categorias.reduce((m, c) => m + (c.cuadro?.partidos.filter((p) => p.estado === "EN_JUEGO").length ?? 0), 0), 0);
 
   const puertas = [
     {
@@ -37,6 +38,15 @@ export default function Home() {
       detalle: "Todas las categorías, grupos y llaves automáticas, programación por días y marcador punto a punto.",
       chip: torneosVivos ? `${torneosVivos} en juego` : `${torneosProximos} activo${torneosProximos === 1 ? "" : "s"}`,
       vivo: torneosVivos > 0,
+    },
+    {
+      href: "/arbitro",
+      icon: Flag,
+      titulo: "Árbitros",
+      lema: "Anota el partido, punto a punto.",
+      detalle: "La tablet de cada pista: un toque por punto. Los televisores y las estadísticas de los atletas se actualizan al instante.",
+      chip: partidosEnJuego ? `${partidosEnJuego} partido${partidosEnJuego === 1 ? "" : "s"} en juego` : "Con PIN de árbitro",
+      vivo: partidosEnJuego > 0,
     },
   ];
 
@@ -80,9 +90,9 @@ export default function Home() {
           <p className="label !text-neon">PadelReserve · La Marina Sport Club</p>
           <h1 className="font-display text-3xl font-bold tracking-tight sm:text-5xl">¿Qué jugamos hoy?</h1>
 
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {puertas.map((p, i) => (
-              <motion.div key={p.href} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 + i * 0.07 }}>
+              <motion.div key={p.href} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 + i * 0.07 }} className={i === 2 ? "sm:col-span-2 lg:col-span-1" : undefined}>
                 <Link
                   href={p.href}
                   className="glass group relative flex h-full min-h-56 flex-col overflow-hidden rounded-[2rem] p-6 transition hover:border-neon/40 active:scale-[0.99] sm:min-h-72 sm:p-8"

@@ -1,4 +1,4 @@
-/** Clave de participantes de un torneo. */
+/** Clave de participantes y PIN de árbitros de un torneo. */
 import type { DiaTorneo } from "@/types/torneo";
 
 /** Venezuela (UTC-4, sin horario de verano). */
@@ -20,3 +20,10 @@ export function venceAlTerminar(dias: Pick<DiaTorneo, "fecha">[]): string {
 }
 
 export const claveVigente = (acceso?: { vence: string } | null, ahora = Date.now()) => !!acceso && new Date(acceso.vence).getTime() > ahora;
+
+/** PIN de árbitros: solo números, fácil de teclear en la tablet. */
+export function pinAleatorio(largo = 6): string {
+  const bytes = new Uint32Array(largo);
+  globalThis.crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => String(b % 10)).join("");
+}

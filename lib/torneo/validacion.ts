@@ -32,6 +32,7 @@ export function validarTorneo(x: unknown): string[] {
     }
   if (!Array.isArray(t.jugadores)) err("jugadores debe ser una lista.");
   if (t.acceso != null && (typeof t.acceso.clave !== "string" || t.acceso.clave.length > 40 || typeof t.acceso.vence !== "string")) err("acceso inválido.");
+  if (t.arbitros != null && (typeof t.arbitros.pin !== "string" || !/^\d{4,8}$/.test(t.arbitros.pin) || typeof t.arbitros.vence !== "string")) err("arbitros: PIN de 4 a 8 números.");
   if (t.sedes != null && (!Array.isArray(t.sedes) || t.sedes.length > 8 || t.sedes.some((s) => !texto(s?.nombre, 80) || typeof s.trasladoMin !== "number"))) err("sedes: máximo 8, con nombre y traslado.");
   if (t.patrocinadores != null) {
     if (!Array.isArray(t.patrocinadores) || t.patrocinadores.length > 16) err("patrocinadores: máximo 16.");

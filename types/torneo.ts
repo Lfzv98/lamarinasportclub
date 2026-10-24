@@ -315,6 +315,12 @@ export interface Torneo {
    * Solo el staff recibe la clave; al resto la API le llega vacía.
    */
   acceso?: { clave: string; vence: string } | null;
+  /**
+   * PIN de árbitros (anotadores): rol aparte del staff que solo puede llamar a pista, empezar,
+   * anotar punto a punto, dar un W.O. vencido y cerrar su partido. Caduca en `vence`.
+   * Solo el staff recibe el PIN; al resto la API le llega vacío.
+   */
+  arbitros?: { pin: string; vence: string } | null;
   /** Solo en respuestas de la API: sin clave válida se recibe un resumen sin datos. */
   bloqueado?: boolean;
   creadoEn: string;
@@ -370,6 +376,8 @@ export interface PuntoRegistrado {
   /** Jugador protagonista: quien hizo el winner/ace, o quien cometió el error. */
   jugadorId?: string | null;
   golpe?: Golpe | null;
+  /** En un error: si la pelota fue a la red o afuera (opcional). */
+  zona?: "RED" | "AFUERA" | null;
   /** Hubo falta de primer saque en este punto. */
   primerSaqueFalla?: boolean;
   /** ISO */

@@ -1,19 +1,26 @@
 import "server-only";
 import type { Torneo } from "@/types/torneo";
-import { huellaClave, leerAccesos, sesionDe } from "./auth";
+import { arbitroDe, huellaClave, leerAccesos, sesionDe, type SesionArbitro } from "./auth";
 
 /** Lo que cada quien puede ver de un torneo. */
-export type Visor = { staff: boolean; accesos: Record<string, number> };
+export type Visor = { staff: boolean; accesos: Record<string, number>; arbitro?: SesionArbitro | null };
 
 export function visorDe(req: Request): Visor {
-  return { staff: !!sesionDe(req), accesos: leerAccesos(req) };
+  return { staff: !!sesionDe(req), accesos: leerAccesos(req), arbitro: arbitroDe(req) };
+}
+
+/** ¿La sesión de árbitro vale para este torneo? (mismo PIN vigente y sin vencer) */
+export function esArbitroDe(t: Torneo, a?: SesionArbitro | null): boolean {
+  if (!a || a.torneoId !== t.id || !t.arbitros?.pin || t.eliminado) return false;
+  if (!(new Date(t.arbitros.vence).getTime() > Date.now())) return false;
+  return a.huella === huellaClave(t.arbitros.pin);
 }
 
 /** Clave del acceso en la cookie: torneo + huella de la clave vigente. */
 export const llaveAcceso = (torneoId: string, clave: string) => `${torneoId}:${huellaClave(clave)}`;
 
 export function puedeVer(t: Torneo, v: Visor): boolean {
-  if (v.staff || !t.acceso?.clave) return true;
+  if (v.staff || !t.acceso?.clave || esArbitroDe(t, v.arbitro)) return true;
   if (!(new Date(t.acceso.vence).getTime() > Date.now())) return false;
   return !!v.accesos[llaveAcceso(t.id, t.acceso.clave)];
 }
@@ -25,10 +32,12 @@ export function puedeVer(t: Torneo, v: Visor): boolean {
 export function paraVisor(t: Torneo, v: Visor): Torneo {
   if (v.staff) return t;
   const acceso = t.acceso?.clave ? { clave: "", vence: t.acceso.vence } : null;
-  if (puedeVer(t, v)) return { ...t, acceso, historial: [] };
+  const arbitros = t.arbitros?.pin ? { pin: "", vence: t.arbitros.vence } : null;
+  if (puedeVer(t, v)) return { ...t, acceso, arbitros, historial: [] };
   return {
     ...t,
     acceso,
+    arbitros,
     bloqueado: true,
     jugadores: [],
     historial: [],
