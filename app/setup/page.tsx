@@ -62,7 +62,8 @@ import { sonar, vibrar } from "@/lib/feedback";
 import { partidosPorUnidad, planRondas } from "@/lib/rotation";
 import { configPorDefecto, CRITERIOS, criterioDe, descripcionPuntuacion } from "@/lib/scoring";
 import { ReglasPuntuacion } from "@/components/ReglasPuntuacion";
-import { aHora, aMinutos, DIAS, diaSemana, franjas, horaFinPrevista, horarioDelDia, nombrePista, rondasQueCaben, validarFranja } from "@/lib/horarios";
+import { SelectorHorario } from "@/components/SelectorHorario";
+import { aMinutos, DIAS, diaSemana, horaFinPrevista, horarioDelDia, nombrePista, rondasQueCaben, validarFranja } from "@/lib/horarios";
 import { MAX_RONDAS } from "@/lib/validacion";
 import { useAmericanos } from "@/lib/store";
 import { hayBorrador, useBorrador, useLimpiarBorrador } from "@/hooks/useBorrador";
@@ -145,7 +146,6 @@ function Setup() {
   const nivelJugadores: Nivel = suma ? nivelParaSuma(suma) : nivel;
 
   const horarioDia = horarioDelDia(club, fecha);
-  const slots = franjas(horarioDia);
   const errorHorario = validarFranja(horarioDia, horaInicio, horaFin);
 
   const mixto = rama === "MIXTO";
@@ -627,6 +627,21 @@ function Setup() {
                       El todos contra todos se completa en {plan.sinRepetir} rondas. Desde la ronda {plan.sinRepetir + 1} empieza una segunda vuelta y se repiten cruces.
                     </p>
                   )}
+                  {!dupla && esAuto && !plan.equitativo && (
+                    <p className="mt-3 rounded-xl bg-white/5 px-3 py-2 text-xs leading-relaxed text-white/60">
+                      Con {generoCuenta ? `${nF} mujeres y ${nH} hombres` : `${jugadores.length} jugadores`} en {porRonda} pista{porRonda === 1 ? "" : "s"} los descansos no dan exacto: algunos juegan un partido más.{" "}
+                      {plan.rondasParejas ? (
+                        <>
+                          Para que todos jueguen lo mismo hacen falta {plan.rondasParejas} rondas.{" "}
+                          <button className="font-semibold text-neon underline underline-offset-2" onClick={() => setRondas(plan.rondasParejas!)}>
+                            Usar {plan.rondasParejas} rondas
+                          </button>
+                        </>
+                      ) : (
+                        "La app reparte las esperas por turnos para que la diferencia nunca pase de uno."
+                      )}
+                    </p>
+                  )}
                   {!esAuto && reparto[0] !== reparto[1] && plan.equitativo && (
                     <p className="mt-3 text-xs text-white/50">Con {totalRondas} rondas algunos juegan un partido más que otros. Con {plan.rondas} todos juegan lo mismo.</p>
                   )}
@@ -667,55 +682,15 @@ function Setup() {
                   </Link>
                 </div>
                 <div className="glass mt-3 rounded-2xl p-4">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <label className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                      <CalendarDays className="size-4 text-neon" />
-                      <input
-                        type="date"
-                        value={fecha}
-                        onChange={(e) => e.target.value && setFecha(e.target.value)}
-                        className="bg-transparent text-sm font-semibold outline-none [color-scheme:dark]"
-                      />
-                    </label>
-                    <span className="text-sm text-white/60">
-                      {DIAS[diaSemana(fecha)]}:{" "}
-                      {horarioDia.abierto ? (
-                        <span className="font-semibold text-white">
-                          {horarioDia.apertura} – {horarioDia.cierre}
-                        </span>
-                      ) : (
-                        <span className="font-semibold text-coral">cerrado</span>
-                      )}
-                    </span>
-                  </div>
-                  {slots.length > 0 && (
-                    <>
-                      <p className="mb-2 mt-4 text-xs text-white/50">Inicio</p>
-                      <div className="no-scrollbar flex gap-1.5 overflow-x-auto pb-1">
-                        {slots.slice(0, -1).map((h) => (
-                          <SlotChip
-                            key={h}
-                            activo={h === horaInicio}
-                            enRango={aMinutos(h) > aMinutos(horaInicio) && aMinutos(h) < aMinutos(horaFin)}
-                            onClick={() => {
-                              setHoraInicio(h);
-                              if (aMinutos(horaFin) <= aMinutos(h)) setHoraFin(aHora(Math.min(aMinutos(h) + 120, aMinutos(horarioDia.cierre))));
-                            }}
-                          >
-                            {h}
-                          </SlotChip>
-                        ))}
-                      </div>
-                      <p className="mb-2 mt-3 text-xs text-white/50">Fin</p>
-                      <div className="no-scrollbar flex gap-1.5 overflow-x-auto pb-1">
-                        {slots.filter((h) => aMinutos(h) > aMinutos(horaInicio)).map((h) => (
-                          <SlotChip key={h} activo={h === horaFin} enRango={aMinutos(h) < aMinutos(horaFin)} onClick={() => setHoraFin(h)}>
-                            {h}
-                          </SlotChip>
-                        ))}
-                      </div>
-                    </>
-                  )}
+                  <SelectorHorario
+                    club={club}
+                    fecha={fecha}
+                    setFecha={setFecha}
+                    horaInicio={horaInicio}
+                    setHoraInicio={setHoraInicio}
+                    horaFin={horaFin}
+                    setHoraFin={setHoraFin}
+                  />
                   {errorHorario ? (
                     <p className="mt-3 text-sm text-coral">{errorHorario}</p>
                   ) : cronometro ? (

@@ -121,6 +121,8 @@ export interface PlanRondas {
   equitativo: boolean;
   /** Partidos por jugador/dupla con las rondas recomendadas: [mínimo, máximo]. */
   partidos: [number, number];
+  /** Individual no equitativo: menor cantidad de rondas (sin repetir pareja) con la que todos juegan lo mismo, si existe. */
+  rondasParejas?: number;
 }
 
 /** Máximo de rondas de un evento (lo mismo que acepta la API). */
@@ -186,7 +188,15 @@ export function planRondas(
         return [Math.min(h[0], m[0]), Math.max(h[1], m[1])];
       })()
     : partidosPorUnidad(n, porRonda, rondas, 4);
-  return { rondas, porRonda, enEspera, sinRepetir, equitativo: parejo(rondas), partidos };
+  const equitativo = parejo(rondas);
+  let rondasParejas: number | undefined;
+  if (!equitativo)
+    for (let r = rondas + 1; r <= Math.min(sinRepetir, MAX_RONDAS_PLAN); r++)
+      if (parejo(r)) {
+        rondasParejas = r;
+        break;
+      }
+  return { rondas, porRonda, enEspera, sinRepetir, equitativo, partidos, ...(rondasParejas ? { rondasParejas } : {}) };
 }
 
 /**

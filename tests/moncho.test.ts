@@ -239,3 +239,26 @@ test("más duplas que pistas: cada ronda anota quién espera y nadie espera dos 
   // Cada dupla espera exactamente una ronda.
   assert.deepEqual(e.rondas.map((r) => r.descansanIds[0]).sort(), ["p0", "p1", "p2", "p3", "p4"]);
 });
+
+test("caso del club: 5 pistas y más inscritos que cupos (26 jugadores, 13 duplas, mixto 13 + 13)", () => {
+  const plan = planRondas(26, "INDIVIDUAL_ROTATIVO", 5);
+  assert.deepEqual([plan.rondas, plan.porRonda, plan.enEspera, plan.equitativo, plan.rondasParejas], [8, 5, 6, false, 13]);
+  const js = Array.from({ length: 26 }, (_, i) => jug(`j${String(i).padStart(2, "0")}`));
+  const m8 = metricasRotacion(generarRondasIndividual(js, { pistas: 5, rondas: 8, semilla: 1 }));
+  assert.deepEqual([m8.companerosRepetidos, m8.minPartidos, m8.maxPartidos], [0, 6, 7]);
+  const m13 = metricasRotacion(generarRondasIndividual(js, { pistas: 5, rondas: 13, semilla: 1 }));
+  assert.deepEqual([m13.companerosRepetidos, m13.minPartidos, m13.maxPartidos], [0, 10, 10]);
+
+  const d = planRondas(13, "DUPLA_FIJA", 5);
+  const { parejas: ps } = parejas(13);
+  const rondas = generarRondasDuplaFija(ps, { pistas: 5, rondas: d.rondas, semilla: 3 });
+  const cruces = new Set(rondas.flatMap((r) => r.partidos.map((p) => [p.parejaA.id, p.parejaB.id].sort().join("|"))));
+  assert.equal(cruces.size, 78);
+  assert.equal(rondas.reduce((s, r) => s + r.partidos.length, 0), 78);
+
+  const mx = [...Array.from({ length: 13 }, (_, i) => jug(`h${i}`, "M")), ...Array.from({ length: 13 }, (_, i) => jug(`m${i}`, "F"))];
+  const pm = planRondas(26, "INDIVIDUAL_ROTATIVO", 5, { hombres: 13, mujeres: 13 });
+  const rm = generarRondasIndividual(mx, { pistas: 5, rondas: pm.rondas, semilla: 4, mixto: true });
+  assert.equal(metricasRotacion(rm).companerosRepetidos, 0);
+  assert.ok(rm.every((r) => r.partidos.every((p) => [p.parejaA, p.parejaB].every((x) => x.jugadorIds.map((id) => id[0]).sort().join() === "h,m"))));
+});

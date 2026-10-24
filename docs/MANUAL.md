@@ -26,8 +26,8 @@ El club tiene 4 pistas techadas (1 a 4) y 1 sin techo (5); la app ya viene confi
 | Puntuación | 100% personalizable: puntos (24 en total, a 13 o cualquier número), games (5 en total, a 6, etc.) con tie-break opcional si empatan, o sets (1, mejor de 3 o de 5, a 4 o 6 games) con super tie opcional. Punto de oro o ventaja |
 | Criterio del ranking | Todos los puntos (cada jugador suma los puntos de su pareja, gane o pierda), Solo rondas ganadas, o Por victorias (3 por ganar, 1 por empate) |
 | Sorteo de parejas | Algoritmo balanceado: no repite compañero, reparte rivales y equilibra niveles. Quien descansa se elige por justicia (el que menos jugó) |
-| Rondas automáticas | Salen solas de las duplas o jugadores inscritos y las pistas: en Dupla fija, exactamente el todos contra todos; en Individual, el máximo sin repetir pareja, buscando que todos jueguen los mismos partidos. Se pueden cambiar a mano y avisa si se repiten parejas o si no cabe en el horario |
-| Pistas y horario | De 1 a 6 pistas. Avisa si sobran pistas para la gente inscrita y calcula a qué hora termina. Botón "¿Llueve?" que deja solo las pistas techadas |
+| Rondas automáticas | Salen solas de las duplas o jugadores inscritos y las pistas: en Dupla fija, exactamente el todos contra todos; en Individual, el máximo sin repetir pareja, buscando que todos jueguen los mismos partidos; si los descansos no dan exacto (por ejemplo 26 jugadores en 5 pistas), avisa y ofrece las rondas exactas para que todos jueguen igual ("Usar 13 rondas"). Se pueden cambiar a mano y avisa si se repiten parejas o si no cabe en el horario |
+| Pistas y horario | De 1 a 6 pistas. Avisa si sobran pistas para la gente inscrita y calcula a qué hora termina. Fecha, Inicio y Fin son tres botones: cada uno abre una pantallita (desde abajo en el celular, centrada en la computadora) con un calendario o un reloj táctil que solo deja elegir días y horas en que el club está abierto. Botón "¿Llueve?" que deja solo las pistas techadas |
 | En vivo | Cronómetro por ronda que se puede **apagar** (la ronda termina al cargar los marcadores), modal táctil para cargar marcadores, deshacer, avance de ronda y apartado **En espera** con las duplas o jugadores que descansan y en qué ronda vuelven |
 | Ranking | Tabla animada en tiempo real con PJ, PG, PP, PF, PC y +/-, flechas de subida y bajada, podio al final. Desempate por enfrentamiento directo (dupla fija), diferencia y puntos a favor; si todo es igual comparten posición, y la app explica cada empate |
 | Historial | Pestaña Historial dentro del Ranking: todos los marcadores ronda por ronda, con filtro por jugador o dupla y su resumen |
@@ -61,7 +61,7 @@ En el inicio, toca **Nuevo Americano**. El asistente tiene 5 pasos y guarda el b
 1. **Categoría:** Femenino, Masculino o Mixto. Luego **Por nivel** (7ma a Open; 2da solo en Masculino y Mixto) o **Suma** (elige N; Open cuenta 1, 2da 2… 7ma 7, y una pareja no puede sumar menos de N). Nombre propio opcional.
 2. **Formato:** Individual o Dupla fija (en Mixto: Individual mixto o Dupla fija mixta); las reglas del partido (ver "Reglas de puntuación") y el criterio del ranking.
 3. **Jugadores:** en Mixto individual hay una casilla para **Mujeres** y otra para **Hombres**, cada una con su contador. En Dupla fija se inscribe cada dupla (en mixta: hombre + mujer). En Suma, a cada jugador se le elige su categoría y la app marca en rojo la dupla que suma menos de lo permitido. Avisa cuántos quedan en espera por ronda.
-4. **Pistas y rondas:** cuáles pistas se usan; las **rondas salen en automático** según los inscritos y las pistas (se pueden cambiar con + y −, y "volver a automático"). **Cronómetro por ronda** encendido (con su duración) o apagado. Fecha y horario: si las rondas no caben, ofrece "Ajustar a N rondas". Si llueve, **¿Llueve?** deja solo las techadas.
+4. **Pistas y rondas:** cuáles pistas se usan; las **rondas salen en automático** según los inscritos y las pistas (se pueden cambiar con + y −, y "volver a automático"). **Cronómetro por ronda** encendido (con su duración) o apagado. **Fecha, Inicio y Fin**: toca cada botón y elige en la pantallita (calendario con atajos Hoy, Mañana y Sábado; reloj con hora, minutos de 15 en 15 y atajos de duración 1 h 30 a 3 h). Si las rondas no caben, ofrece "Ajustar a N rondas". Si llueve, **¿Llueve?** deja solo las techadas.
 5. **Listo:** revisa el resumen, la vista previa de la ronda 1 (con quién espera) y crea el evento.
 
 ### Reglas de puntuación
@@ -140,6 +140,7 @@ Color de marca: verde #7FE302 del logo de La Marina. Tipografías Inter y Space 
 | `lib/scoring.ts` | Validación de marcadores y cálculo del ranking |
 | `lib/evento.ts` | Ciclo de vida del evento, cronómetro, cambios de plantel, fusión |
 | `lib/horarios.ts` | Horarios del club, pistas, rondas que caben |
+| `components/SelectorHorario.tsx` | Botones Fecha, Inicio y Fin con su pantallita (calendario y reloj); usa `components/ui/Hoja.tsx` |
 | `lib/validacion.ts` | Validación estricta de lo que llega a la API |
 | `lib/store.ts` | Estado local y sincronización |
 | `lib/server/` | Repositorio (DEMO o Supabase), auth de staff, manejo de errores HTTP |
@@ -183,7 +184,7 @@ cd lamarinasportclub
 npm install
 cp .env.example .env.local   # vacío = modo DEMO
 npm run dev                  # http://localhost:3000, PIN 1234
-npm test                     # 54 tests de lógica
+npm test                     # 55 tests de lógica
 ```
 
 ### 2. Crear las tablas en Supabase
@@ -271,7 +272,7 @@ Errores, siempre en JSON: `400` JSON mal formado, `401` sin sesión, `403` usuar
 
 ## Pruebas y solución de problemas
 
-Antes de entregar pasaron 54 tests de lógica (`npm test`), 49 pruebas en navegador real con Playwright (`tests/e2e/robustez.e2e.mjs` y `tests/e2e/moncho.e2e.mjs`), `tsc --noEmit` sin errores y el build de Next.js.
+Antes de entregar pasaron 55 tests de lógica (`npm test`), 67 pruebas en navegador real con Playwright (`tests/e2e/robustez.e2e.mjs`, `tests/e2e/moncho.e2e.mjs` y `tests/e2e/horario.e2e.mjs`), `tsc --noEmit` sin errores y el build de Next.js.
 
 | Prueba | Qué cubre |
 | --- | --- |
