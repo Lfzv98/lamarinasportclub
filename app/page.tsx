@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Settings, Plus, Sparkles, Timer, Trophy, Tv } from "lucide-react";
+import { BookOpen, Settings, Plus, Sparkles, Timer, Trophy, Tv } from "lucide-react";
 import { EventoCard } from "@/components/EventoCard";
 import { InstallButton } from "@/components/InstallButton";
 import { Logo } from "@/components/Logo";
@@ -53,6 +53,9 @@ export default function Home() {
           <InstallButton />
           <ModoBadge />
           <StaffChip />
+          <Link href="/manual" className="btn-ghost !p-2.5" aria-label="Manual del staff" title="Manual del staff">
+            <BookOpen className="size-4" />
+          </Link>
           <Link href="/club" onClick={soloStaff} className="btn-ghost !p-2.5" aria-label="Mi club" title="Mi club: pistas y horarios">
             <Settings className="size-4" />
           </Link>
