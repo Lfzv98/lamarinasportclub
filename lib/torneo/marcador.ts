@@ -5,8 +5,12 @@
  * saca, cambio de lado, punto de oro, tie-break, break/set/match point y
  * estadísticas) se calcula re-jugando esa lista. Así "Deshacer" es quitar el
  * último punto y nunca queda un estado inconsistente.
+ *
+ * Sigue el Reglamento de Juego de la FIP (rev. 28.05.2021): Regla 1 (puntuación, punto de oro,
+ * tie-break y métodos alternativos), Regla 2 (tiempos), Regla 5 (cambios de campo), Regla 6 y 8
+ * (orden de saque y resto por set) y la tabla de penalizaciones.
  */
-import type { FinPunto, Golpe, MarcadorVivo, PuntoRegistrado, ReglasPartido } from "@/types/torneo";
+import type { AtencionMedica, FinPunto, Golpe, MarcadorVivo, NivelSancion, PuntoRegistrado, ReglasPartido, SancionPartido } from "@/types/torneo";
 import type { SetScore } from "@/types/americano";
 
 export type Lado = "A" | "B";
@@ -67,6 +71,9 @@ export const setsNecesarios = (r: ReglasPartido) => (r.sets === 3 ? 2 : 1);
 /** ¿El set `i` se juega como súper tie-break? */
 export const esSuperTie = (r: ReglasPartido, i: number) => r.sets === 3 && r.superTie && i === 2;
 
+/** Puntos del tie-break decisivo que reemplaza al tercer set (FIP: 10 o 7). */
+export const puntosTieDecisivo = (r: ReglasPartido) => r.tieDecisivo ?? 10;
+
 function textoGame(p: SetScore, oro: boolean): [string, string] {
   if (p.a >= 3 && p.b >= 3) {
     if (oro || p.a === p.b) return ["40", "40"];
@@ -80,7 +87,7 @@ function cierraGame(r: ReglasPartido, p: SetScore, l: Lado, enTie: boolean, supe
   const mio = p[k(l)] + 1;
   const suyo = p[k(otro(l))];
   if (enTie) {
-    const meta = superTie ? 10 : 7;
+    const meta = superTie ? puntosTieDecisivo(r) : 7;
     return mio >= meta && mio - suyo >= 2;
   }
   if (r.puntoDeOro && p.a === 3 && p.b === 3) return true;
@@ -94,13 +101,27 @@ function cierraSet(r: ReglasPartido, g: SetScore, l: Lado, enTie: boolean): bool
   return mio >= r.games && mio - suyo >= 2;
 }
 
-function entraEnTie(r: ReglasPartido, g: SetScore): boolean {
+function entraEnTie(r: ReglasPartido, g: SetScore, set: number): boolean {
+  if (r.tercerSetLargo && set === 2) return false;
   return r.tieBreakEn !== null && g.a === r.tieBreakEn && g.b === r.tieBreakEn;
 }
 
-export function calcularMarcador(m: Pick<MarcadorVivo, "reglas" | "ordenSaque" | "puntos" | "jugadoresA">): EstadoMarcador {
+/** Orden de saque vigente en el set `i`: el inicial con los cambios dentro de cada dupla pedidos al empezar un set. */
+export function ordenDelSet(m: Pick<MarcadorVivo, "ordenSaque" | "ordenSets" | "jugadoresA">, i: number): [string, string, string, string] {
+  let cambio: { A?: boolean; B?: boolean } = {};
+  for (let s = 0; s <= i; s++) if (m.ordenSets?.[s]) cambio = m.ordenSets[s];
+  const [s0, s1, s2, s3] = m.ordenSaque;
+  const o: [string, string, string, string] = [s0, s1, s2, s3];
+  const ladoDe = (id: string): Lado => (m.jugadoresA.includes(id) ? "A" : "B");
+  // Posiciones 0 y 2 son de una dupla; 1 y 3 de la otra.
+  if (cambio[ladoDe(s0)]) [o[0], o[2]] = [o[2], o[0]];
+  if (cambio[ladoDe(s1)]) [o[1], o[3]] = [o[3], o[1]];
+  return o;
+}
+
+export function calcularMarcador(m: Pick<MarcadorVivo, "reglas" | "ordenSaque" | "puntos" | "jugadoresA" | "ordenSets">): EstadoMarcador {
   const r = m.reglas;
-  const orden = m.ordenSaque;
+  let orden = ordenDelSet(m, 0);
   const equipoDe = (id: string): Lado => (m.jugadoresA.includes(id) ? "A" : "B");
 
   const sets: SetScore[] = [{ a: 0, b: 0 }];
@@ -157,12 +178,13 @@ export function calcularMarcador(m: Pick<MarcadorVivo, "reglas" | "ordenSaque" |
           sets.push({ a: 0, b: 0 });
           games = { a: 0, b: 0 };
           enTie = esSuperTie(r, setActual);
+          orden = ordenDelSet(m, setActual);
           // Tras un set con número impar de games se cambia de lado (el tie-break cuenta como un game).
           cambioDeLado = totalSet % 2 === 1;
         }
       } else {
         sets[setActual] = { ...games };
-        enTie = entraEnTie(r, games);
+        enTie = entraEnTie(r, games, setActual);
         cambioDeLado = (games.a + games.b) % 2 === 1;
       }
     } else {
@@ -254,7 +276,127 @@ export function ace(m: MarcadorVivo): MarcadorVivo {
 export function deshacer(m: MarcadorVivo): MarcadorVivo {
   if (m.faltaPendiente) return { ...m, faltaPendiente: false, actualizadoEn: new Date().toISOString() };
   if (!m.puntos.length) return m;
-  return { ...m, puntos: m.puntos.slice(0, -1), actualizadoEn: new Date().toISOString() };
+  const quitado = m.puntos.length - 1;
+  // Si el punto era por sanción, la sanción se va con él.
+  const sanciones = m.sanciones?.filter((s) => s.punto !== quitado);
+  return { ...m, puntos: m.puntos.slice(0, -1), sanciones, actualizadoEn: new Date().toISOString() };
+}
+
+/* ---------- orden de saque por set (FIP Regla 6.10 y 8.3) ---------- */
+
+/**
+ * Al empezar un set cada dupla puede cambiar quién saca primero. Alterna, para el set `set`,
+ * el sacador de la dupla `lado` respecto del orden que venía rigiendo.
+ */
+export function alternarOrdenSet(m: MarcadorVivo, set: number, lado: Lado): MarcadorVivo {
+  let vigente: { A?: boolean; B?: boolean } = {};
+  for (let s = 0; s <= set; s++) if (m.ordenSets?.[s]) vigente = m.ordenSets[s];
+  const nuevo = { ...vigente, [lado]: !vigente[lado] };
+  return { ...m, ordenSets: { ...m.ordenSets, [set]: nuevo }, actualizadoEn: new Date().toISOString() };
+}
+
+/** Al inicio de un set (0-0, ningún punto jugado en él) se puede elegir el orden de saque de cada dupla. */
+export function puedeElegirOrden(e: EstadoMarcador): boolean {
+  return !e.terminado && e.setActual > 0 && e.games.a + e.games.b === 0 && e.puntos.a + e.puntos.b === 0;
+}
+
+/* ---------- tiempos (FIP Regla 2) ---------- */
+
+export interface Descanso {
+  segundos: number;
+  motivo: string;
+}
+
+/**
+ * Tiempo máximo hasta el próximo saque según el último punto:
+ * 20 s entre puntos, 90 s en el cambio de lado, sin descanso tras el primer game del set,
+ * 20 s en los cambios del tie-break y 120 s al terminar un set.
+ */
+export function descansoReglamentario(e: EstadoMarcador): Descanso | null {
+  const u = e.jugados.at(-1);
+  if (!u || e.terminado) return null;
+  if (u.evento === "SET") return { segundos: 120, motivo: e.cambioDeLado ? "Fin de set · cambio de lado" : "Fin de set" };
+  if (u.enTie && e.cambioDeLado) return { segundos: 20, motivo: "Cambio de lado en el tie-break" };
+  if (u.evento === "GAME" && e.cambioDeLado) {
+    return u.games.a + u.games.b === 1 ? { segundos: 0, motivo: "Cambio de lado sin descanso (primer game del set)" } : { segundos: 90, motivo: "Cambio de lado" };
+  }
+  return { segundos: 20, motivo: "Entre puntos" };
+}
+
+/** Peloteo al reanudar un partido suspendido por causas ajenas a los jugadores (FIP Regla 2.11–2.14). */
+export function peloteoTrasSuspension(minutosSuspendido: number): number {
+  if (minutosSuspendido <= 5) return 0;
+  if (minutosSuspendido <= 20) return 3;
+  return 5;
+}
+
+/* ---------- sanciones (FIP, tabla de penalizaciones) ---------- */
+
+export const NOMBRE_SANCION: Record<NivelSancion, string> = {
+  ADVERTENCIA: "Advertencia",
+  PUNTO: "Advertencia con pérdida de punto",
+  DESCALIFICACION: "Descalificación",
+};
+
+/** Qué sanción le toca a la dupla en su próxima infracción (se acumulan entre sus dos jugadores). */
+export function proximaSancion(m: Pick<MarcadorVivo, "sanciones">, lado: Lado): NivelSancion {
+  const n = (m.sanciones ?? []).filter((s) => s.lado === lado).length;
+  return n === 0 ? "ADVERTENCIA" : n === 1 ? "PUNTO" : "DESCALIFICACION";
+}
+
+/**
+ * Registra una infracción. La 2ª da el punto a la otra dupla; la 3ª (o una infracción muy grave,
+ * `directa`) descalifica: el partido se cierra a favor de la otra dupla.
+ */
+export function sancionar(
+  m: MarcadorVivo,
+  input: { lado: Lado; jugadorId?: string | null; motivo: string; directa?: boolean },
+): { marcador: MarcadorVivo; nivel: NivelSancion } {
+  const nivel: NivelSancion = input.directa ? "DESCALIFICACION" : proximaSancion(m, input.lado);
+  const t = new Date().toISOString();
+  const sancion: SancionPartido = { lado: input.lado, jugadorId: input.jugadorId ?? null, nivel, motivo: input.motivo, t, ...(input.directa ? { directa: true } : {}) };
+  let marcador: MarcadorVivo = m;
+  if (nivel === "PUNTO" && !calcularMarcador(m).terminado) {
+    sancion.punto = m.puntos.length;
+    marcador = anotarPunto({ ...m, faltaPendiente: false }, otro(input.lado), { fin: "SANCION", jugadorId: input.jugadorId ?? null });
+  }
+  return { marcador: { ...marcador, sanciones: [...(m.sanciones ?? []), sancion], actualizadoEn: t }, nivel };
+}
+
+/** Quita la última sanción (si fue de punto, también ese punto, siempre que sea el último). */
+export function quitarUltimaSancion(m: MarcadorVivo): MarcadorVivo {
+  const lista = m.sanciones ?? [];
+  const ult = lista.at(-1);
+  if (!ult) return m;
+  if (ult.punto !== undefined) {
+    if (ult.punto !== m.puntos.length - 1) return m;
+    return deshacer(m);
+  }
+  return { ...m, sanciones: lista.slice(0, -1), actualizadoEn: new Date().toISOString() };
+}
+
+/* ---------- atención médica (FIP Regla 2.17–2.20) ---------- */
+
+export const SEGUNDOS_ATENCION: Record<AtencionMedica["tipo"], number> = { LESION: 180, ACCIDENTE: 900 };
+
+/** Un jugador tiene una sola atención por lesión por partido (no la puede ceder). El accidente ajeno al juego no cuenta. */
+export function puedePedirAtencion(m: Pick<MarcadorVivo, "atenciones">, jugadorId: string, tipo: AtencionMedica["tipo"]): boolean {
+  if (tipo === "ACCIDENTE") return true;
+  return !(m.atenciones ?? []).some((a) => a.jugadorId === jugadorId && a.tipo === "LESION");
+}
+
+export function pedirAtencion(m: MarcadorVivo, jugadorId: string, tipo: AtencionMedica["tipo"]): MarcadorVivo {
+  if (!puedePedirAtencion(m, jugadorId, tipo)) return m;
+  const t = new Date().toISOString();
+  return { ...m, atenciones: [...(m.atenciones ?? []), { jugadorId, tipo, t }], actualizadoEn: t };
+}
+
+/** Atención en curso (si la hay) y segundos que le quedan. */
+export function atencionEnCurso(m: Pick<MarcadorVivo, "atenciones">, ahora = Date.now()): { atencion: AtencionMedica; quedan: number } | null {
+  const a = m.atenciones?.at(-1);
+  if (!a) return null;
+  const quedan = Math.ceil((new Date(a.t).getTime() + SEGUNDOS_ATENCION[a.tipo] * 1000 - ahora) / 1000);
+  return quedan > 0 ? { atencion: a, quedan } : null;
 }
 
 /* ---------- relato ---------- */
@@ -265,6 +407,7 @@ export const NOMBRE_FIN: Record<FinPunto, string> = {
   ERROR_FORZADO: "Error forzado",
   ACE: "Ace",
   DOBLE_FALTA: "Doble falta",
+  SANCION: "Punto por sanción",
 };
 
 export const NOMBRE_GOLPE: Record<Golpe, string> = {
@@ -287,6 +430,7 @@ export function relatoPunto(p: PuntoJugado, nombreJugador: (id: string) => strin
   let base = `Punto para ${nombreLado(p.gana)}`;
   if (p.fin === "ACE") base = `${quien}, ace. ${base}`;
   else if (p.fin === "DOBLE_FALTA") base = `${quien}, doble falta. ${base}`;
+  else if (p.fin === "SANCION") base = `Sanción${quien ? ` a ${quien}` : ""}: punto para ${nombreLado(p.gana)}`;
   else if (p.fin) {
     const golpe = p.golpe && p.golpe !== "SAQUE" ? ` de ${NOMBRE_GOLPE[p.golpe]}` : "";
     base = `${quien ? `${quien}, ` : ""}${NOMBRE_FIN[p.fin].toLowerCase()}${golpe}. ${base}`;
@@ -358,6 +502,8 @@ export function statsPartido(m: MarcadorVivo): StatsJugador[] {
   let ultimo: Lado | null = null;
   let actual = 0;
   for (const p of e.jugados) {
+    // Un punto por sanción suma al marcador pero no es un punto jugado.
+    if (p.fin === "SANCION") continue;
     actual = ultimo === p.gana ? actual + 1 : 1;
     ultimo = p.gana;
     rachas[p.gana] = Math.max(rachas[p.gana], actual);

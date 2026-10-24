@@ -233,7 +233,7 @@ function Llamado({ torneo, p, ahora }: { torneo: Torneo; p: PartidoTorneo; ahora
   return (
     <p className={clsx("mt-2 text-xs font-semibold", quedan <= 0 ? "text-coral" : quedan <= 5 ? "text-amber-200" : "text-white/50")}>
       {quedan > 0 ? quedan > torneo.toleranciaWO
-          ? `Llamado hace ${pasados} min · adelantado, juega a las ${p.programacion?.hora}`
+          ? `Llamado hace ${pasados} min · hora prevista ${new Date(limite - torneo.toleranciaWO * 60_000).toTimeString().slice(0, 5)}`
           : `Llamado hace ${pasados} min · W.O. en ${quedan} min` : `Pasó la tolerancia de ${torneo.toleranciaWO} min: se puede dar W.O.`}
     </p>
   );

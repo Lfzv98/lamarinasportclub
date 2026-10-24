@@ -20,7 +20,7 @@ export function ResumenClub({ torneo }: { torneo: Torneo }) {
   const puntuales = atrasos.filter((a) => a <= 10).length;
   const jugadores = new Set(torneo.categorias.flatMap((c) => c.duplas.filter((d) => d.estado === "ACTIVA").flatMap((d) => d.jugadorIds))).size;
   const wo = jugados.filter((p) => p.resultado?.tipo === "WO").length;
-  const retiros = jugados.filter((p) => p.resultado?.tipo === "RETIRO").length;
+  const retiros = jugados.filter((p) => p.resultado?.tipo === "RETIRO" || p.resultado?.tipo === "DESCALIFICACION").length;
   const suspensiones = new Set(torneo.bloqueos.map((b) => b.suspensionId).filter(Boolean)).size;
   const puntos = Object.values(marcadores).filter((m) => m.torneoId === torneo.id).reduce((a, m) => a + m.puntos.length, 0);
   const sedes = (torneo.sedes ?? []).length;

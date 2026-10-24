@@ -5,24 +5,37 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowLeftRight, Check, CircleSlash, Flag, MoreHorizontal, Undo2, Zap } from "lucide-react";
+import { ArrowLeft, ArrowLeftRight, Check, CircleSlash, Flag, HeartPulse, MoreHorizontal, ShieldAlert, Timer, Undo2, Zap } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { StaffGate } from "@/components/StaffGate";
 import { Hoja } from "@/components/ui/Hoja";
 import { toast } from "@/components/ui/Toaster";
 import { TorneoShellMinimo } from "@/components/torneo/minimo";
+import { useAhora } from "@/components/torneo/vivo";
 import { sonar, vibrar } from "@/lib/feedback";
 import { nombreCorto } from "@/lib/torneo/categorias";
 import {
   ace,
+  alternarOrdenSet,
   anotarPunto,
+  atencionEnCurso,
   calcularMarcador,
+  descansoReglamentario,
   deshacer,
   detallarUltimo,
   faltaSaque,
   NOMBRE_GOLPE,
+  NOMBRE_SANCION,
   nuevoMarcador,
+  ordenDelSet,
+  pedirAtencion,
+  peloteoTrasSuspension,
+  proximaSancion,
+  puedeElegirOrden,
+  puedePedirAtencion,
+  quitarUltimaSancion,
   relatoPunto,
+  sancionar,
   setsFinales,
   statsPartido,
   type Lado,
@@ -173,6 +186,8 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
   const e = useMemo(() => calcularMarcador(m), [m]);
   const [bandeja, setBandeja] = useState<Bandeja | null>(null);
   const [menu, setMenu] = useState(false);
+  const [sancionDe, setSancionDe] = useState<Lado | null>(null);
+  const ahora = useAhora(1000);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const jug = (id: string) => torneo.jugadores.find((j) => j.id === id);
   const nombreLado = (l: Lado) => nombreDupla(torneo, dupla(torneo, l === "A" ? p.duplaA : p.duplaB));
@@ -185,7 +200,12 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
     const pista = p.pistaReal ?? p.programacion?.pista ?? m.pista ?? null;
     guardar(iniciarPartido(torneo, p.id, pista ?? undefined));
     if (pista !== m.pista) guardarMarcador({ ...m, pista, actualizadoEn: new Date().toISOString() });
-    if (p.suspendido) toast(`Se reanuda: ${textoSets(setsFinales(e).filter((s) => s.a + s.b > 0)) || "0-0"}`, "info");
+    if (p.suspendido) {
+      // FIP Regla 2.11–2.15: se sigue exactamente donde quedó; peloteo según cuánto duró la suspensión.
+      const min = Math.round((Date.now() - new Date(p.suspendido.en).getTime()) / 60_000);
+      const peloteo = peloteoTrasSuspension(min);
+      toast(`Se reanuda: ${textoSets(setsFinales(e).filter((s) => s.a + s.b > 0)) || "0-0"} · ${peloteo ? `${peloteo} min de peloteo` : "sin peloteo"}`, "info");
+    }
     // Solo al entrar.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -236,11 +256,14 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
     setBandeja(null);
   }
 
-  function confirmar(tipo: "NORMAL" | "RETIRO" = "NORMAL", ganador?: Lado) {
+  function confirmar(tipo: "NORMAL" | "RETIRO" | "DESCALIFICACION" = "NORMAL", ganador?: Lado, marcador: MarcadorVivo = m) {
     const reglas = reglasDe(torneo, p);
+    const est = marcador === m ? e : calcularMarcador(marcador);
     const resultado =
-      tipo === "RETIRO" ? resultadoRetiro(reglas, setsFinales(e).filter((s) => s.a + s.b > 0), ganador!) : { sets: setsFinales(e), ganador: e.ganador!, tipo: "NORMAL" as const };
-    guardarMarcador({ ...m, finalizado: true, actualizadoEn: new Date().toISOString() });
+      tipo === "NORMAL"
+        ? { sets: setsFinales(est), ganador: est.ganador!, tipo: "NORMAL" as const }
+        : { ...resultadoRetiro(reglas, setsFinales(est).filter((s) => s.a + s.b > 0), ganador!), tipo };
+    guardarMarcador({ ...marcador, finalizado: true, actualizadoEn: new Date().toISOString() });
     guardar(cargarResultado(torneo, p.id, resultado));
     sonar("ok");
     toast(`Resultado guardado: ${textoSets(resultado.sets)}`);
@@ -278,6 +301,29 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
   };
 
   const sets = setsFinales(e);
+  const esMixto = categoria(torneo, p.categoriaId)?.categoria.rama === "MIXTO";
+  const descanso = descansoReglamentario(e);
+  const quedaDescanso = descanso && ultimo ? Math.ceil((new Date(ultimo.t).getTime() + descanso.segundos * 1000 - ahora) / 1000) : 0;
+  const atencion = atencionEnCurso(m, ahora);
+  const eligeOrden = puedeElegirOrden(e);
+  const orden = ordenDelSet(m, e.setActual);
+  const siguiente = orden[(orden.indexOf(e.sacador) + 1) % 4];
+  const mmss = (seg: number) => `${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, "0")}`;
+
+  function sancion(lado: Lado, motivo: string, directa = false) {
+    const nivel = directa ? "DESCALIFICACION" : proximaSancion(m, lado);
+    if (nivel === "DESCALIFICACION" && !confirm(`${NOMBRE_SANCION.DESCALIFICACION} de ${nombreLado(lado)}: pierde el partido. ¿Confirmas?`)) return;
+    const r = sancionar(m, { lado, motivo, directa });
+    setSancionDe(null);
+    setMenu(false);
+    vibrar([40, 40, 40]);
+    if (r.nivel === "DESCALIFICACION") {
+      confirmar("DESCALIFICACION", lado === "A" ? "B" : "A", r.marcador);
+      return;
+    }
+    guardarMarcador(r.marcador);
+    toast(`${NOMBRE_SANCION[r.nivel]} a ${nombreLado(lado)}${r.nivel === "PUNTO" ? ": punto para la otra dupla" : ""}`, r.nivel === "PUNTO" ? "error" : "info");
+  }
 
   return (
     <main className="flex h-dvh flex-col gap-2 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-[max(0.5rem,env(safe-area-inset-top))]">
@@ -311,6 +357,40 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
           </motion.p>
         )}
       </AnimatePresence>
+
+      {!e.terminado && e.puntoDeOro && (
+        <p className="-mt-1 text-center text-[11px] text-white/50">
+          {esMixto ? "Resta el jugador del mismo sexo que el sacador, sin cambiar de lado." : "La dupla que resta elige de qué lado recibe, sin cambiar posiciones."}
+        </p>
+      )}
+
+      {atencion && (
+        <div className="flex items-center justify-center gap-2 rounded-2xl bg-coral/15 px-3 py-2 text-sm font-semibold text-coral">
+          <HeartPulse className="size-4" />
+          {atencion.atencion.tipo === "LESION" ? "Atención médica" : "Accidente"} · {corto(jug(atencion.atencion.jugadorId))} · {mmss(atencion.quedan)}
+        </div>
+      )}
+
+      {!e.terminado && !atencion && descanso && quedaDescanso > 0 && descanso.segundos >= 90 && (
+        <div className="flex items-center justify-center gap-2 rounded-2xl bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/70">
+          <Timer className="size-3.5 text-lima" /> {descanso.motivo} · {mmss(quedaDescanso)}
+        </div>
+      )}
+      {!e.terminado && descanso && descanso.segundos === 0 && e.cambioDeLado && (
+        <p className="text-center text-xs font-semibold text-white/60">{descanso.motivo}</p>
+      )}
+
+      {eligeOrden && (
+        <div className="glass flex flex-wrap items-center gap-2 rounded-2xl px-3 py-2 text-xs">
+          <span className="font-semibold text-white/60">Set {e.setActual + 1}: cada dupla elige quién saca</span>
+          <button className="chip !py-1" onClick={() => guardarMarcador(alternarOrdenSet(m, e.setActual, e.equipoSaca))}>
+            <Zap className="size-3 text-lima" /> Saca {corto(jug(e.sacador))} <ArrowLeftRight className="size-3" />
+          </button>
+          <button className="chip !py-1" onClick={() => guardarMarcador(alternarOrdenSet(m, e.setActual, e.equipoSaca === "A" ? "B" : "A"))}>
+            Luego {corto(jug(siguiente))} <ArrowLeftRight className="size-3" />
+          </button>
+        </div>
+      )}
 
       {e.terminado ? (
         <Final torneo={torneo} m={m} nombreLado={nombreLado} onConfirmar={() => confirmar()} onDeshacer={() => guardarMarcador(deshacer(m))} />
@@ -434,6 +514,68 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
           >
             <ArrowLeftRight className="size-4" /> Corregir quién saca (otra dupla)
           </button>
+          <p className="label !mt-5">Sanciones (FIP)</p>
+          {(["A", "B"] as const).map((l) => (
+            <button key={l} className="btn-ghost w-full !justify-between" onClick={() => {
+                setMenu(false);
+                setSancionDe(l);
+              }}>
+              <span className="flex items-center gap-2">
+                <ShieldAlert className="size-4 text-amber-200" /> {nombreLado(l)}
+              </span>
+              <span className="text-xs text-white/50">Próxima: {NOMBRE_SANCION[proximaSancion(m, l)]}</span>
+            </button>
+          ))}
+          {!!m.sanciones?.length && (
+            <div className="rounded-2xl bg-white/5 p-3 text-xs text-white/60">
+              {m.sanciones.map((x, i) => (
+                <p key={i}>
+                  {NOMBRE_SANCION[x.nivel]} · {nombreLado(x.lado)} · {x.motivo}
+                </p>
+              ))}
+              <button className="mt-2 font-semibold text-lima" onClick={() => guardarMarcador(quitarUltimaSancion(m))}>
+                Quitar la última
+              </button>
+            </div>
+          )}
+
+          <p className="label !mt-5">Atención médica (FIP)</p>
+          <div className="grid grid-cols-2 gap-2">
+            {[...m.jugadoresA, ...m.jugadoresB].map((id) => (
+              <button
+                key={id}
+                className="btn-ghost !py-2 text-xs"
+                disabled={!puedePedirAtencion(m, id, "LESION")}
+                onClick={() => {
+                  guardarMarcador(pedirAtencion(m, id, "LESION"));
+                  setMenu(false);
+                  toast(`Atención médica de 3 min para ${corto(jug(id))}`, "info");
+                }}
+              >
+                <HeartPulse className="size-3.5" /> {corto(jug(id))}
+                {!puedePedirAtencion(m, id, "LESION") && " · usada"}
+              </button>
+            ))}
+          </div>
+          <details className="text-xs text-white/50">
+            <summary className="cursor-pointer py-1">Accidente ajeno al juego (hasta 15 min, no cuenta)</summary>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {[...m.jugadoresA, ...m.jugadoresB].map((id) => (
+                <button
+                  key={id}
+                  className="btn-ghost !py-2 text-xs"
+                  onClick={() => {
+                    guardarMarcador(pedirAtencion(m, id, "ACCIDENTE"));
+                    setMenu(false);
+                  }}
+                >
+                  {corto(jug(id))}
+                </button>
+              ))}
+            </div>
+          </details>
+          <p className="text-[11px] text-white/40">Lesión: 3 min una vez por jugador, no se cede al compañero. Con una herida sangrante no se puede seguir jugando.</p>
+
           <p className="label !mt-5">Retiro por lesión</p>
           {(["A", "B"] as const).map((l) => (
             <button
@@ -449,9 +591,29 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
           ))}
         </div>
       </Hoja>
+
+      <Hoja abierta={sancionDe !== null} onClose={() => setSancionDe(null)} titulo="Sanción" sub={sancionDe ? `${nombreLado(sancionDe)} · ${NOMBRE_SANCION[proximaSancion(m, sancionDe)]}` : undefined}>
+        {sancionDe && (
+          <div className="space-y-3">
+            <p className="text-xs text-white/50">Tabla FIP: 1ª advertencia, 2ª pérdida de punto, 3ª descalificación. Se suman las de los dos jugadores de la dupla.</p>
+            <div className="flex flex-wrap gap-2">
+              {MOTIVOS_SANCION.map((mo) => (
+                <button key={mo} className="btn-ghost !px-3 !py-2 text-xs" onClick={() => sancion(sancionDe, mo)}>
+                  {mo}
+                </button>
+              ))}
+            </div>
+            <button className="btn-ghost w-full !text-coral" onClick={() => sancion(sancionDe, "Infracción muy grave", true)}>
+              <ShieldAlert className="size-4" /> Infracción muy grave: descalificación directa
+            </button>
+          </div>
+        )}
+      </Hoja>
     </main>
   );
 }
+
+const MOTIVOS_SANCION = ["Demora en el juego", "Conducta antideportiva", "Obscenidad", "Abuso de pelota", "Abuso de pala o equipo", "Abuso verbal", "Indumentaria", "Consejos fuera de tiempo"];
 
 function Final({ torneo, m, nombreLado, onConfirmar, onDeshacer }: { torneo: Torneo; m: MarcadorVivo; nombreLado: (l: Lado) => string; onConfirmar: () => void; onDeshacer: () => void }) {
   const e = calcularMarcador(m);

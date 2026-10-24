@@ -13,7 +13,7 @@ import { TorneoShellMinimo } from "@/components/torneo/minimo";
 import { FranjaPatrocinadores, PresentaPista } from "@/components/torneo/Patrocinadores";
 import { useAhora, useMarcadoresEnVivo } from "@/components/torneo/vivo";
 import { nombreCategoria } from "@/lib/torneo/categorias";
-import { calcularMarcador, relatoPunto, setsFinales, statsPartido, type Lado } from "@/lib/torneo/marcador";
+import { atencionEnCurso, calcularMarcador, descansoReglamentario, relatoPunto, setsFinales, statsPartido, type Lado } from "@/lib/torneo/marcador";
 import { estadoPistas, limiteWO } from "@/lib/torneo/programacion";
 import { categoria, dupla, nombreDupla, nombreJugador } from "@/lib/torneo/torneo";
 import { useMarcador } from "@/lib/torneosStore";
@@ -95,9 +95,19 @@ function Marcador({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marca
   const sets = setsFinales(e);
   const jug = (id: string) => torneo.jugadores.find((j) => j.id === id);
   const totales = (l: Lado) => stats.filter((s) => s.lado === l);
+  const ahora = useAhora(1000);
+  const atencion = atencionEnCurso(m, ahora);
+  const descanso = descansoReglamentario(e);
+  const ultimoT = e.jugados.at(-1)?.t;
+  const quedaDescanso = descanso && ultimoT ? Math.ceil((new Date(ultimoT).getTime() + descanso.segundos * 1000 - ahora) / 1000) : 0;
+  const mmss = (seg: number) => `${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, "0")}`;
   const aviso = e.terminado
     ? null
-    : e.matchPoint
+    : atencion
+      ? `ATENCIÓN MÉDICA · ${mmss(atencion.quedan)}`
+      : descanso && descanso.segundos >= 90 && quedaDescanso > 0
+        ? `${descanso.motivo.toUpperCase()} · ${mmss(quedaDescanso)}`
+        : e.matchPoint
       ? "PUNTO DE PARTIDO"
       : e.setPoint
         ? "PUNTO DE SET"
@@ -118,7 +128,7 @@ function Marcador({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marca
         <div className="grid grid-cols-[1fr_repeat(var(--sets),5rem)_11rem] items-center gap-4 text-center text-lg font-semibold uppercase tracking-[0.2em] text-white/35" style={{ ["--sets" as string]: sets.length }}>
           <span className="text-left">{m.reglas.sets === 3 ? "Mejor de 3" : "1 set"} · {m.reglas.puntoDeOro ? "punto de oro" : "ventaja"}</span>
           {sets.map((_, i) => (
-            <span key={i}>{i === 2 && m.reglas.superTie ? "STB" : `Set ${i + 1}`}</span>
+            <span key={i}>{i === 2 && m.reglas.superTie ? ((m.reglas.tieDecisivo ?? 10) === 7 ? "TB" : "STB") : `Set ${i + 1}`}</span>
           ))}
           <span>{e.enTie ? "Tie" : "Puntos"}</span>
         </div>

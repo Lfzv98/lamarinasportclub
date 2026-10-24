@@ -90,19 +90,29 @@ export function resultadoRetiro(reglas: ReglasPartido, setsJugados: SetScore[], 
   const g = ganador === "A" ? "a" : "b";
   const p = ganador === "A" ? "b" : "a";
   const ultimo = sets[sets.length - 1];
-  if (ultimo && !setTerminado(reglas, ultimo)) {
-    ultimo[g] = Math.max(reglas.games, ultimo[p] + 2);
-    if (reglas.tieBreakEn !== null && ultimo[p] >= reglas.tieBreakEn) ultimo[g] = reglas.tieBreakEn + 1;
+  const iUlt = sets.length - 1;
+  if (ultimo && !setTerminado(reglas, ultimo, iUlt)) {
+    if (iUlt === 2 && reglas.sets === 3 && reglas.superTie) {
+      // Tie-break decisivo en curso: se cierra a la meta (o con 2 de diferencia).
+      ultimo[g] = Math.max(reglas.tieDecisivo ?? 10, ultimo[p] + 2);
+    } else {
+      ultimo[g] = Math.max(reglas.games, ultimo[p] + 2);
+      const conTie = reglas.tieBreakEn !== null && !(reglas.tercerSetLargo && iUlt === 2);
+      if (conTie && ultimo[p] >= reglas.tieBreakEn!) ultimo[g] = reglas.tieBreakEn! + 1;
+    }
   }
   while (setsGanados(sets)[g] < necesarios) sets.push(ganador === "A" ? { a: reglas.games, b: 0 } : { a: 0, b: reglas.games });
   return { sets, ganador, tipo: "RETIRO" };
 }
 
-export function setTerminado(r: ReglasPartido, s: SetScore): boolean {
+/** ¿El set `s` (de índice `i`) está terminado? Con `tercerSetLargo` el 3er set no tiene tie-break (FIP Regla 1.4). */
+export function setTerminado(r: ReglasPartido, s: SetScore, i = 0): boolean {
   const hi = Math.max(s.a, s.b);
   const lo = Math.min(s.a, s.b);
-  if (hi >= r.games && hi - lo >= 2) return true;
-  return r.tieBreakEn !== null && hi === r.tieBreakEn + 1 && lo === r.tieBreakEn;
+  const sinTie = r.tieBreakEn === null || (r.tercerSetLargo && i === 2);
+  if (sinTie) return hi >= r.games && hi - lo >= 2 && (hi === r.games || hi - lo === 2);
+  if (hi >= r.games && hi - lo >= 2 && hi <= r.tieBreakEn! + 1 && (hi === r.games || lo >= r.games - 1)) return true;
+  return hi === r.tieBreakEn! + 1 && lo === r.tieBreakEn;
 }
 
 /** Valida un resultado cargado a mano. Devuelve el error o null. */
@@ -118,8 +128,10 @@ export function validarResultadoTorneo(r: ReglasPartido, sets: SetScore[], esDec
     if (i === 2 && esDecisivoSuperTie) {
       const hi = Math.max(s.a, s.b);
       const lo = Math.min(s.a, s.b);
-      if (hi < 10 || hi - lo < 2 || (hi > 10 && hi - lo !== 2)) return "Súper tie-break: a 10 con 2 de diferencia (ej. 10-7, 12-10).";
-    } else if (!setTerminado(r, s)) {
+      const meta = r.tieDecisivo ?? 10;
+      if (hi < meta || hi - lo < 2 || (hi > meta && hi - lo !== 2))
+        return meta === 10 ? "Súper tie-break: a 10 con 2 de diferencia (ej. 10-7, 12-10)." : "Tie-break decisivo: a 7 con 2 de diferencia (ej. 7-4, 9-7).";
+    } else if (!setTerminado(r, s, i)) {
       return `Set ${i + 1}: ${s.a}-${s.b} no es un set terminado.`;
     }
     if (s.a > s.b) a++;

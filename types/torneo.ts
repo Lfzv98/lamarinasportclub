@@ -68,8 +68,12 @@ export interface ReglasPartido {
   tieBreakEn: number | null;
   /** 40-40 se define a un punto (true) o con ventaja (false). */
   puntoDeOro: boolean;
-  /** El tercer set se reemplaza por un súper tie-break a 10. */
+  /** El tercer set se reemplaza por un tie-break decisivo (FIP Regla 1: súper tie-break a 10 o tie-break a 7). */
   superTie: boolean;
+  /** Puntos del tie-break decisivo que reemplaza al tercer set: 10 (súper tie-break, por defecto) o 7. */
+  tieDecisivo?: 7 | 10;
+  /** Tercer set sin tie-break: con 6-6 se sigue hasta sacar 2 games de diferencia (FIP Regla 1.4). */
+  tercerSetLargo?: boolean;
   /** Duración estimada en minutos (para programar). */
   minutos: number;
 }
@@ -116,7 +120,7 @@ export type Origen =
 
 export type EstadoPartidoTorneo = "PENDIENTE" | "LLAMADO" | "EN_JUEGO" | "FINALIZADO";
 
-export type TipoResultado = "NORMAL" | "WO" | "RETIRO";
+export type TipoResultado = "NORMAL" | "WO" | "RETIRO" | "DESCALIFICACION";
 
 export interface ResultadoTorneo {
   sets: SetScore[];
@@ -294,7 +298,29 @@ export interface Torneo {
 
 /* ---------- Marcador en vivo (punto a punto) ---------- */
 
-export type FinPunto = "WINNER" | "ERROR_NO_FORZADO" | "ERROR_FORZADO" | "ACE" | "DOBLE_FALTA";
+export type FinPunto = "WINNER" | "ERROR_NO_FORZADO" | "ERROR_FORZADO" | "ACE" | "DOBLE_FALTA" | "SANCION";
+
+/** Tabla de penalizaciones FIP: 1ª advertencia, 2ª pérdida de punto, 3ª descalificación. Se acumulan por dupla. */
+export type NivelSancion = "ADVERTENCIA" | "PUNTO" | "DESCALIFICACION";
+
+export interface SancionPartido {
+  lado: "A" | "B";
+  jugadorId?: string | null;
+  nivel: NivelSancion;
+  /** Infracción muy grave: descalificación directa. */
+  directa?: boolean;
+  motivo: string;
+  /** Índice del punto que generó (pérdida de punto), para que "Deshacer" la quite junto al punto. */
+  punto?: number;
+  t: string;
+}
+
+/** FIP Regla 2.17–2.19: lesión 3 min una vez por jugador; accidente ajeno al juego hasta 15 min y no cuenta. */
+export interface AtencionMedica {
+  jugadorId: string;
+  tipo: "LESION" | "ACCIDENTE";
+  t: string;
+}
 
 export type Golpe =
   | "REMATE"
@@ -338,6 +364,13 @@ export interface MarcadorVivo {
   puntos: PuntoRegistrado[];
   /** Falta de primer saque pendiente en el punto en curso. */
   faltaPendiente?: boolean;
+  /**
+   * Cambio de orden dentro de cada dupla al empezar un set (FIP Regla 6.10 y 8.3). Clave = índice del set;
+   * true = ese set saca primero el otro jugador de la dupla respecto del orden inicial. Rige hasta el próximo cambio.
+   */
+  ordenSets?: Record<number, { A?: boolean; B?: boolean }>;
+  sanciones?: SancionPartido[];
+  atenciones?: AtencionMedica[];
   pista?: number | null;
   anotador?: string;
   iniciadoEn: string;

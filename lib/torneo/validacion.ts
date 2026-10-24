@@ -51,6 +51,8 @@ export function validarMarcador(x: unknown): string[] {
   if (!Array.isArray(m.ordenSaque) || m.ordenSaque.length !== 4) errores.push("ordenSaque: 4 jugadores.");
   if (!Array.isArray(m.puntos) || m.puntos.length > 600) errores.push("puntos: máximo 600.");
   else if (m.puntos.some((p) => p?.gana !== "A" && p?.gana !== "B")) errores.push("Cada punto necesita gana: A o B.");
+  if (m.sanciones != null && (!Array.isArray(m.sanciones) || m.sanciones.length > 20)) errores.push("sanciones: máximo 20.");
+  if (m.atenciones != null && (!Array.isArray(m.atenciones) || m.atenciones.length > 20)) errores.push("atenciones: máximo 20.");
   if (typeof m.actualizadoEn !== "string") errores.push("actualizadoEn es obligatorio.");
   return errores;
 }

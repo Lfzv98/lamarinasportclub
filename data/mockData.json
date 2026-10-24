@@ -1910,7 +1910,7 @@
         }
       ],
       "descansoMin": 45,
-      "toleranciaWO": 15,
+      "toleranciaWO": 10,
       "finalesUltimoDia": true,
       "bloqueos": [],
       "criterios": [
@@ -2469,7 +2469,7 @@
               "puntos": 1193,
               "cabezaSerie": 1,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:11.997Z"
+              "inscritaEn": "2026-10-24T17:02:13.512Z"
             },
             {
               "id": "M-4TA-d2",
@@ -2480,7 +2480,7 @@
               "puntos": 1058,
               "cabezaSerie": 2,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:11.997Z"
+              "inscritaEn": "2026-10-24T17:02:13.513Z"
             },
             {
               "id": "M-4TA-d3",
@@ -2491,7 +2491,7 @@
               "puntos": 995,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:11.997Z"
+              "inscritaEn": "2026-10-24T17:02:13.513Z"
             },
             {
               "id": "M-4TA-d4",
@@ -2502,7 +2502,7 @@
               "puntos": 920,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:11.997Z"
+              "inscritaEn": "2026-10-24T17:02:13.513Z"
             },
             {
               "id": "M-4TA-d5",
@@ -2513,7 +2513,7 @@
               "puntos": 833,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:11.997Z"
+              "inscritaEn": "2026-10-24T17:02:13.513Z"
             },
             {
               "id": "M-4TA-d6",
@@ -2524,7 +2524,7 @@
               "puntos": 743,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:11.998Z"
+              "inscritaEn": "2026-10-24T17:02:13.513Z"
             },
             {
               "id": "M-4TA-d7",
@@ -2535,7 +2535,7 @@
               "puntos": 606,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:11.998Z"
+              "inscritaEn": "2026-10-24T17:02:13.513Z"
             },
             {
               "id": "M-4TA-d8",
@@ -2546,7 +2546,7 @@
               "puntos": 554,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:11.998Z"
+              "inscritaEn": "2026-10-24T17:02:13.513Z"
             },
             {
               "id": "M-4TA-d9",
@@ -2557,7 +2557,7 @@
               "puntos": 456,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:11.998Z"
+              "inscritaEn": "2026-10-24T17:02:13.513Z"
             }
           ],
           "config": {
@@ -2658,7 +2658,7 @@
                 "llamadoEn": "2026-10-23T19:55:00.000Z",
                 "pistaReal": 1,
                 "finEn": "2026-10-23T21:10:25.944Z",
-                "actualizadoEn": "2026-10-24T16:16:12.063Z",
+                "actualizadoEn": "2026-10-24T17:02:13.603Z",
                 "resultado": {
                   "sets": [
                     {
@@ -2701,7 +2701,7 @@
                 "llamadoEn": "2026-10-24T00:25:00.000Z",
                 "pistaReal": 2,
                 "finEn": "2026-10-24T01:57:05.583Z",
-                "actualizadoEn": "2026-10-24T16:16:12.380Z",
+                "actualizadoEn": "2026-10-24T17:02:13.895Z",
                 "resultado": {
                   "sets": [
                     {
@@ -2748,7 +2748,7 @@
                 "llamadoEn": "2026-10-24T14:55:00.000Z",
                 "pistaReal": 3,
                 "finEn": "2026-10-24T15:34:31.121Z",
-                "actualizadoEn": "2026-10-24T16:16:12.569Z",
+                "actualizadoEn": "2026-10-24T17:02:14.119Z",
                 "resultado": {
                   "sets": [
                     {
@@ -2791,7 +2791,7 @@
                 "llamadoEn": "2026-10-23T19:55:00.000Z",
                 "pistaReal": 2,
                 "finEn": "2026-10-23T21:16:59.034Z",
-                "actualizadoEn": "2026-10-24T16:16:12.086Z",
+                "actualizadoEn": "2026-10-24T17:02:13.628Z",
                 "resultado": {
                   "sets": [
                     {
@@ -2834,7 +2834,7 @@
                 "llamadoEn": "2026-10-24T00:25:00.000Z",
                 "pistaReal": 3,
                 "finEn": "2026-10-24T01:31:57.476Z",
-                "actualizadoEn": "2026-10-24T16:16:12.388Z",
+                "actualizadoEn": "2026-10-24T17:02:13.904Z",
                 "resultado": {
                   "sets": [
                     {
@@ -2876,7 +2876,7 @@
                 "inicioEn": "2026-10-24T15:04:00.000Z",
                 "llamadoEn": "2026-10-24T14:55:00.000Z",
                 "pistaReal": 4,
-                "actualizadoEn": "2026-10-24T16:16:12.574Z"
+                "actualizadoEn": "2026-10-24T17:02:14.125Z"
               },
               {
                 "id": "M-4TA:GC:J1:1",
@@ -2905,7 +2905,7 @@
                 "llamadoEn": "2026-10-23T19:55:00.000Z",
                 "pistaReal": 3,
                 "finEn": "2026-10-23T21:17:24.717Z",
-                "actualizadoEn": "2026-10-24T16:16:12.109Z",
+                "actualizadoEn": "2026-10-24T17:02:13.647Z",
                 "resultado": {
                   "sets": [
                     {
@@ -2948,7 +2948,7 @@
                 "llamadoEn": "2026-10-24T00:25:00.000Z",
                 "pistaReal": 4,
                 "finEn": "2026-10-24T01:36:30.690Z",
-                "actualizadoEn": "2026-10-24T16:16:12.397Z",
+                "actualizadoEn": "2026-10-24T17:02:13.916Z",
                 "resultado": {
                   "sets": [
                     {
@@ -2990,7 +2990,7 @@
                 "inicioEn": "2026-10-24T15:04:00.000Z",
                 "llamadoEn": "2026-10-24T14:55:00.000Z",
                 "pistaReal": 5,
-                "actualizadoEn": "2026-10-24T16:16:12.578Z"
+                "actualizadoEn": "2026-10-24T17:02:14.130Z"
               },
               {
                 "id": "M-4TA:L1:1",
@@ -3169,7 +3169,7 @@
               }
             ],
             "semilla": 25,
-            "sorteadoEn": "2026-10-24T16:16:12.000Z",
+            "sorteadoEn": "2026-10-24T17:02:13.515Z",
             "sorteadoPor": "Staff",
             "publicado": true
           }
@@ -3191,7 +3191,7 @@
               "puntos": 1151,
               "cabezaSerie": 1,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.004Z"
+              "inscritaEn": "2026-10-24T17:02:13.518Z"
             },
             {
               "id": "M-2DA-d2",
@@ -3202,7 +3202,7 @@
               "puntos": 1068,
               "cabezaSerie": 2,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.004Z"
+              "inscritaEn": "2026-10-24T17:02:13.518Z"
             },
             {
               "id": "M-2DA-d3",
@@ -3213,7 +3213,7 @@
               "puntos": 993,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.004Z"
+              "inscritaEn": "2026-10-24T17:02:13.518Z"
             },
             {
               "id": "M-2DA-d4",
@@ -3224,7 +3224,7 @@
               "puntos": 923,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.004Z"
+              "inscritaEn": "2026-10-24T17:02:13.518Z"
             },
             {
               "id": "M-2DA-d5",
@@ -3235,7 +3235,7 @@
               "puntos": 817,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.004Z"
+              "inscritaEn": "2026-10-24T17:02:13.518Z"
             },
             {
               "id": "M-2DA-d6",
@@ -3246,7 +3246,7 @@
               "puntos": 749,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.004Z"
+              "inscritaEn": "2026-10-24T17:02:13.518Z"
             },
             {
               "id": "M-2DA-d7",
@@ -3257,7 +3257,7 @@
               "puntos": 642,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.004Z"
+              "inscritaEn": "2026-10-24T17:02:13.518Z"
             },
             {
               "id": "M-2DA-d8",
@@ -3268,7 +3268,7 @@
               "puntos": 541,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.004Z"
+              "inscritaEn": "2026-10-24T17:02:13.518Z"
             }
           ],
           "config": {
@@ -3362,7 +3362,7 @@
                 "llamadoEn": "2026-10-23T19:55:00.000Z",
                 "pistaReal": 4,
                 "finEn": "2026-10-23T20:52:55.304Z",
-                "actualizadoEn": "2026-10-24T16:16:12.116Z",
+                "actualizadoEn": "2026-10-24T17:02:13.656Z",
                 "resultado": {
                   "sets": [
                     {
@@ -3405,7 +3405,7 @@
                 "llamadoEn": "2026-10-23T19:55:00.000Z",
                 "pistaReal": 5,
                 "finEn": "2026-10-23T20:58:48.192Z",
-                "actualizadoEn": "2026-10-24T16:16:12.128Z",
+                "actualizadoEn": "2026-10-24T17:02:13.679Z",
                 "resultado": {
                   "sets": [
                     {
@@ -3448,7 +3448,7 @@
                 "llamadoEn": "2026-10-24T00:25:00.000Z",
                 "pistaReal": 5,
                 "finEn": "2026-10-24T01:38:52.755Z",
-                "actualizadoEn": "2026-10-24T16:16:12.408Z",
+                "actualizadoEn": "2026-10-24T17:02:13.930Z",
                 "resultado": {
                   "sets": [
                     {
@@ -3491,7 +3491,7 @@
                 "llamadoEn": "2026-10-24T11:55:00.000Z",
                 "pistaReal": 1,
                 "finEn": "2026-10-24T13:16:01.192Z",
-                "actualizadoEn": "2026-10-24T16:16:12.419Z",
+                "actualizadoEn": "2026-10-24T17:02:13.951Z",
                 "resultado": {
                   "sets": [
                     {
@@ -3586,7 +3586,7 @@
                 "llamadoEn": "2026-10-23T21:25:00.000Z",
                 "pistaReal": 1,
                 "finEn": "2026-10-23T22:31:28.130Z",
-                "actualizadoEn": "2026-10-24T16:16:12.141Z",
+                "actualizadoEn": "2026-10-24T17:02:13.688Z",
                 "resultado": {
                   "sets": [
                     {
@@ -3629,7 +3629,7 @@
                 "llamadoEn": "2026-10-23T21:25:00.000Z",
                 "pistaReal": 2,
                 "finEn": "2026-10-23T22:44:47.507Z",
-                "actualizadoEn": "2026-10-24T16:16:12.154Z",
+                "actualizadoEn": "2026-10-24T17:02:13.705Z",
                 "resultado": {
                   "sets": [
                     {
@@ -3672,7 +3672,7 @@
                 "llamadoEn": "2026-10-24T11:55:00.000Z",
                 "pistaReal": 2,
                 "finEn": "2026-10-24T13:58:07.360Z",
-                "actualizadoEn": "2026-10-24T16:16:12.447Z",
+                "actualizadoEn": "2026-10-24T17:02:13.984Z",
                 "resultado": {
                   "sets": [
                     {
@@ -3719,7 +3719,7 @@
                 "llamadoEn": "2026-10-24T11:55:00.000Z",
                 "pistaReal": 3,
                 "finEn": "2026-10-24T12:57:33.835Z",
-                "actualizadoEn": "2026-10-24T16:16:12.454Z",
+                "actualizadoEn": "2026-10-24T17:02:13.995Z",
                 "resultado": {
                   "sets": [
                     {
@@ -3760,7 +3760,7 @@
                 },
                 "llamadoEn": "2026-10-24T15:46:00.000Z",
                 "pistaReal": 3,
-                "actualizadoEn": "2026-10-24T16:16:12.579Z"
+                "actualizadoEn": "2026-10-24T17:02:14.131Z"
               },
               {
                 "id": "M-2DA:GB:J3:2",
@@ -3867,7 +3867,7 @@
               }
             ],
             "semilla": 41,
-            "sorteadoEn": "2026-10-24T16:16:12.005Z",
+            "sorteadoEn": "2026-10-24T17:02:13.519Z",
             "sorteadoPor": "Staff",
             "publicado": true
           }
@@ -3889,7 +3889,7 @@
               "puntos": 1190,
               "cabezaSerie": 1,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.006Z"
+              "inscritaEn": "2026-10-24T17:02:13.519Z"
             },
             {
               "id": "M-1RA-d2",
@@ -3900,7 +3900,7 @@
               "puntos": 1075,
               "cabezaSerie": 2,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.006Z"
+              "inscritaEn": "2026-10-24T17:02:13.519Z"
             },
             {
               "id": "M-1RA-d3",
@@ -3911,7 +3911,7 @@
               "puntos": 983,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.006Z"
+              "inscritaEn": "2026-10-24T17:02:13.519Z"
             },
             {
               "id": "M-1RA-d4",
@@ -3922,7 +3922,7 @@
               "puntos": 898,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.006Z"
+              "inscritaEn": "2026-10-24T17:02:13.519Z"
             }
           ],
           "config": {
@@ -4006,7 +4006,7 @@
                 "llamadoEn": "2026-10-23T21:25:00.000Z",
                 "pistaReal": 3,
                 "finEn": "2026-10-23T22:51:43.072Z",
-                "actualizadoEn": "2026-10-24T16:16:12.182Z",
+                "actualizadoEn": "2026-10-24T17:02:13.723Z",
                 "resultado": {
                   "sets": [
                     {
@@ -4049,7 +4049,7 @@
                 "llamadoEn": "2026-10-23T21:25:00.000Z",
                 "pistaReal": 4,
                 "finEn": "2026-10-23T23:02:39.597Z",
-                "actualizadoEn": "2026-10-24T16:16:12.225Z",
+                "actualizadoEn": "2026-10-24T17:02:13.750Z",
                 "resultado": {
                   "sets": [
                     {
@@ -4092,7 +4092,7 @@
                 "llamadoEn": "2026-10-24T11:55:00.000Z",
                 "pistaReal": 4,
                 "finEn": "2026-10-24T13:26:32.052Z",
-                "actualizadoEn": "2026-10-24T16:16:12.468Z",
+                "actualizadoEn": "2026-10-24T17:02:14.015Z",
                 "resultado": {
                   "sets": [
                     {
@@ -4139,7 +4139,7 @@
                 "llamadoEn": "2026-10-24T11:55:00.000Z",
                 "pistaReal": 5,
                 "finEn": "2026-10-24T13:21:58.471Z",
-                "actualizadoEn": "2026-10-24T16:16:12.481Z",
+                "actualizadoEn": "2026-10-24T17:02:14.028Z",
                 "resultado": {
                   "sets": [
                     {
@@ -4232,7 +4232,7 @@
               }
             ],
             "semilla": 49,
-            "sorteadoEn": "2026-10-24T16:16:12.006Z",
+            "sorteadoEn": "2026-10-24T17:02:13.520Z",
             "sorteadoPor": "Staff",
             "publicado": true
           }
@@ -4254,7 +4254,7 @@
               "puntos": 1182,
               "cabezaSerie": 1,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.006Z"
+              "inscritaEn": "2026-10-24T17:02:13.520Z"
             },
             {
               "id": "F-5TA-d2",
@@ -4265,7 +4265,7 @@
               "puntos": 1092,
               "cabezaSerie": 2,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.006Z"
+              "inscritaEn": "2026-10-24T17:02:13.520Z"
             },
             {
               "id": "F-5TA-d3",
@@ -4276,7 +4276,7 @@
               "puntos": 992,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.007Z"
+              "inscritaEn": "2026-10-24T17:02:13.520Z"
             },
             {
               "id": "F-5TA-d4",
@@ -4287,7 +4287,7 @@
               "puntos": 917,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.007Z"
+              "inscritaEn": "2026-10-24T17:02:13.520Z"
             },
             {
               "id": "F-5TA-d5",
@@ -4298,7 +4298,7 @@
               "puntos": 823,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.007Z"
+              "inscritaEn": "2026-10-24T17:02:13.520Z"
             },
             {
               "id": "F-5TA-d6",
@@ -4309,7 +4309,7 @@
               "puntos": 748,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.007Z"
+              "inscritaEn": "2026-10-24T17:02:13.520Z"
             }
           ],
           "config": {
@@ -4401,7 +4401,7 @@
                 "llamadoEn": "2026-10-23T21:25:00.000Z",
                 "pistaReal": 5,
                 "finEn": "2026-10-23T23:03:09.870Z",
-                "actualizadoEn": "2026-10-24T16:16:12.264Z",
+                "actualizadoEn": "2026-10-24T17:02:13.782Z",
                 "resultado": {
                   "sets": [
                     {
@@ -4444,7 +4444,7 @@
                 "llamadoEn": "2026-10-24T13:25:00.000Z",
                 "pistaReal": 1,
                 "finEn": "2026-10-24T14:34:54.279Z",
-                "actualizadoEn": "2026-10-24T16:16:12.490Z",
+                "actualizadoEn": "2026-10-24T17:02:14.038Z",
                 "resultado": {
                   "sets": [
                     {
@@ -4511,7 +4511,7 @@
                 "llamadoEn": "2026-10-23T22:55:00.000Z",
                 "pistaReal": 1,
                 "finEn": "2026-10-24T00:03:26.289Z",
-                "actualizadoEn": "2026-10-24T16:16:12.284Z",
+                "actualizadoEn": "2026-10-24T17:02:13.808Z",
                 "resultado": {
                   "sets": [
                     {
@@ -4554,7 +4554,7 @@
                 "llamadoEn": "2026-10-24T13:25:00.000Z",
                 "pistaReal": 2,
                 "finEn": "2026-10-24T14:50:42.455Z",
-                "actualizadoEn": "2026-10-24T16:16:12.503Z",
+                "actualizadoEn": "2026-10-24T17:02:14.051Z",
                 "resultado": {
                   "sets": [
                     {
@@ -4675,7 +4675,7 @@
               }
             ],
             "semilla": 61,
-            "sorteadoEn": "2026-10-24T16:16:12.007Z",
+            "sorteadoEn": "2026-10-24T17:02:13.520Z",
             "sorteadoPor": "Staff",
             "publicado": true
           }
@@ -4697,7 +4697,7 @@
               "puntos": 1182,
               "cabezaSerie": 1,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.007Z"
+              "inscritaEn": "2026-10-24T17:02:13.521Z"
             },
             {
               "id": "X-5TA-d2",
@@ -4708,7 +4708,7 @@
               "puntos": 1108,
               "cabezaSerie": 2,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.007Z"
+              "inscritaEn": "2026-10-24T17:02:13.522Z"
             },
             {
               "id": "X-5TA-d3",
@@ -4719,7 +4719,7 @@
               "puntos": 1014,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.007Z"
+              "inscritaEn": "2026-10-24T17:02:13.522Z"
             },
             {
               "id": "X-5TA-d4",
@@ -4730,7 +4730,7 @@
               "puntos": 911,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.007Z"
+              "inscritaEn": "2026-10-24T17:02:13.522Z"
             },
             {
               "id": "X-5TA-d5",
@@ -4741,7 +4741,7 @@
               "puntos": 791,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.007Z"
+              "inscritaEn": "2026-10-24T17:02:13.522Z"
             }
           ],
           "config": {
@@ -4826,7 +4826,7 @@
                 "llamadoEn": "2026-10-23T22:55:00.000Z",
                 "pistaReal": 2,
                 "finEn": "2026-10-23T23:51:53.750Z",
-                "actualizadoEn": "2026-10-24T16:16:12.294Z",
+                "actualizadoEn": "2026-10-24T17:02:13.814Z",
                 "resultado": {
                   "sets": [
                     {
@@ -4869,7 +4869,7 @@
                 "llamadoEn": "2026-10-23T22:55:00.000Z",
                 "pistaReal": 3,
                 "finEn": "2026-10-24T00:30:05.760Z",
-                "actualizadoEn": "2026-10-24T16:16:12.325Z",
+                "actualizadoEn": "2026-10-24T17:02:13.835Z",
                 "resultado": {
                   "sets": [
                     {
@@ -4916,7 +4916,7 @@
                 "llamadoEn": "2026-10-24T13:25:00.000Z",
                 "pistaReal": 3,
                 "finEn": "2026-10-24T14:42:26.385Z",
-                "actualizadoEn": "2026-10-24T16:16:12.513Z",
+                "actualizadoEn": "2026-10-24T17:02:14.063Z",
                 "resultado": {
                   "sets": [
                     {
@@ -4959,7 +4959,7 @@
                 "llamadoEn": "2026-10-24T13:25:00.000Z",
                 "pistaReal": 4,
                 "finEn": "2026-10-24T15:03:51.730Z",
-                "actualizadoEn": "2026-10-24T16:16:12.531Z",
+                "actualizadoEn": "2026-10-24T17:02:14.087Z",
                 "resultado": {
                   "sets": [
                     {
@@ -5148,7 +5148,7 @@
               }
             ],
             "semilla": 71,
-            "sorteadoEn": "2026-10-24T16:16:12.007Z",
+            "sorteadoEn": "2026-10-24T17:02:13.522Z",
             "sorteadoPor": "Staff",
             "publicado": true
           }
@@ -5170,7 +5170,7 @@
               "puntos": 1169,
               "cabezaSerie": 1,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.008Z"
+              "inscritaEn": "2026-10-24T17:02:13.522Z"
             },
             {
               "id": "M-MASTER45-d2",
@@ -5181,7 +5181,7 @@
               "puntos": 1066,
               "cabezaSerie": 2,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.008Z"
+              "inscritaEn": "2026-10-24T17:02:13.522Z"
             },
             {
               "id": "M-MASTER45-d3",
@@ -5192,7 +5192,7 @@
               "puntos": 987,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.008Z"
+              "inscritaEn": "2026-10-24T17:02:13.522Z"
             },
             {
               "id": "M-MASTER45-d4",
@@ -5203,7 +5203,7 @@
               "puntos": 927,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.008Z"
+              "inscritaEn": "2026-10-24T17:02:13.522Z"
             },
             {
               "id": "M-MASTER45-d5",
@@ -5214,7 +5214,7 @@
               "puntos": 811,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.009Z"
+              "inscritaEn": "2026-10-24T17:02:13.522Z"
             },
             {
               "id": "M-MASTER45-d6",
@@ -5225,7 +5225,7 @@
               "puntos": 698,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.009Z"
+              "inscritaEn": "2026-10-24T17:02:13.522Z"
             }
           ],
           "config": {
@@ -5317,7 +5317,7 @@
                 "llamadoEn": "2026-10-23T22:55:00.000Z",
                 "pistaReal": 4,
                 "finEn": "2026-10-24T00:04:53.147Z",
-                "actualizadoEn": "2026-10-24T16:16:12.338Z",
+                "actualizadoEn": "2026-10-24T17:02:13.849Z",
                 "resultado": {
                   "sets": [
                     {
@@ -5360,7 +5360,7 @@
                 "llamadoEn": "2026-10-24T13:25:00.000Z",
                 "pistaReal": 5,
                 "finEn": "2026-10-24T14:50:16.925Z",
-                "actualizadoEn": "2026-10-24T16:16:12.544Z",
+                "actualizadoEn": "2026-10-24T17:02:14.099Z",
                 "resultado": {
                   "sets": [
                     {
@@ -5427,7 +5427,7 @@
                 "llamadoEn": "2026-10-23T22:55:00.000Z",
                 "pistaReal": 5,
                 "finEn": "2026-10-24T00:18:20.514Z",
-                "actualizadoEn": "2026-10-24T16:16:12.352Z",
+                "actualizadoEn": "2026-10-24T17:02:13.865Z",
                 "resultado": {
                   "sets": [
                     {
@@ -5469,7 +5469,7 @@
                 "inicioEn": "2026-10-24T15:04:00.000Z",
                 "llamadoEn": "2026-10-24T14:55:00.000Z",
                 "pistaReal": 1,
-                "actualizadoEn": "2026-10-24T16:16:12.551Z"
+                "actualizadoEn": "2026-10-24T17:02:14.104Z"
               },
               {
                 "id": "M-MASTER45:GB:J3:1",
@@ -5576,7 +5576,7 @@
               }
             ],
             "semilla": 83,
-            "sorteadoEn": "2026-10-24T16:16:12.010Z",
+            "sorteadoEn": "2026-10-24T17:02:13.522Z",
             "sorteadoPor": "Staff",
             "publicado": true
           }
@@ -5598,7 +5598,7 @@
               "puntos": 1193,
               "cabezaSerie": 1,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.010Z"
+              "inscritaEn": "2026-10-24T17:02:13.522Z"
             },
             {
               "id": "M-SUB16-d2",
@@ -5609,7 +5609,7 @@
               "puntos": 1080,
               "cabezaSerie": 2,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.010Z"
+              "inscritaEn": "2026-10-24T17:02:13.523Z"
             },
             {
               "id": "M-SUB16-d3",
@@ -5620,7 +5620,7 @@
               "puntos": 997,
               "cabezaSerie": null,
               "estado": "ACTIVA",
-              "inscritaEn": "2026-10-24T16:16:12.010Z"
+              "inscritaEn": "2026-10-24T17:02:13.523Z"
             }
           ],
           "config": {
@@ -5703,7 +5703,7 @@
                 "llamadoEn": "2026-10-24T00:25:00.000Z",
                 "pistaReal": 1,
                 "finEn": "2026-10-24T01:48:29.132Z",
-                "actualizadoEn": "2026-10-24T16:16:12.365Z",
+                "actualizadoEn": "2026-10-24T17:02:13.879Z",
                 "resultado": {
                   "sets": [
                     {
@@ -5749,7 +5749,7 @@
                 "inicioEn": "2026-10-24T15:04:00.000Z",
                 "llamadoEn": "2026-10-24T14:55:00.000Z",
                 "pistaReal": 2,
-                "actualizadoEn": "2026-10-24T16:16:12.561Z"
+                "actualizadoEn": "2026-10-24T17:02:14.111Z"
               },
               {
                 "id": "M-SUB16:GA:J3:1",
@@ -5804,7 +5804,7 @@
               }
             ],
             "semilla": 89,
-            "sorteadoEn": "2026-10-24T16:16:12.010Z",
+            "sorteadoEn": "2026-10-24T17:02:13.523Z",
             "sorteadoPor": "Staff",
             "publicado": true
           }
@@ -5813,76 +5813,76 @@
       "estado": "EN_JUEGO",
       "historial": [
         {
-          "en": "2026-10-24T16:16:11.965Z",
+          "en": "2026-10-24T17:02:13.499Z",
           "texto": "Torneo creado"
         },
         {
-          "en": "2026-10-24T16:16:12.006Z",
+          "en": "2026-10-24T17:02:13.522Z",
           "por": "Staff",
           "texto": "Sorteo de 4ta Masculino (semilla 25)."
         },
         {
-          "en": "2026-10-24T16:16:12.007Z",
+          "en": "2026-10-24T17:02:13.523Z",
           "por": "Staff",
           "texto": "Cuadro publicado: 4ta Masculino."
         },
         {
-          "en": "2026-10-24T16:16:12.016Z",
+          "en": "2026-10-24T17:02:13.532Z",
           "por": "Staff",
           "texto": "Sorteo de 2da Masculino (semilla 41)."
         },
         {
-          "en": "2026-10-24T16:16:12.017Z",
+          "en": "2026-10-24T17:02:13.533Z",
           "por": "Staff",
           "texto": "Cuadro publicado: 2da Masculino."
         },
         {
-          "en": "2026-10-24T16:16:12.022Z",
+          "en": "2026-10-24T17:02:13.538Z",
           "por": "Staff",
           "texto": "Sorteo de 1ra Masculino (semilla 49)."
         },
         {
-          "en": "2026-10-24T16:16:12.023Z",
+          "en": "2026-10-24T17:02:13.539Z",
           "por": "Staff",
           "texto": "Cuadro publicado: 1ra Masculino."
         },
         {
-          "en": "2026-10-24T16:16:12.030Z",
+          "en": "2026-10-24T17:02:13.546Z",
           "por": "Staff",
           "texto": "Sorteo de 5ta Femenino (semilla 61)."
         },
         {
-          "en": "2026-10-24T16:16:12.031Z",
+          "en": "2026-10-24T17:02:13.547Z",
           "por": "Staff",
           "texto": "Cuadro publicado: 5ta Femenino."
         },
         {
-          "en": "2026-10-24T16:16:12.037Z",
+          "en": "2026-10-24T17:02:13.553Z",
           "por": "Staff",
           "texto": "Sorteo de 5ta Mixto (semilla 71)."
         },
         {
-          "en": "2026-10-24T16:16:12.038Z",
+          "en": "2026-10-24T17:02:13.554Z",
           "por": "Staff",
           "texto": "Cuadro publicado: 5ta Mixto."
         },
         {
-          "en": "2026-10-24T16:16:12.045Z",
+          "en": "2026-10-24T17:02:13.561Z",
           "por": "Staff",
           "texto": "Sorteo de Master +45 Masculino (semilla 83)."
         },
         {
-          "en": "2026-10-24T16:16:12.046Z",
+          "en": "2026-10-24T17:02:13.562Z",
           "por": "Staff",
           "texto": "Cuadro publicado: Master +45 Masculino."
         },
         {
-          "en": "2026-10-24T16:16:12.050Z",
+          "en": "2026-10-24T17:02:13.566Z",
           "por": "Staff",
           "texto": "Sorteo de Junior Sub-16 Masculino (semilla 89)."
         },
         {
-          "en": "2026-10-24T16:16:12.051Z",
+          "en": "2026-10-24T17:02:13.567Z",
           "por": "Staff",
           "texto": "Cuadro publicado: Junior Sub-16 Masculino."
         }
