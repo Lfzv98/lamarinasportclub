@@ -220,7 +220,7 @@ En Vercel → Settings → Environment Variables, y luego un Redeploy:
 | `STAFF_EMAILS` | Opcional | Correos con permiso de staff, separados por coma |
 | `SUPABASE_AMERICANOS_TABLE` / `SUPABASE_CLUB_TABLE` | Opcional | Si quieres otros nombres de tabla |
 
-Con las dos primeras, la app cambia sola de DEMO a SUPABASE y el badge pasa de "Demo" a "En línea".
+Con las dos primeras, la app cambia sola de DEMO a SUPABASE y aparece el badge "En línea" (en DEMO no se muestra ningún badge).
 
 ### 4. Dar acceso de staff a usuarios de PadelReserve
 
@@ -299,7 +299,7 @@ Antes de entregar pasaron 55 tests de lógica (`npm test`), 67 pruebas en navega
 
 | Problema | Solución |
 | --- | --- |
-| El badge dice "Demo" en producción | Faltan `NEXT_PUBLIC_SUPABASE_URL` o `SUPABASE_SERVICE_ROLE_KEY`, o falta el Redeploy después de agregarlas |
+| No aparece el badge "En línea" en producción | Faltan `NEXT_PUBLIC_SUPABASE_URL` o `SUPABASE_SERVICE_ROLE_KEY`, o falta el Redeploy después de agregarlas |
 | "N por subir" en el badge | Hay cambios guardados en el celular esperando conexión o sesión. Se suben solos; si persiste, ingresar de nuevo como staff |
 | El PIN no funciona con Supabase | Con Supabase el PIN solo existe si `STAFF_PIN` está definido |
 | "Demasiados intentos" | Esperar 10 minutos o ingresar desde otra red |
