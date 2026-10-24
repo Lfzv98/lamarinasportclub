@@ -3,8 +3,10 @@
 import clsx from "clsx";
 import { use, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { ClipboardPaste, Crown, Dices, Plus, Settings2, Trash2, Undo2, UserPlus } from "lucide-react";
+import { Camera, ClipboardPaste, Crown, Dices, Plus, Settings2, Trash2, Undo2, UserPlus } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
+import { TomarFoto } from "@/components/Foto";
+import { subirFoto, useFotoDupla, useFotos, useFotosTorneo } from "@/lib/fotos";
 import { StaffGate } from "@/components/StaffGate";
 import { Hoja } from "@/components/ui/Hoja";
 import { Segmented } from "@/components/ui/Segmented";
@@ -47,6 +49,7 @@ export default function CategoriasPage({ params }: { params: Promise<{ id: strin
 const ESTADO_LABEL = { INSCRIPCION: "Inscripciones", SORTEADA: "Sorteada (borrador)", PUBLICADA: "Publicada", EN_JUEGO: "En juego", FINALIZADA: "Finalizada" };
 
 function Categorias({ torneo }: { torneo: Torneo }) {
+  useFotosTorneo(torneo.id);
   const [sel, setSel] = useState(torneo.categorias[0]?.categoria.id ?? "");
   const cat = torneo.categorias.find((c) => c.categoria.id === sel) ?? torneo.categorias[0];
   if (!cat) return <p className="mt-10 text-center text-white/50">Este torneo no tiene categorías.</p>;
@@ -160,10 +163,7 @@ function PanelCategoria({ torneo, cat }: { torneo: Torneo; cat: CategoriaEnTorne
                 <span className={clsx("flex size-8 shrink-0 items-center justify-center rounded-lg font-display text-sm font-bold", d.cabezaSerie ? "bg-lima text-marino-2" : "bg-white/5 text-white/50")}>
                   {d.cabezaSerie ? <Crown className="size-4" /> : i + 1}
                 </span>
-                <div className="flex -space-x-2">
-                  <Avatar nombre={nombreJugador(a)} fotoUrl={a?.fotoUrl} size={32} className="ring-2 ring-fondo" />
-                  <Avatar nombre={nombreJugador(b)} fotoUrl={b?.fotoUrl} size={32} className="ring-2 ring-fondo" />
-                </div>
+                <FotosInscrito torneo={torneo} d={d} jugadores={[a, b]} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{nombreJugador(a)} / {nombreJugador(b)}</p>
                   <p className="text-xs text-white/45">
@@ -527,5 +527,56 @@ function ReglasHoja({ torneo, cat, abierta, onClose }: { torneo: Torneo; cat: Ca
         <p className="text-xs text-white/45">{descripcionReglas(r)}. Según el Reglamento de Juego FIP (rev. 2021). La duración se usa para armar los horarios; si ya estaban programados, reprograma desde Horarios.</p>
       </div>
     </Hoja>
+  );
+}
+
+/**
+ * Fotos desde Inscritos (staff): toca la cara de un jugador para su foto, o la cámara para la
+ * foto de la dupla. Se ven en el cuadro, el anotador, la TV y la página del partido.
+ */
+function FotosInscrito({ torneo, d, jugadores }: { torneo: Torneo; d: Dupla; jugadores: (JugadorTorneo | undefined)[] }) {
+  const actualizar = useTorneos((s) => s.actualizar);
+  const urlDupla = useFotoDupla(torneo.id, d.id);
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className="flex -space-x-2">
+        {jugadores.map((j, i) =>
+          j ? (
+            <TomarFoto
+              key={j.id}
+              className="rounded-full"
+              etiqueta={`Foto de ${nombreJugador(j)}`}
+              onFoto={async (img) => {
+                const r = await subirFoto(torneo.id, "jugador", j.id, img);
+                if (!r.url) return toast(r.error!, "error");
+                actualizar(torneo.id, (t) => ({ ...t, jugadores: t.jugadores.map((x) => (x.id === j.id ? { ...x, fotoUrl: r.url } : x)) }));
+                toast(`Foto de ${j.nombre} lista`);
+              }}
+            >
+              <Avatar nombre={nombreJugador(j)} fotoUrl={j.fotoUrl} size={34} className="ring-2 ring-fondo" />
+            </TomarFoto>
+          ) : (
+            <Avatar key={i} nombre="?" size={34} />
+          ),
+        )}
+      </div>
+      <TomarFoto
+        className="relative flex h-9 w-11 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/5 text-white/50"
+        etiqueta="Foto de la dupla"
+        onFoto={async (img) => {
+          const r = await subirFoto(torneo.id, "dupla", d.id, img);
+          if (!r.url) return toast(r.error!, "error");
+          useFotos.getState().poner(torneo.id, d.id, r.url);
+          toast("Foto de la dupla lista");
+        }}
+      >
+        {urlDupla ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={urlDupla} alt="" className="size-full object-cover" />
+        ) : (
+          <Camera className="size-4" />
+        )}
+      </TomarFoto>
+    </div>
   );
 }

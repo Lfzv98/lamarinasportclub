@@ -4,22 +4,26 @@ import clsx from "clsx";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, CloudRain, Flag, LogOut, Megaphone, Play, Tv, UserX } from "lucide-react";
+import { ArrowLeft, CalendarClock, Camera, CloudRain, Flag, LogOut, Megaphone, Play, Tv, UserX } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { FotoDupla, TomarFoto } from "@/components/Foto";
 import { Logo } from "@/components/Logo";
+import { Hoja } from "@/components/ui/Hoja";
 import { StaffChip } from "@/components/StaffGate";
 import { ArbitroLogin, useTorneosConArbitros } from "@/components/torneo/Arbitraje";
 import { MarcadorMini, useAhora, useMarcadoresEnVivo } from "@/components/torneo/vivo";
 import { toast } from "@/components/ui/Toaster";
 import { useArbitro, useArbitroStore } from "@/lib/arbitro";
 import { vibrar } from "@/lib/feedback";
+import { subirFoto, useFotoDupla, useFotos, useFotosTorneo } from "@/lib/fotos";
+import { partidosDeTurno, relojClub, turnoActual, turnosDe } from "@/lib/torneo/arbitros";
 import { nombreCorto } from "@/lib/torneo/categorias";
 import { nombrePista } from "@/lib/torneo/imprevistos";
 import { estadoPistas, limiteWO, type EstadoPista } from "@/lib/torneo/programacion";
 import { categoria, dupla, nombreDupla } from "@/lib/torneo/torneo";
 import { useEsStaff } from "@/lib/store";
 import { useListaTorneos, useTorneo, useTorneos } from "@/lib/torneosStore";
-import type { PartidoTorneo, Torneo } from "@/types/torneo";
+import type { PartidoTorneo, Torneo, TurnoArbitro } from "@/types/torneo";
 
 const PISTA_GUARDADA = "lamarina-arbitro-pista";
 
@@ -43,7 +47,7 @@ export default function ArbitroPage() {
       </main>
     );
 
-  if (arbitro) return <Panel torneoId={arbitro.torneoId} nombre={arbitro.nombre} />;
+  if (arbitro) return <Panel torneoId={arbitro.torneoId} nombre={arbitro.nombre} arbitroId={arbitro.id} />;
 
   // El staff también puede usar el panel: elige el torneo.
   const enCurso = lista.filter((t) => t.estado !== "FINALIZADO");
@@ -93,12 +97,17 @@ export default function ArbitroPage() {
   );
 }
 
-function Panel({ torneoId, nombre, alCambiar }: { torneoId: string; nombre: string; alCambiar?: () => void }) {
+function Panel({ torneoId, nombre, arbitroId, alCambiar }: { torneoId: string; nombre: string; arbitroId?: string; alCambiar?: () => void }) {
   const torneo = useTorneo(torneoId);
   const salir = useArbitroStore((s) => s.salir);
   const ahora = useAhora(1000);
   useMarcadoresEnVivo(torneoId, 4000);
+  useFotosTorneo(torneoId);
   const [pista, setPista] = useState<number | null>(null);
+  const [todas, setTodas] = useState(false);
+  const [verTurnos, setVerTurnos] = useState(false);
+  const turno = torneo && !torneo.bloqueado && arbitroId ? turnoActual(torneo, arbitroId, ahora) : null;
+  const misTurnos = torneo && !torneo.bloqueado && arbitroId ? turnosDe(torneo, arbitroId) : [];
 
   useEffect(() => {
     try {
@@ -108,6 +117,10 @@ function Panel({ torneoId, nombre, alCambiar }: { torneoId: string; nombre: stri
       /* sin almacenamiento */
     }
   }, [torneoId]);
+  // Con turno asignado, la tablet se pone sola en la pista que le toca.
+  useEffect(() => {
+    if (turno) setPista(turno.pista);
+  }, [turno?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const elegir = (n: number) => {
     vibrar(8);
     setPista(n);
@@ -127,6 +140,9 @@ function Panel({ torneoId, nombre, alCambiar }: { torneoId: string; nombre: stri
       </main>
     );
   const actual = pistas.find((e) => e.numero === pista) ?? null;
+  const hoy = relojClub(ahora).fecha;
+  const pistasHoy = new Set(misTurnos.filter((x) => x.fecha === hoy).map((x) => x.pista));
+  const visibles = todas || !pistasHoy.size ? pistas : pistas.filter((e) => pistasHoy.has(e.numero) || e.numero === pista);
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-3xl flex-col px-4 pb-10 pt-[max(0.75rem,env(safe-area-inset-top))]">
@@ -157,9 +173,44 @@ function Panel({ torneoId, nombre, alCambiar }: { torneoId: string; nombre: stri
         ) : null}
       </header>
 
-      <p className="label mt-4">Tu pista</p>
+      {arbitroId && (
+        <button onClick={() => setVerTurnos(true)} className="glass mt-3 flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition hover:border-neon/40">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-lima/15 text-lima">
+            <CalendarClock className="size-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            {turno ? (
+              <>
+                <span className="block font-semibold">
+                  Tu turno: {nombrePista(torneo, turno.pista)} · {turno.desde}–{turno.hasta}
+                </span>
+                <span className="block text-xs text-white/50">
+                  {(() => {
+                    const ps = partidosDeTurno(torneo, turno);
+                    const hechos = ps.filter((p) => p.estado === "FINALIZADO").length;
+                    return `${ps.length} partidos · ${hechos} terminados`;
+                  })()}
+                </span>
+              </>
+            ) : misTurnos.length ? (
+              <>
+                <span className="block font-semibold">Ahora no tienes turno</span>
+                <span className="block text-xs text-white/50">Toca para ver tus {misTurnos.length} turnos del torneo</span>
+              </>
+            ) : (
+              <>
+                <span className="block font-semibold">Sin turnos asignados</span>
+                <span className="block text-xs text-white/50">El staff te asigna pista. Mientras, elige la pista donde estás.</span>
+              </>
+            )}
+          </span>
+          {misTurnos.length > 0 && <span className="chip shrink-0">{misTurnos.length} turnos</span>}
+        </button>
+      )}
+
+      <p className="label mt-4">{pistasHoy.size && !todas ? "Tus pistas hoy" : "Pista"}</p>
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-        {pistas.map((e) => (
+        {visibles.map((e) => (
           <button
             key={e.numero}
             onClick={() => elegir(e.numero)}
@@ -170,7 +221,16 @@ function Panel({ torneoId, nombre, alCambiar }: { torneoId: string; nombre: stri
             {e.enJuego && <span className="absolute right-2 top-2 size-2 animate-pulse rounded-full bg-neon" />}
           </button>
         ))}
+        {pistasHoy.size > 0 && (
+          <button onClick={() => setTodas((v) => !v)} className="shrink-0 rounded-2xl border border-dashed border-white/15 px-4 py-2.5 text-sm text-white/55">
+            {todas ? "Solo las mías" : "Otra pista"}
+          </button>
+        )}
       </div>
+
+      <Hoja abierta={verTurnos} onClose={() => setVerTurnos(false)} titulo="Mis turnos" sub={`${nombre} · ${torneo.nombre}`}>
+        <MisTurnos torneo={torneo} turnos={misTurnos} ahora={ahora} />
+      </Hoja>
 
       <AnimatePresence mode="wait">
         {!actual ? (
@@ -189,15 +249,73 @@ function Panel({ torneoId, nombre, alCambiar }: { torneoId: string; nombre: stri
   );
 }
 
-function Duplas({ torneo, p }: { torneo: Torneo; p: PartidoTorneo }) {
+function MisTurnos({ torneo, turnos, ahora }: { torneo: Torneo; turnos: TurnoArbitro[]; ahora: number }) {
+  if (!turnos.length) return <p className="py-6 text-center text-sm text-white/55">Todavía no tienes turnos. El staff los asigna en el torneo → Árbitros.</p>;
+  const total = turnos.reduce((s, x) => s + partidosDeTurno(torneo, x).length, 0);
+  const { fecha, hora } = relojClub(ahora);
   return (
     <div className="space-y-2">
+      <p className="text-sm text-white/60">
+        Te tocan <b className="text-white">{turnos.length} turnos</b> con <b className="text-white">{total} partidos</b> programados.
+      </p>
+      {turnos.map((x) => {
+        const ps = partidosDeTurno(torneo, x);
+        const paso = x.fecha < fecha || (x.fecha === fecha && x.hasta <= hora);
+        const ahoraSi = x.fecha === fecha && x.desde <= hora && hora < x.hasta;
+        return (
+          <div key={x.id} className={clsx("flex items-center gap-3 rounded-2xl border px-4 py-3", ahoraSi ? "seleccion sobre-marca" : "border-white/10", paso && "opacity-50")}>
+            <div className="w-24 shrink-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-white/50">{new Date(`${x.fecha}T12:00:00`).toLocaleDateString("es", { weekday: "short", day: "numeric", month: "short" })}</p>
+              <p className="font-display font-bold tabular">
+                {x.desde}–{x.hasta}
+              </p>
+            </div>
+            <p className="min-w-0 flex-1 font-semibold">{nombrePista(torneo, x.pista)}</p>
+            <span className="chip shrink-0">{ps.length} partidos</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function Duplas({ torneo, p }: { torneo: Torneo; p: PartidoTorneo }) {
+  return (
+    <div className="space-y-3">
       {[p.duplaA, p.duplaB].map((d, i) => (
-        <div key={i} className="flex items-center gap-3">
-          <span className={clsx("h-8 w-1.5 rounded-full", i === 0 ? "bg-lima" : "bg-cielo")} />
-          <span className="font-display text-2xl font-bold">{nombreDupla(torneo, dupla(torneo, d))}</span>
-        </div>
+        <FilaDupla key={i} torneo={torneo} duplaId={d} color={i === 0 ? "bg-lima" : "bg-cielo"} />
       ))}
+    </div>
+  );
+}
+
+/** Dupla con su foto; la cámara para tomarla está a un toque. */
+function FilaDupla({ torneo, duplaId, color }: { torneo: Torneo; duplaId: string | null; color: string }) {
+  const url = useFotoDupla(torneo.id, duplaId);
+  const d = dupla(torneo, duplaId);
+  const js = (d?.jugadorIds ?? []).map((id) => torneo.jugadores.find((j) => j.id === id));
+  return (
+    <div className="flex items-center gap-3">
+      <span className={clsx("h-12 w-1.5 shrink-0 rounded-full", color)} />
+      {duplaId && (
+        <TomarFoto
+          className="group relative shrink-0 overflow-hidden rounded-2xl"
+          etiqueta={url ? "Repetir foto de la dupla" : "Foto de la dupla"}
+          onFoto={async (img) => {
+            const r = await subirFoto(torneo.id, "dupla", duplaId, img);
+            if (r.url) {
+              useFotos.getState().poner(torneo.id, duplaId, r.url);
+              toast("Foto lista: ya se ve en la TV");
+            } else toast(r.error!, "error");
+          }}
+        >
+          <FotoDupla url={url} nombres={js.map((j) => j?.nombre ?? "?")} fotos={js.map((j) => j?.fotoUrl)} className="h-14 w-20 rounded-2xl" avatar={30} />
+          <span className="absolute bottom-1 right-1 flex size-6 items-center justify-center rounded-full bg-black/60 text-white">
+            <Camera className="size-3.5" />
+          </span>
+        </TomarFoto>
+      )}
+      <span className="min-w-0 font-display text-2xl font-bold leading-tight">{nombreDupla(torneo, d)}</span>
     </div>
   );
 }

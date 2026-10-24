@@ -5895,7 +5895,169 @@
       },
       "arbitros": {
         "pin": "2468",
-        "vence": "2026-10-26T03:59:00.000Z"
+        "vence": "2026-10-26T03:59:00.000Z",
+        "turnos": [
+          {
+            "id": "tu-2026-10-23-1600-p1",
+            "arbitroId": "arb-demo-pedro",
+            "fecha": "2026-10-23",
+            "pista": 1,
+            "desde": "16:00",
+            "hasta": "23:00"
+          },
+          {
+            "id": "tu-2026-10-23-1600-p2",
+            "arbitroId": "arb-demo-carla",
+            "fecha": "2026-10-23",
+            "pista": 2,
+            "desde": "16:00",
+            "hasta": "23:00"
+          },
+          {
+            "id": "tu-2026-10-23-1600-p3",
+            "arbitroId": "arb-demo-jose",
+            "fecha": "2026-10-23",
+            "pista": 3,
+            "desde": "16:00",
+            "hasta": "23:00"
+          },
+          {
+            "id": "tu-2026-10-23-1600-p4",
+            "arbitroId": "arb-demo-ana",
+            "fecha": "2026-10-23",
+            "pista": 4,
+            "desde": "16:00",
+            "hasta": "23:00"
+          },
+          {
+            "id": "tu-2026-10-23-1600-p5",
+            "arbitroId": "arb-demo-luis",
+            "fecha": "2026-10-23",
+            "pista": 5,
+            "desde": "16:00",
+            "hasta": "23:00"
+          },
+          {
+            "id": "tu-2026-10-24-0800-p1",
+            "arbitroId": "arb-demo-maria",
+            "fecha": "2026-10-24",
+            "pista": 1,
+            "desde": "08:00",
+            "hasta": "16:00"
+          },
+          {
+            "id": "tu-2026-10-24-0800-p2",
+            "arbitroId": "arb-demo-carla",
+            "fecha": "2026-10-24",
+            "pista": 2,
+            "desde": "08:00",
+            "hasta": "16:00"
+          },
+          {
+            "id": "tu-2026-10-24-0800-p3",
+            "arbitroId": "arb-demo-jose",
+            "fecha": "2026-10-24",
+            "pista": 3,
+            "desde": "08:00",
+            "hasta": "16:00"
+          },
+          {
+            "id": "tu-2026-10-24-0800-p4",
+            "arbitroId": "arb-demo-ana",
+            "fecha": "2026-10-24",
+            "pista": 4,
+            "desde": "08:00",
+            "hasta": "16:00"
+          },
+          {
+            "id": "tu-2026-10-24-0800-p5",
+            "arbitroId": "arb-demo-luis",
+            "fecha": "2026-10-24",
+            "pista": 5,
+            "desde": "08:00",
+            "hasta": "16:00"
+          },
+          {
+            "id": "tu-2026-10-24-1600-p1",
+            "arbitroId": "arb-demo-pedro",
+            "fecha": "2026-10-24",
+            "pista": 1,
+            "desde": "16:00",
+            "hasta": "23:00"
+          },
+          {
+            "id": "tu-2026-10-24-1600-p2",
+            "arbitroId": "arb-demo-maria",
+            "fecha": "2026-10-24",
+            "pista": 2,
+            "desde": "16:00",
+            "hasta": "23:00"
+          },
+          {
+            "id": "tu-2026-10-24-1600-p4",
+            "arbitroId": "arb-demo-ana",
+            "fecha": "2026-10-24",
+            "pista": 4,
+            "desde": "16:00",
+            "hasta": "23:00"
+          },
+          {
+            "id": "tu-2026-10-24-1600-p5",
+            "arbitroId": "arb-demo-luis",
+            "fecha": "2026-10-24",
+            "pista": 5,
+            "desde": "16:00",
+            "hasta": "23:00"
+          },
+          {
+            "id": "tu-2026-10-25-0800-p1",
+            "arbitroId": "arb-demo-carla",
+            "fecha": "2026-10-25",
+            "pista": 1,
+            "desde": "08:00",
+            "hasta": "14:00"
+          },
+          {
+            "id": "tu-2026-10-25-0800-p2",
+            "arbitroId": "arb-demo-jose",
+            "fecha": "2026-10-25",
+            "pista": 2,
+            "desde": "08:00",
+            "hasta": "14:00"
+          },
+          {
+            "id": "tu-2026-10-25-0800-p3",
+            "arbitroId": "arb-demo-pedro",
+            "fecha": "2026-10-25",
+            "pista": 3,
+            "desde": "08:00",
+            "hasta": "14:00"
+          },
+          {
+            "id": "tu-2026-10-25-0800-p4",
+            "arbitroId": "arb-demo-maria",
+            "fecha": "2026-10-25",
+            "pista": 4,
+            "desde": "08:00",
+            "hasta": "14:00"
+          },
+          {
+            "id": "tu-2026-10-25-0800-p5",
+            "arbitroId": "arb-demo-luis",
+            "fecha": "2026-10-25",
+            "pista": 5,
+            "desde": "08:00",
+            "hasta": "14:00"
+          },
+          {
+            "id": "tu-2026-10-25-1400-p1",
+            "arbitroId": "arb-demo-ana",
+            "fecha": "2026-10-25",
+            "pista": 1,
+            "desde": "14:00",
+            "hasta": "20:00"
+          }
+        ]
       },
       "patrocinadores": [
         {
@@ -31956,6 +32118,76 @@
       "finalizado": false,
       "actualizadoEn": "2026-10-24T15:50:00.000Z",
       "faltaPendiente": false
+    }
+  ],
+  "extras": [
+    {
+      "id": "arbitros:t-open-2026",
+      "torneoId": "t-open-2026",
+      "tipo": "arbitros",
+      "data": [
+        {
+          "id": "arb-demo-carla",
+          "nombre": "Carla",
+          "apellido": "Rodríguez",
+          "telefono": "04141234567",
+          "activo": true,
+          "registradoEn": "2026-10-22T14:00:00.000Z",
+          "actualizadoEn": "2026-10-22T14:00:00.000Z",
+          "codigoDemo": "1234"
+        },
+        {
+          "id": "arb-demo-jose",
+          "nombre": "José",
+          "apellido": "Méndez",
+          "telefono": "04241234567",
+          "activo": true,
+          "registradoEn": "2026-10-22T14:00:00.000Z",
+          "actualizadoEn": "2026-10-22T14:00:00.000Z",
+          "codigoDemo": "1234"
+        },
+        {
+          "id": "arb-demo-ana",
+          "nombre": "Ana",
+          "apellido": "Pérez",
+          "telefono": "04121234567",
+          "activo": true,
+          "registradoEn": "2026-10-22T14:00:00.000Z",
+          "actualizadoEn": "2026-10-22T14:00:00.000Z",
+          "codigoDemo": "1234"
+        },
+        {
+          "id": "arb-demo-luis",
+          "nombre": "Luis",
+          "apellido": "Salas",
+          "telefono": "04161234567",
+          "activo": true,
+          "registradoEn": "2026-10-22T14:00:00.000Z",
+          "actualizadoEn": "2026-10-22T14:00:00.000Z",
+          "codigoDemo": "1234"
+        },
+        {
+          "id": "arb-demo-maria",
+          "nombre": "María",
+          "apellido": "Gil",
+          "telefono": "04261234567",
+          "activo": true,
+          "registradoEn": "2026-10-22T14:00:00.000Z",
+          "actualizadoEn": "2026-10-22T14:00:00.000Z",
+          "codigoDemo": "1234"
+        },
+        {
+          "id": "arb-demo-pedro",
+          "nombre": "Pedro",
+          "apellido": "Arias",
+          "telefono": "04143334444",
+          "activo": true,
+          "registradoEn": "2026-10-22T14:00:00.000Z",
+          "actualizadoEn": "2026-10-22T14:00:00.000Z",
+          "codigoDemo": "1234"
+        }
+      ],
+      "actualizadoEn": "2026-10-22T14:00:00.000Z"
     }
   ]
 }

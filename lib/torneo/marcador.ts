@@ -57,6 +57,8 @@ export interface EstadoMarcador {
   matchPoint: Lado | null;
   /** Tras el último punto, los jugadores cambian de lado. */
   cambioDeLado: boolean;
+  /** Cambios de lado hechos hasta ahora (para dibujar a cada dupla en su lado real). */
+  cambiosDeLado: number;
   /** Texto de los puntos: ["40", "AD"] o ["5", "4"] en tie. */
   texto: [string, string];
   jugados: PuntoJugado[];
@@ -135,6 +137,7 @@ export function calcularMarcador(m: Pick<MarcadorVivo, "reglas" | "ordenSaque" |
   let terminado = false;
   let ganador: Lado | null = null;
   let cambioDeLado = false;
+  let cambiosDeLado = 0;
   const jugados: PuntoJugado[] = [];
   let racha = { lado: null as Lado | null, puntos: 0 };
 
@@ -195,6 +198,7 @@ export function calcularMarcador(m: Pick<MarcadorVivo, "reglas" | "ordenSaque" |
       }
     }
 
+    if (cambioDeLado) cambiosDeLado++;
     jugados.push({ ...pt, n: n + 1, sacador, equipoSaca, antes, oro, breakPoint, enTie: tieAntes, evento, games: { ...sets[setAntes] }, setIndex: setAntes });
   });
 
@@ -226,6 +230,7 @@ export function calcularMarcador(m: Pick<MarcadorVivo, "reglas" | "ordenSaque" |
     setPoint,
     matchPoint,
     cambioDeLado,
+    cambiosDeLado,
     texto,
     jugados,
     racha,
@@ -321,6 +326,21 @@ export function descansoReglamentario(e: EstadoMarcador): Descanso | null {
     return u.games.a + u.games.b === 1 ? { segundos: 0, motivo: "Cambio de lado sin descanso (primer game del set)" } : { segundos: 90, motivo: "Cambio de lado" };
   }
   return { segundos: 20, motivo: "Entre puntos" };
+}
+
+/**
+ * Cambio de lado que está corriendo ahora (para el aviso del árbitro y las pantallas):
+ * tras el primer game del set se cambia sin descanso (se avisa 20 s), en los demás games
+ * impares hay 90 s, al terminar un set 120 s y en el tie-break 20 s cada 6 puntos.
+ */
+export function cambioDeLadoEnCurso(e: EstadoMarcador, ahora: number): (Descanso & { quedan: number; directo: boolean }) | null {
+  const d = descansoReglamentario(e);
+  const u = e.jugados.at(-1);
+  if (!d || !u || !e.cambioDeLado) return null;
+  const directo = d.segundos === 0;
+  const quedan = Math.ceil((new Date(u.t).getTime() + (directo ? 20 : d.segundos) * 1000 - ahora) / 1000);
+  if (quedan <= -10) return null;
+  return { ...d, quedan, directo };
 }
 
 /** Peloteo al reanudar un partido suspendido por causas ajenas a los jugadores (FIP Regla 2.11–2.14). */
@@ -600,6 +620,9 @@ export function nuevoMarcador(input: {
   primerB: string;
   pista?: number | null;
   anotador?: string;
+  arbitroId?: string;
+  sorteo?: MarcadorVivo["sorteo"];
+  ladoInicialA?: MarcadorVivo["ladoInicialA"];
 }): MarcadorVivo {
   const segA = input.jugadoresA.find((j) => j !== input.primerA)!;
   const segB = input.jugadoresB.find((j) => j !== input.primerB)!;
@@ -617,8 +640,19 @@ export function nuevoMarcador(input: {
     puntos: [],
     pista: input.pista ?? null,
     anotador: input.anotador,
+    arbitroId: input.arbitroId,
+    anotadores: input.arbitroId && input.anotador ? [{ id: input.arbitroId, nombre: input.anotador }] : undefined,
+    sorteo: input.sorteo ?? null,
+    ladoInicialA: input.ladoInicialA,
     iniciadoEn: ahora,
     finalizado: false,
     actualizadoEn: ahora,
   };
+}
+
+/** Lado de la pista (visto desde la silla del árbitro) donde está ahora cada dupla. */
+export function ladoActual(m: MarcadorVivo, e: Pick<EstadoMarcador, "cambiosDeLado">, l: Lado): "IZQ" | "DER" {
+  const inicialA = m.ladoInicialA ?? "IZQ";
+  const a = e.cambiosDeLado % 2 === 0 ? inicialA : inicialA === "IZQ" ? "DER" : "IZQ";
+  return l === "A" ? a : a === "IZQ" ? "DER" : "IZQ";
 }

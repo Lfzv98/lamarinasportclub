@@ -183,17 +183,34 @@ export function claveCorrecta(recibida: string, esperada: string): boolean {
 
 /**
  * Sesión de árbitro: rol aparte del staff, por torneo. Entra con el PIN de árbitros que el staff
- * crea en Ajustes → Claves de torneos. La cookie guarda el torneo, el nombre del árbitro y una
- * huella del PIN: si el staff lo cambia o lo quita, la sesión deja de valer.
+ * crea en Ajustes → Claves de torneos. Cada árbitro se registra una vez con su nombre y un código
+ * personal; la cookie guarda el torneo, quién es y huellas del PIN y de su código: si el staff cambia
+ * el PIN, o el árbitro cambia su código o queda desactivado, la sesión deja de valer.
  */
 export const COOKIE_ARBITRO = "lm_arbitro";
 const DURACION_ARBITRO_S = 16 * 3600;
 
 export interface SesionArbitro {
   torneoId: string;
+  /** Árbitro registrado. */
+  arbitroId: string;
   nombre: string;
+  /** Huella del PIN de árbitros del torneo. */
   huella: string;
+  /** Huella de su código personal. */
+  hc: string;
   exp: number;
+}
+
+/** Código personal del árbitro, guardado solo como HMAC ligado al torneo y al árbitro. */
+export function hashCodigo(torneoId: string, arbitroId: string, codigo: string): string {
+  return firmar(`r:${torneoId}:${arbitroId}:${codigo.trim()}`);
+}
+
+export function codigoCorrecto(torneoId: string, arbitroId: string, codigo: string, hash: string): boolean {
+  const a = Buffer.from(hashCodigo(torneoId, arbitroId, codigo));
+  const b = Buffer.from(hash);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 export function crearTokenArbitro(s: Omit<SesionArbitro, "exp">, venceMs: number): { token: string; maxAge: number } {
@@ -214,7 +231,7 @@ export function arbitroDe(req: Request): SesionArbitro | null {
   if (esperada.length !== recibida.length || !timingSafeEqual(esperada, recibida)) return null;
   try {
     const s = JSON.parse(Buffer.from(datos, "base64url").toString()) as SesionArbitro;
-    return s.exp > Date.now() / 1000 ? s : null;
+    return s.arbitroId && s.exp > Date.now() / 1000 ? s : null;
   } catch {
     return null;
   }
