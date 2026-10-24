@@ -35,7 +35,7 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 
 ## Torneos
 
-- **Categorías:** 7ma a 1ra en Masculino, Femenino y Mixto, Master +45 y +55 (M/F) y Junior Sub-12/14/16/18, con validación de edad (año del torneo) y de género en Mixto.
+- **Categorías:** 7ma a 1ra en Masculino, Femenino y Mixto, Master +40, +45 y +55 (M/F) y Junior Sub-12/13/14/16/18 (las mismas que usa la FVP), con validación de edad (año del torneo) y de género en Mixto.
 - **Sorteo automático por categoría:** propone el formato según inscritos (eliminación, liga, liga + final, grupos + llave) y explica por qué; byes a los mejores sembrados; 2dos de un grupo en la mitad opuesta a su 1ro; cabezas de serie y puntos de ranking.
 - **Desempates explicados:** 2 empatadas → partido entre ellas; 3 o más → sets y games entre las empatadas, luego en todo el grupo y por último sorteo registrado. El orden de criterios se ajusta por torneo.
 - **Programación sin choques:** pistas, descanso mínimo (también entre categorías), dependencias de la llave, finales el último día en la pista principal, franjas bloqueadas y disponibilidad de cada dupla.

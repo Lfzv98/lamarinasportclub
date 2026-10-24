@@ -110,6 +110,11 @@ function RankingFvp() {
                 </span>
               ) : null,
             )}
+            {Object.entries(resumen.especiales ?? {}).map(([e, n]) => (
+              <span key={e} className="chip text-xs">
+                {e} <b className="text-cielo">{n.toLocaleString("es")}</b>
+              </span>
+            ))}
           </div>
         )}
         <div className="relative mt-5 flex flex-wrap gap-2">
@@ -156,7 +161,14 @@ function RankingFvp() {
           <ul className="glass mt-2 divide-y divide-white/5 rounded-2xl text-sm">
             {resultados.map((a) => (
               <li key={a.clave} className="flex items-center gap-3 px-4 py-2.5">
-                <span className="w-12 shrink-0 font-display text-lg font-bold text-lima">{etiquetaNivel(a.categoria)}</span>
+                <span className="w-16 shrink-0 font-display text-lg font-bold leading-tight text-lima">
+                  {a.categoria ? etiquetaNivel(a.categoria) : null}
+                  {a.especiales?.map((e) => (
+                    <span key={e} className="block text-[11px] font-semibold text-cielo">
+                      {e}
+                    </span>
+                  ))}
+                </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold">{a.nombre || "Sin nombre"}</span>
                   <span className="text-xs text-white/45">

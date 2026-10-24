@@ -1,5 +1,5 @@
 import "server-only";
-import { buscadorFvp, contarPorCategoria, HOJA_FVP, leerListaFvp, urlCsvHoja, urlHoja, type BuscarAtleta } from "@/lib/ranking/fvp";
+import { buscadorFvp, contarEspeciales, contarPorCategoria, HOJA_FVP, leerListaFvp, urlCsvHoja, urlHoja, type BuscarAtleta } from "@/lib/ranking/fvp";
 import type { FuenteRanking, RankingFvp, ResumenRankingFvp } from "@/types/ranking";
 import { ErrorApi } from "./http";
 import { getRankingRepository } from "./repository";
@@ -21,10 +21,19 @@ const hoja = () => ({
   gids: process.env.FVP_SHEET_GIDS?.split(",").map((s) => s.trim()).filter(Boolean) ?? HOJA_FVP.gids,
 });
 
-const cache = globalThis as unknown as { __fvpBuscar?: { cargadoEn: string; buscar: BuscarAtleta } };
+const cache = globalThis as unknown as { __fvpBuscar?: { cargadoEn: string; buscar: BuscarAtleta }; __fvpDemo?: Promise<RankingFvp | null> };
 
+/**
+ * En modo DEMO la lista vive en la memoria de cada instancia de Vercel: una instancia
+ * nueva no la tiene. Para que la búsqueda y la inscripción funcionen igual, la primera
+ * lectura de cada instancia la descarga de la hoja (una sola vez).
+ */
 export async function obtenerRanking(): Promise<RankingFvp | null> {
-  return getRankingRepository().obtener();
+  const repo = getRankingRepository();
+  const r = await repo.obtener();
+  if (r || repo.modo !== "DEMO" || process.env.NODE_ENV === "test") return r;
+  cache.__fvpDemo ??= sincronizarHoja().catch(() => null);
+  return cache.__fvpDemo;
 }
 
 /** Buscador por cédula de la lista vigente (null = no hay lista). Se arma una vez por versión. */
@@ -36,7 +45,7 @@ export async function buscadorVigente(): Promise<{ buscar: BuscarAtleta; lista: 
 }
 
 export function resumen(r: RankingFvp | null): ResumenRankingFvp {
-  if (!r) return { cargado: false, total: 0, porCategoria: {}, avisos: [] };
+  if (!r) return { cargado: false, total: 0, porCategoria: {}, especiales: {}, avisos: [] };
   return {
     cargado: r.atletas.length > 0,
     fuente: r.fuente,
@@ -45,6 +54,7 @@ export function resumen(r: RankingFvp | null): ResumenRankingFvp {
     origen: r.origen,
     total: r.atletas.length,
     porCategoria: contarPorCategoria(r.atletas),
+    especiales: contarEspeciales(r.atletas),
     avisos: r.avisos,
     ultimoError: r.ultimoError,
   };

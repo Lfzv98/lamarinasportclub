@@ -14,8 +14,10 @@ export interface AtletaFvp {
   cedula: string;
   nombre: string;
   genero: "M" | "F" | null;
-  /** Categoría vigente (CATEGORÍA FINAL de la hoja). */
-  categoria: NivelTorneo;
+  /** Categoría de nivel vigente (CATEGORÍA FINAL de la hoja). null = solo figura en una categoría por edad. */
+  categoria: NivelTorneo | null;
+  /** Categorías por edad en las que figura: "Master +40", "Sub-13"… */
+  especiales?: string[];
   /** Categoría antes de la actualización (CAT. ORIGEN). */
   origen?: NivelTorneo | null;
   puntos?: number | null;
@@ -49,6 +51,8 @@ export interface ResumenRankingFvp {
   origen?: string | null;
   total: number;
   porCategoria: Partial<Record<NivelTorneo, number>>;
+  /** Categorías por edad: "Master +40" → 5. */
+  especiales: Record<string, number>;
   avisos: string[];
   ultimoError?: { en: string; mensaje: string } | null;
 }

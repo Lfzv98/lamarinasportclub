@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buscadorFvp, claveCedula, leerCsv, leerListaFvp, leerNivel, pendientesFvp, puedeJugar, revisarFvpServidor, verificarDupla } from "../lib/ranking/fvp.ts";
+import { buscadorFvp, buscarAtletas, claveCedula, leerEspecial, leerCsv, leerListaFvp, leerNivel, pendientesFvp, puedeJugar, revisarFvpServidor, verificarDupla } from "../lib/ranking/fvp.ts";
 import { catMaster, catNivel } from "../lib/torneo/categorias.ts";
 import { crearTorneo, inscribirDupla } from "../lib/torneo/torneo.ts";
 import { CLUB_POR_DEFECTO } from "../lib/horarios.ts";
@@ -162,4 +162,45 @@ test("lee el CSV que entrega gviz (headers=0): títulos numéricos vacíos y res
   assert.equal(luis.puntos, 1200);
   assert.equal(luis.estado, "Zulia");
   assert.equal(luis.nombre, "LUIS GVIZ");
+});
+
+test("categorías por edad de la FVP (Master +40, Sub-13…): se leen y se juntan con la de nivel", () => {
+  const hoja = [
+    `"","CÉDULA","NOMBRE DEL ATLETA","CAT. ORIGEN","GÉNERO","","ESTADO","","MOVIMIENTO","CATEGORÍA FINAL"`,
+    `"1","V-60000001","ANTONIO MASTER","4ta","Masculino","1","Distrito Capital","10","Mantener","Master +40"`,
+    `"2","V-60000002","MARIO SOLO MASTER","","Masculino","1","Distrito Capital","10","Mantener","Master +55"`,
+    `"3","V-60000003","CARLOS JUNIOR","","Masculino","1","Distrito Capital","10","Mantener","Sub-13"`,
+    `"","CÉDULA","NOMBRE DEL ATLETA","CAT. ORIGEN","GÉNERO","","ESTADO","","MOVIMIENTO","CATEGORÍA FINAL"`,
+    `"1","V-60000001","ANTONIO MASTER","4ta","Masculino","1","Distrito Capital","10","Ascenso","3ra"`,
+  ].join("\n");
+  const { atletas, avisos } = leerListaFvp(hoja);
+  assert.ok(!avisos.some((a) => a.includes("no se entiende")), avisos.join(" | "));
+  const por = new Map(atletas.map((a) => [a.clave, a]));
+  assert.equal(por.get("60000001")!.categoria, "3RA");
+  assert.deepEqual(por.get("60000001")!.especiales, ["Master +40"]);
+  assert.equal(por.get("60000002")!.categoria, null);
+  assert.deepEqual(por.get("60000003")!.especiales, ["Sub-13"]);
+  assert.equal(leerEspecial("MASTER 45"), "Master +45");
+  assert.equal(leerEspecial("Junior Sub-16"), "Sub-16");
+  // Solo Master en la FVP → para una categoría por nivel queda por verificar.
+  const buscar = buscadorFvp(atletas);
+  const v = verificarDupla(catNivel("MASCULINO", "4TA"), [j("mario", "V-60000002"), j("antonio", "V-60000001")], buscar)!;
+  assert.equal(v.estado, "BLOQUEADA", "antonio es 3ra");
+  const w = verificarDupla(catNivel("MASCULINO", "3RA"), [j("mario", "V-60000002"), j("antonio", "V-60000001")], buscar)!;
+  assert.equal(w.estado, "POR_VERIFICAR");
+  assert.match(w.nota!, /Master \+55/);
+});
+
+test("búsqueda por nombre (acentos, mayúsculas, orden) y por cédula", () => {
+  const { atletas } = leerListaFvp(
+    "CEDULA,NOMBRE,CATEGORIA FINAL\nV-18949321,MIGUEL MARTINEZ,2da\nV-18.000.001,MARTÍNEZ PÉREZ MIGUEL ÁNGEL,4ta\nV-20000009,ANA MIGUELENA,5ta\n",
+  );
+  const nombres = (q: string) => buscarAtletas(atletas, q).map((a) => a.nombre);
+  assert.deepEqual(nombres("miguel martinez"), ["MIGUEL MARTINEZ", "MARTÍNEZ PÉREZ MIGUEL ÁNGEL"]);
+  assert.deepEqual(nombres("Martínez Miguel"), ["MIGUEL MARTINEZ", "MARTÍNEZ PÉREZ MIGUEL ÁNGEL"]);
+  assert.deepEqual(nombres("miguel ang"), ["MARTÍNEZ PÉREZ MIGUEL ÁNGEL"]);
+  assert.deepEqual(nombres("V-18.949.321"), ["MIGUEL MARTINEZ"]);
+  assert.deepEqual(nombres("18949321"), ["MIGUEL MARTINEZ"]);
+  assert.deepEqual(nombres("1894"), ["MIGUEL MARTINEZ"]);
+  assert.deepEqual(nombres("migue"), ["MIGUEL MARTINEZ", "MARTÍNEZ PÉREZ MIGUEL ÁNGEL", "ANA MIGUELENA"]);
 });

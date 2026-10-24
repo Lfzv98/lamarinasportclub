@@ -49,10 +49,17 @@ export function AtletaFvpLinea({ cedula, atleta, listo, nivel }: { cedula: strin
   if (!claveCedula(cedula)) return cedula.trim() ? <p className="mt-1 text-xs text-white/40">Cédula incompleta.</p> : null;
   if (!listo) return <p className="mt-1 text-xs text-white/40">Buscando en el ranking FVP…</p>;
   if (!atleta) return <p className="mt-1 text-xs text-amber-300">{formatoCedula(cedula)} no aparece en la lista FVP.</p>;
+  if (!atleta.categoria)
+    return (
+      <p className="mt-1 text-xs text-amber-300">
+        FVP {atleta.especiales?.join(", ")} (sin categoría de nivel) · {atleta.nombre}
+      </p>
+    );
   const ok = !nivel || puedeJugar(nivel, atleta.categoria);
   return (
     <p className={clsx("mt-1 text-xs", ok ? "text-neon" : "text-coral")}>
-      FVP {etiquetaNivel(atleta.categoria)} · {atleta.nombre}
+      FVP {etiquetaNivel(atleta.categoria)}
+      {atleta.especiales?.length ? ` · ${atleta.especiales.join(", ")}` : ""} · {atleta.nombre}
       {atleta.estado ? ` · ${atleta.estado}` : ""}
     </p>
   );

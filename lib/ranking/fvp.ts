@@ -69,6 +69,16 @@ export function leerNivel(x?: string | null): NivelTorneo | null {
   return i >= 0 ? POR_RANGO[i] : null;
 }
 
+/** "Master +40", "MASTER 55", "Sub-13", "SUB 14", "Junior Sub-16" → etiqueta normalizada ("Master +40", "Sub-13"). */
+export function leerEspecial(x?: string | null): string | null {
+  const s = sinAcentos(x ?? "");
+  const m = s.match(/master\s*\+?\s*(\d{2})/) ?? s.match(/^\+\s*(\d{2})$/);
+  if (m) return `Master +${m[1]}`;
+  const j = s.match(/sub\s*-?\s*(\d{1,2})/) ?? s.match(/^u\s*-?\s*(\d{1,2})$/);
+  if (j) return `Sub-${Number(j[1])}`;
+  return null;
+}
+
 function leerGenero(x?: string | null): "M" | "F" | null {
   const s = sinAcentos(x ?? "");
   if (/^(m|masc|caballero|hombre|varon)/.test(s)) return "M";
@@ -195,8 +205,9 @@ export function leerListaFvp(texto: string): { atletas: AtletaFvp[]; avisos: str
     }
     const clave = claveCedula(ced);
     const categoria = leerNivel(celda(cols.categoria));
+    const especial = categoria ? null : leerEspecial(celda(cols.categoria));
     if (!clave) continue;
-    if (!categoria) {
+    if (!categoria && !especial) {
       sinCategoria++;
       aviso(`${formatoCedula(ced)} (${nombre || "sin nombre"}): no se entiende la categoría "${celda(cols.categoria)}".`);
       continue;
@@ -207,6 +218,7 @@ export function leerListaFvp(texto: string): { atletas: AtletaFvp[]; avisos: str
       nombre,
       genero: leerGenero(celda(cols.genero)),
       categoria,
+      ...(especial ? { especiales: [especial] } : {}),
       origen: leerNivel(celda(cols.origen)),
       puntos: leerPuntos(celda(cols.puntos)),
       estado: celda(cols.estado) || null,
@@ -214,10 +226,14 @@ export function leerListaFvp(texto: string): { atletas: AtletaFvp[]; avisos: str
     };
     const previo = porClave.get(clave);
     if (previo) {
-      repetidas++;
-      const queda = masAlta(previo.categoria, categoria) === previo.categoria ? previo : atleta;
-      if (previo.categoria !== categoria) aviso(`${atleta.cedula} aparece más de una vez (${previo.nombre} ${etiquetaNivel(previo.categoria)} / ${nombre} ${etiquetaNivel(categoria)}): se usa ${etiquetaNivel(queda.categoria)}.`);
-      porClave.set(clave, queda);
+      // Misma cédula en una tabla de nivel y en una de edad (Master / Sub): se juntan.
+      const especiales = [...new Set([...(previo.especiales ?? []), ...(atleta.especiales ?? [])])];
+      const base = !previo.categoria ? atleta : !categoria ? previo : masAlta(previo.categoria, categoria) === previo.categoria ? previo : atleta;
+      if (previo.categoria && categoria) {
+        repetidas++;
+        if (previo.categoria !== categoria) aviso(`${atleta.cedula} aparece más de una vez (${previo.nombre} ${etiquetaNivel(previo.categoria)} / ${nombre} ${etiquetaNivel(categoria)}): se usa ${etiquetaNivel(base.categoria!)}.`);
+      }
+      porClave.set(clave, { ...base, categoria: base.categoria ?? null, ...(especiales.length ? { especiales } : {}) });
     } else porClave.set(clave, atleta);
   }
 
@@ -264,6 +280,10 @@ export function verificarDupla(
     const a = buscar(j.cedula);
     if (!a) {
       faltan.push(`${nombreDe(j)}: no aparece en la lista FVP`);
+      return null;
+    }
+    if (!a.categoria) {
+      faltan.push(`${nombreDe(j)}: en la FVP solo figura en ${a.especiales?.join(", ") || "una categoría por edad"}, sin categoría de nivel`);
       return null;
     }
     if (!puedeJugar(cat.nivel!, a.categoria)) bloqueos.push(`${nombreDe(j)} es ${etiquetaNivel(a.categoria)} FVP y no puede jugar ${etiquetaNivel(cat.nivel!)}.`);
@@ -334,6 +354,40 @@ export function revisarFvpServidor(
 /** Resumen por categoría (para la pantalla del ranking). */
 export function contarPorCategoria(atletas: AtletaFvp[]): Partial<Record<NivelTorneo, number>> {
   const out: Partial<Record<NivelTorneo, number>> = {};
-  for (const a of atletas) out[a.categoria] = (out[a.categoria] ?? 0) + 1;
+  for (const a of atletas) if (a.categoria) out[a.categoria] = (out[a.categoria] ?? 0) + 1;
+  return out;
+}
+
+/** Cuántos hay en cada categoría por edad ("Master +40", "Sub-13", …). */
+export function contarEspeciales(atletas: AtletaFvp[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const a of atletas) for (const e of a.especiales ?? []) out[e] = (out[e] ?? 0) + 1;
+  return out;
+}
+
+/**
+ * Búsqueda por nombre o cédula: sin importar acentos, mayúsculas ni el orden de las
+ * palabras ("miguel martinez" encuentra "MARTÍNEZ PÉREZ, MIGUEL ÁNGEL"); la cédula con
+ * o sin "V-" y puntos, también incompleta.
+ */
+export function buscarAtletas(atletas: AtletaFvp[], q: string, limite = 25): AtletaFvp[] {
+  const palabras = sinAcentos(q)
+    .replace(/[^a-z0-9ñ\s]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+  if (!palabras.length) return [];
+  const digitos = q.replace(/\D/g, "").replace(/^0+/, "");
+  const soloCedula = digitos.length >= 4 && palabras.every((p) => /^([vejp]|[vejp]?\d+)$/.test(p));
+  const out: AtletaFvp[] = [];
+  for (const a of atletas) {
+    const ok = soloCedula
+      ? a.clave.includes(digitos)
+      : (() => {
+          const nombre = ` ${sinAcentos(a.nombre).replace(/[^a-z0-9ñ\s]/g, " ")} `;
+          return palabras.every((p) => nombre.includes(` ${p}`));
+        })();
+    if (ok) out.push(a);
+    if (out.length >= limite) break;
+  }
   return out;
 }

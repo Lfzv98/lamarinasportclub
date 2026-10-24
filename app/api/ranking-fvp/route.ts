@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { claveCedula } from "@/lib/ranking/fvp";
+import { buscarAtletas } from "@/lib/ranking/fvp";
 import { exigirStaff } from "@/lib/server/auth";
 import { ErrorApi, leerJson, manejar } from "@/lib/server/http";
 import { buscadorVigente, cargarManual, obtenerRanking, resumen, sincronizarHoja } from "@/lib/server/rankingFvp";
@@ -8,7 +8,6 @@ import type { AtletaFvp } from "@/types/ranking";
 export const dynamic = "force-dynamic";
 
 const MAX_CEDULAS = 300;
-const sinAcentos = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 /**
  * GET /api/ranking-fvp (staff)
@@ -28,14 +27,7 @@ export const GET = manejar(async (req: Request) => {
     return NextResponse.json({ resumen: resumen(r), atletas });
   }
   const r = await obtenerRanking();
-  if (q) {
-    const clave = claveCedula(q);
-    const texto = sinAcentos(q);
-    const resultados = (r?.atletas ?? [])
-      .filter((a) => (clave && a.clave.startsWith(clave)) || sinAcentos(a.nombre).includes(texto))
-      .slice(0, 25);
-    return NextResponse.json({ resumen: resumen(r), resultados });
-  }
+  if (q) return NextResponse.json({ resumen: resumen(r), resultados: buscarAtletas(r?.atletas ?? [], q.slice(0, 80)) });
   return NextResponse.json({ resumen: resumen(r) });
 });
 
