@@ -433,7 +433,7 @@ function PegarHoja({ torneo, cat, abierta, onClose }: { torneo: Torneo; cat: Cat
         </button>
       }
     >
-      <textarea className="input min-h-40 font-mono text-sm" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={"Ana Ruiz / Sofía Díaz 900\nCarla Gil / Eva Mora"} />
+      <textarea className="input min-h-40 font-mono text-sm" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={"Nombre Apellido / Nombre Apellido  puntos (opcional)\nUna dupla por línea"} />
       {lineas.some((x) => x.error) && (
         <ul className="mt-2 space-y-1 text-xs text-coral">
           {lineas.filter((x) => x.error).map((x, i) => (

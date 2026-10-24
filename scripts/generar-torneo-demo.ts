@@ -64,7 +64,7 @@ let t: Torneo = crearTorneo({
   canchas: CLUB_POR_DEFECTO.pistas,
   categorias: categorias.map((c) => c.cat),
 });
-t = { ...t, id: "t-open-2026", creadoEn: "2026-10-10T14:00:00.000Z", acceso: { clave: "MARINA", vence: new Date(`2026-10-25T23:59:00${ZONA}`).toISOString() }, arbitros: { pin: "2468", vence: new Date(`2026-10-25T23:59:00${ZONA}`).toISOString() } };
+t = { ...t, id: "t-open-2026", creadoEn: "2026-10-10T14:00:00.000Z", acceso: { clave: "MARINA", vence: new Date(`2026-10-25T23:59:00${ZONA}`).toISOString() }, arbitros: { turnos: [] } };
 
 const fuerza = new Map<string, number>();
 for (const c of categorias) {
@@ -187,18 +187,18 @@ const ruta = new URL("../data/mockData.json", import.meta.url);
 const mock = JSON.parse(readFileSync(ruta, "utf8"));
 // Árbitros registrados de ejemplo (código 1234) y sus turnos repartidos.
 const arbitrosDemo = [
-  { id: "arb-demo-carla", nombre: "Carla", apellido: "Rodríguez", telefono: "04141234567" },
-  { id: "arb-demo-jose", nombre: "José", apellido: "Méndez", telefono: "04241234567" },
-  { id: "arb-demo-ana", nombre: "Ana", apellido: "Pérez", telefono: "04121234567" },
-  { id: "arb-demo-luis", nombre: "Luis", apellido: "Salas", telefono: "04161234567" },
-  { id: "arb-demo-maria", nombre: "María", apellido: "Gil", telefono: "04261234567" },
-  { id: "arb-demo-pedro", nombre: "Pedro", apellido: "Arias", telefono: "04143334444" },
+  { id: "arb-demo-carla", nombre: "Carla", apellido: "Rodríguez", telefono: "04140000001" },
+  { id: "arb-demo-jose", nombre: "José", apellido: "Méndez", telefono: "04140000002" },
+  { id: "arb-demo-ana", nombre: "Ana", apellido: "Pérez", telefono: "04140000003" },
+  { id: "arb-demo-luis", nombre: "Luis", apellido: "Salas", telefono: "04140000004" },
+  { id: "arb-demo-maria", nombre: "María", apellido: "Gil", telefono: "04140000005" },
+  { id: "arb-demo-pedro", nombre: "Pedro", apellido: "Arias", telefono: "04140000006" },
 ].map((a) => ({ ...a, activo: true, registradoEn: "2026-10-22T14:00:00.000Z", actualizadoEn: "2026-10-22T14:00:00.000Z", codigoDemo: "1234" }));
 t = { ...t, arbitros: { ...t.arbitros!, turnos: repartirTurnos(t, arbitrosDemo.map((a) => a.id)) } };
 
 mock.torneos = [t];
 mock.marcadores = marcadores;
-mock.extras = [{ id: `arbitros:${t.id}`, torneoId: t.id, tipo: "arbitros", data: arbitrosDemo, actualizadoEn: "2026-10-22T14:00:00.000Z" }];
+mock.extras = [{ id: "arbitros:club", torneoId: "club", tipo: "arbitros", data: { pin: "2468", arbitros: arbitrosDemo }, actualizadoEn: "2026-10-22T14:00:00.000Z" }];
 writeFileSync(ruta, JSON.stringify(mock, null, 2) + "\n");
 
 const fin = todosLosPartidos(t).filter((p) => p.estado === "FINALIZADO" && !p.bye).length;

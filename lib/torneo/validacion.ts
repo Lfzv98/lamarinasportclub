@@ -32,7 +32,7 @@ export function validarTorneo(x: unknown): string[] {
     }
   if (!Array.isArray(t.jugadores)) err("jugadores debe ser una lista.");
   if (t.acceso != null && (typeof t.acceso.clave !== "string" || t.acceso.clave.length > 40 || typeof t.acceso.vence !== "string")) err("acceso inválido.");
-  if (t.arbitros != null && (typeof t.arbitros.pin !== "string" || !/^\d{4,8}$/.test(t.arbitros.pin) || typeof t.arbitros.vence !== "string")) err("arbitros: PIN de 4 a 8 números.");
+  if (t.arbitros != null && typeof t.arbitros !== "object") err("arbitros inválido.");
   const turnos = t.arbitros?.turnos;
   if (turnos != null) {
     if (!Array.isArray(turnos) || turnos.length > 500) err("arbitros.turnos: máximo 500.");

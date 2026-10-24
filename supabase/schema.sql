@@ -39,7 +39,7 @@ create table if not exists public.torneos_marcadores (
 create index if not exists torneos_marcadores_torneo_idx on public.torneos_marcadores (torneo_id);
 
 -- Datos sueltos de torneos y americanos (evento_id = id del torneo o del americano):
--- registro de árbitros (tipo 'arbitros'), foto de dupla (tipo 'foto') y foto de jugador (tipo 'foto-jugador').
+-- plantel de árbitros del club (id 'arbitros:club', tipo 'arbitros'), foto de dupla (tipo 'foto') y foto de jugador (tipo 'foto-jugador').
 -- Las fotos son JPEG de ~40-80 KB en base64; si prefieres Storage, cambia guardarExtra/obtenerExtra.
 create table if not exists public.eventos_extras (
   id             text primary key,

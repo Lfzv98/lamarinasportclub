@@ -36,9 +36,9 @@ export default function ArbitroPage() {
   const arbitro = useArbitro();
   const esStaff = useEsStaff();
   const hidratado = useTorneos((s) => s.hidratado);
-  const lista = useListaTorneos();
-  const conPin = useTorneosConArbitros();
-  const [torneoStaff, setTorneoStaff] = useState<string | null>(null);
+  const enCurso = useTorneosConArbitros();
+  const salir = useArbitroStore((s) => s.salir);
+  const [elegido, setElegido] = useState<string | null>(null);
 
   if (arbitro === undefined || esStaff === undefined || !hidratado)
     return (
@@ -47,11 +47,13 @@ export default function ArbitroPage() {
       </main>
     );
 
-  if (arbitro) return <Panel torneoId={arbitro.torneoId} nombre={arbitro.nombre} arbitroId={arbitro.id} />;
-
-  // El staff también puede usar el panel: elige el torneo.
-  const enCurso = lista.filter((t) => t.estado !== "FINALIZADO");
-  if (esStaff && (torneoStaff || enCurso.length === 1)) return <Panel torneoId={torneoStaff ?? enCurso[0].id} nombre="Staff" alCambiar={enCurso.length > 1 ? () => setTorneoStaff(null) : undefined} />;
+  // Árbitro del club o staff: si hay un solo torneo en curso (o uno donde tiene turno hoy), entra directo.
+  if (arbitro || esStaff) {
+    const hoy = relojClub(Date.now()).fecha;
+    const conTurno = arbitro ? enCurso.filter((t) => turnosDe(t, arbitro.id).some((x) => x.fecha === hoy)) : [];
+    const id = elegido ?? (conTurno.length === 1 ? conTurno[0].id : enCurso.length === 1 ? enCurso[0].id : null);
+    if (id) return <Panel torneoId={id} nombre={arbitro?.nombre ?? "Staff"} arbitroId={arbitro?.id} alCambiar={enCurso.length > 1 ? () => setElegido(null) : undefined} />;
+  }
 
   return (
     <main className="min-h-dvh pb-16">
@@ -62,33 +64,39 @@ export default function ArbitroPage() {
             <ArrowLeft className="size-4" />
           </Link>
           <span className="flex-1" />
-          <StaffChip />
+          {arbitro ? (
+            <button className="btn-ghost !px-3 !py-2 text-xs" onClick={() => salir()}>
+              <LogOut className="size-3.5" /> Salir ({arbitro.nombre.split(" ")[0]})
+            </button>
+          ) : (
+            <StaffChip />
+          )}
         </header>
         <div className="relative mx-auto max-w-xl px-6 pt-4">
           <span className="flex size-14 items-center justify-center rounded-2xl bg-lima text-marino-2">
             <Flag className="size-7" />
           </span>
-          <h1 className="mt-5 font-display text-4xl font-bold tracking-tight">Árbitros</h1>
+          <h1 className="mt-5 font-display text-4xl font-bold tracking-tight">{arbitro ? `Hola, ${arbitro.nombre.split(" ")[0]}` : "Árbitros"}</h1>
           <p className="mt-2 text-white/65">La tablet de la pista. Un toque por punto: el marcador de la pista, los televisores y las estadísticas de los atletas se actualizan al instante.</p>
         </div>
       </div>
       <div className="relative -mt-6 rounded-t-[2rem] bg-fondo px-4 pt-8">
         <div className="mx-auto flex max-w-xl flex-col items-center">
-          {esStaff ? (
+          {arbitro || esStaff ? (
             <div className="w-full space-y-2">
               <p className="label">¿Qué torneo vas a anotar?</p>
               {enCurso.map((t) => (
-                <button key={t.id} className="glass w-full rounded-2xl px-4 py-3 text-left hover:border-neon/40" onClick={() => setTorneoStaff(t.id)}>
-                  <span className="block font-semibold">{t.nombre}</span>
-                  <span className="block text-xs text-white/50">{t.arbitros ? "Con PIN de árbitros" : "Sin PIN de árbitros: créalo en Ajustes del club → Claves de torneos"}</span>
+                <button key={t.id} className="glass w-full rounded-2xl px-5 py-4 text-left hover:border-neon/40" onClick={() => setElegido(t.id)}>
+                  <span className="block font-display text-lg font-bold">{t.nombre}</span>
+                  {arbitro && turnosDe(t, arbitro.id).length > 0 && <span className="block text-xs text-lima">Tienes {turnosDe(t, arbitro.id).length} turnos en este torneo</span>}
                 </button>
               ))}
-              {!enCurso.length && <p className="text-center text-white/55">No hay torneos en curso.</p>}
+              {!enCurso.length && <p className="glass rounded-2xl p-5 text-center text-sm text-white/55">No hay torneos en curso. Cuando el staff cree uno, aparece aquí.</p>}
             </div>
           ) : (
             <>
               <ArbitroLogin />
-              {conPin.length > 0 && <p className="mt-6 max-w-sm text-center text-xs text-white/45">El PIN te lo da el staff. Vale solo para anotar y vence cuando termina el torneo.</p>}
+              <p className="mt-6 max-w-sm text-center text-xs text-white/45">El PIN de árbitros te lo da el staff. Te registras una sola vez y sirve para todos los torneos del club.</p>
             </>
           )}
         </div>

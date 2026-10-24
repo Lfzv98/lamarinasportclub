@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
  */
 export const GET = manejar(async (req: Request) => {
   const repo = getTorneosRepository();
-  const v = visorDe(req);
+  const v = await visorDe(req);
   const todos = new URL(req.url).searchParams.get("todos") === "1";
   const torneos = (await repo.listar()).filter((t) => todos || !t.eliminado).map((t) => paraVisor(t, v));
   return NextResponse.json<ApiTorneosRespuesta>({ modo: repo.modo, torneos });

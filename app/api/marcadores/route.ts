@@ -18,7 +18,7 @@ export const GET = manejar(async (req: Request) => {
   const torneoId = url.searchParams.get("torneoId");
   const desde = url.searchParams.get("desde");
   const repo = getTorneosRepository();
-  const v = visorDe(req);
+  const v = await visorDe(req);
   const torneos = new Map((await repo.listar()).map((t) => [t.id, t]));
   const marcadores = (await repo.listarMarcadores(torneoId)).filter((m) => {
     const t = torneos.get(m.torneoId);
@@ -43,7 +43,7 @@ export const POST = manejar(async (req: Request) => {
   if (staff) quien = { id: "staff", nombre: staff.nombre };
   else {
     const t = await repo.obtener(entrante.torneoId);
-    const a = t ? await arbitroValido(t, visorDe(req).arbitro) : null;
+    const a = t ? await arbitroValido(t, (await visorDe(req)).arbitro) : null;
     if (!t || !a) throw new ErrorApi(401, "Solo el staff o los árbitros de este torneo pueden anotar.");
     // Solo partidos de su torneo.
     if (!t.categorias.some((c) => c.cuadro?.partidos.some((p) => p.id === entrante.id))) throw new ErrorApi(403, "Ese partido no es de tu torneo.");

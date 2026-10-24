@@ -5894,8 +5894,6 @@
         "vence": "2026-10-26T03:59:00.000Z"
       },
       "arbitros": {
-        "pin": "2468",
-        "vence": "2026-10-26T03:59:00.000Z",
         "turnos": [
           {
             "id": "tu-2026-10-23-1600-p1",
@@ -32122,71 +32120,74 @@
   ],
   "extras": [
     {
-      "id": "arbitros:t-open-2026",
-      "torneoId": "t-open-2026",
+      "id": "arbitros:club",
+      "torneoId": "club",
       "tipo": "arbitros",
-      "data": [
-        {
-          "id": "arb-demo-carla",
-          "nombre": "Carla",
-          "apellido": "Rodríguez",
-          "telefono": "04141234567",
-          "activo": true,
-          "registradoEn": "2026-10-22T14:00:00.000Z",
-          "actualizadoEn": "2026-10-22T14:00:00.000Z",
-          "codigoDemo": "1234"
-        },
-        {
-          "id": "arb-demo-jose",
-          "nombre": "José",
-          "apellido": "Méndez",
-          "telefono": "04241234567",
-          "activo": true,
-          "registradoEn": "2026-10-22T14:00:00.000Z",
-          "actualizadoEn": "2026-10-22T14:00:00.000Z",
-          "codigoDemo": "1234"
-        },
-        {
-          "id": "arb-demo-ana",
-          "nombre": "Ana",
-          "apellido": "Pérez",
-          "telefono": "04121234567",
-          "activo": true,
-          "registradoEn": "2026-10-22T14:00:00.000Z",
-          "actualizadoEn": "2026-10-22T14:00:00.000Z",
-          "codigoDemo": "1234"
-        },
-        {
-          "id": "arb-demo-luis",
-          "nombre": "Luis",
-          "apellido": "Salas",
-          "telefono": "04161234567",
-          "activo": true,
-          "registradoEn": "2026-10-22T14:00:00.000Z",
-          "actualizadoEn": "2026-10-22T14:00:00.000Z",
-          "codigoDemo": "1234"
-        },
-        {
-          "id": "arb-demo-maria",
-          "nombre": "María",
-          "apellido": "Gil",
-          "telefono": "04261234567",
-          "activo": true,
-          "registradoEn": "2026-10-22T14:00:00.000Z",
-          "actualizadoEn": "2026-10-22T14:00:00.000Z",
-          "codigoDemo": "1234"
-        },
-        {
-          "id": "arb-demo-pedro",
-          "nombre": "Pedro",
-          "apellido": "Arias",
-          "telefono": "04143334444",
-          "activo": true,
-          "registradoEn": "2026-10-22T14:00:00.000Z",
-          "actualizadoEn": "2026-10-22T14:00:00.000Z",
-          "codigoDemo": "1234"
-        }
-      ],
+      "data": {
+        "pin": "2468",
+        "arbitros": [
+          {
+            "id": "arb-demo-carla",
+            "nombre": "Carla",
+            "apellido": "Rodríguez",
+            "telefono": "04140000001",
+            "activo": true,
+            "registradoEn": "2026-10-22T14:00:00.000Z",
+            "actualizadoEn": "2026-10-22T14:00:00.000Z",
+            "codigoDemo": "1234"
+          },
+          {
+            "id": "arb-demo-jose",
+            "nombre": "José",
+            "apellido": "Méndez",
+            "telefono": "04140000002",
+            "activo": true,
+            "registradoEn": "2026-10-22T14:00:00.000Z",
+            "actualizadoEn": "2026-10-22T14:00:00.000Z",
+            "codigoDemo": "1234"
+          },
+          {
+            "id": "arb-demo-ana",
+            "nombre": "Ana",
+            "apellido": "Pérez",
+            "telefono": "04140000003",
+            "activo": true,
+            "registradoEn": "2026-10-22T14:00:00.000Z",
+            "actualizadoEn": "2026-10-22T14:00:00.000Z",
+            "codigoDemo": "1234"
+          },
+          {
+            "id": "arb-demo-luis",
+            "nombre": "Luis",
+            "apellido": "Salas",
+            "telefono": "04140000004",
+            "activo": true,
+            "registradoEn": "2026-10-22T14:00:00.000Z",
+            "actualizadoEn": "2026-10-22T14:00:00.000Z",
+            "codigoDemo": "1234"
+          },
+          {
+            "id": "arb-demo-maria",
+            "nombre": "María",
+            "apellido": "Gil",
+            "telefono": "04140000005",
+            "activo": true,
+            "registradoEn": "2026-10-22T14:00:00.000Z",
+            "actualizadoEn": "2026-10-22T14:00:00.000Z",
+            "codigoDemo": "1234"
+          },
+          {
+            "id": "arb-demo-pedro",
+            "nombre": "Pedro",
+            "apellido": "Arias",
+            "telefono": "04140000006",
+            "activo": true,
+            "registradoEn": "2026-10-22T14:00:00.000Z",
+            "actualizadoEn": "2026-10-22T14:00:00.000Z",
+            "codigoDemo": "1234"
+          }
+        ]
+      },
       "actualizadoEn": "2026-10-22T14:00:00.000Z"
     }
   ]

@@ -7,7 +7,6 @@ import { ArrowLeft, ChevronRight, Delete, LockKeyhole, UserPlus } from "lucide-r
 import { useEffect, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { Logo } from "@/components/Logo";
-import { rangoFechas } from "@/components/torneo/TorneoShell";
 import { esArbitroDe, listarArbitros, useArbitro, useArbitroStore, type ArbitroLista } from "@/lib/arbitro";
 import { sonar, vibrar } from "@/lib/feedback";
 import { useAmericanos, useEsStaff } from "@/lib/store";
@@ -30,10 +29,10 @@ function guardarUltimo(id: string) {
   }
 }
 
-/** Torneos con PIN de árbitros vigente. */
+/** Torneos que se pueden arbitrar: los que no terminaron. */
 export function useTorneosConArbitros() {
-  const lista = useListaTorneos();
-  return lista.filter((t) => t.arbitros && new Date(t.arbitros.vence).getTime() > Date.now());
+  const hoy = new Date().toISOString().slice(0, 10);
+  return useListaTorneos().filter((t) => t.estado !== "FINALIZADO" && (t.dias.at(-1)?.fecha ?? hoy) >= hoy);
 }
 
 /** Teclado numérico grande para el código de 4 dígitos: se envía solo al completar. */
@@ -80,37 +79,28 @@ export function PadCodigo({ largo = 4, onCompleto, error, ocupado }: { largo?: n
   );
 }
 
-type Paso = { p: "torneo" } | { p: "quien" } | { p: "codigo"; a: ArbitroLista } | { p: "registro" };
+type Paso = { p: "quien" } | { p: "codigo"; a: ArbitroLista } | { p: "registro" };
 
 /**
  * Entrada del árbitro, pensada para la tablet: tu nombre de la lista y tu código de 4 números.
- * La primera vez se registra (nombre, apellido, teléfono, PIN que da el staff y su código):
- * así cada punto queda firmado por una persona y no hay "yo no fui".
+ * La primera vez se registra (nombre, apellido, teléfono, PIN que da el staff y su código), una
+ * sola vez para todos los torneos del club: así cada punto queda firmado por una persona.
  */
-export function ArbitroLogin({ torneoFijo, onListo }: { torneoFijo?: string; onListo?: () => void }) {
+export function ArbitroLogin({ onListo }: { onListo?: () => void }) {
   const entrar = useArbitroStore((s) => s.entrar);
-  const torneos = useTorneosConArbitros();
-  const [torneoId, setTorneoId] = useState(torneoFijo ?? "");
-  const [paso, setPaso] = useState<Paso>({ p: torneoFijo ? "quien" : "torneo" });
-  const [lista, setLista] = useState<ArbitroLista[] | null>(null);
+  const [paso, setPaso] = useState<Paso>({ p: "quien" });
+  const [plantel, setPlantel] = useState<{ abierto: boolean; arbitros: ArbitroLista[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const ultimo = leerUltimo();
 
   useEffect(() => {
-    if (!torneoId && torneos.length === 1) {
-      setTorneoId(torneos[0].id);
-      setPaso({ p: "quien" });
-    }
-  }, [torneoId, torneos]);
-  useEffect(() => {
-    if (!torneoId) return;
-    setLista(null);
-    listarArbitros(torneoId).then((l) => {
-      setLista(l);
-      if (!l.length) setPaso((x) => (x.p === "quien" ? { p: "registro" } : x));
+    listarArbitros().then((l) => {
+      const p = l ?? { abierto: true, arbitros: [] };
+      setPlantel(p);
+      if (p.abierto && !p.arbitros.length) setPaso((x) => (x.p === "quien" ? { p: "registro" } : x));
     });
-  }, [torneoId]);
+  }, []);
 
   const listo = async (a: { id: string }) => {
     guardarUltimo(a.id);
@@ -119,45 +109,19 @@ export function ArbitroLogin({ torneoFijo, onListo }: { torneoFijo?: string; onL
     await useTorneos.getState().sincronizar();
     onListo?.();
   };
-  const fijo = torneos.find((t) => t.id === torneoId);
+  const lista = plantel?.arbitros ?? null;
   const orden = [...(lista ?? [])].sort((a, b) => (a.id === ultimo ? -1 : b.id === ultimo ? 1 : a.nombre.localeCompare(b.nombre)));
+
+  if (plantel && !plantel.abierto)
+    return (
+      <p className="glass w-full max-w-xl rounded-2xl p-5 text-left text-sm text-white/60">
+        El club todavía no abrió el registro de árbitros. El staff crea el PIN en <b>Ajustes → Árbitros del club</b>.
+      </p>
+    );
 
   return (
     <div className="w-full max-w-xl text-left">
-      {fijo && paso.p !== "torneo" && !torneoFijo && torneos.length > 1 && (
-        <button className="mb-4 flex items-center gap-1.5 text-sm text-white/55" onClick={() => setPaso({ p: "torneo" })}>
-          <ArrowLeft className="size-4" /> {fijo.nombre}
-        </button>
-      )}
       <AnimatePresence mode="wait">
-        {paso.p === "torneo" && (
-          <motion.div key="torneo" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-            <p className="label">¿Qué torneo vas a arbitrar?</p>
-            {torneos.length === 0 ? (
-              <p className="glass rounded-2xl p-4 text-sm text-white/60">No hay torneos abiertos para árbitros. El staff lo activa en Ajustes del club → Claves de torneos.</p>
-            ) : (
-              <div className="space-y-2">
-                {torneos.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => {
-                      setTorneoId(t.id);
-                      setPaso({ p: "quien" });
-                    }}
-                    className="glass flex w-full items-center gap-3 rounded-2xl px-5 py-4 text-left transition hover:border-neon/40 active:scale-[0.99]"
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="block font-display text-lg font-bold">{t.nombre}</span>
-                      <span className="block text-sm text-white/50">{rangoFechas(t)}</span>
-                    </span>
-                    <ChevronRight className="size-5 text-white/40" />
-                  </button>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        )}
-
         {paso.p === "quien" && (
           <motion.div key="quien" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
             <p className="font-display text-2xl font-bold">¿Quién eres?</p>
@@ -208,7 +172,7 @@ export function ArbitroLogin({ torneoFijo, onListo }: { torneoFijo?: string; onL
               ocupado={ocupado}
               onCompleto={async (c) => {
                 setOcupado(true);
-                const err = await entrar(torneoId, paso.a.id, c);
+                const err = await entrar(paso.a.id, c);
                 setOcupado(false);
                 if (err) return setError(err);
                 await listo(paso.a);
@@ -222,7 +186,7 @@ export function ArbitroLogin({ torneoFijo, onListo }: { torneoFijo?: string; onL
 
         {paso.p === "registro" && (
           <motion.div key="registro" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-            <Registro torneoId={torneoId} hayLista={!!lista?.length} onVolver={() => setPaso({ p: "quien" })} onListo={listo} />
+            <Registro hayLista={!!lista?.length} onVolver={() => setPaso({ p: "quien" })} onListo={listo} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -231,7 +195,7 @@ export function ArbitroLogin({ torneoFijo, onListo }: { torneoFijo?: string; onL
 }
 
 /** Registro en tres toques: tus datos, el PIN del staff y tu código (dos veces). */
-function Registro({ torneoId, hayLista, onVolver, onListo }: { torneoId: string; hayLista: boolean; onVolver: () => void; onListo: (a: { id: string }) => void }) {
+function Registro({ hayLista, onVolver, onListo }: { hayLista: boolean; onVolver: () => void; onListo: (a: { id: string }) => void }) {
   const registrar = useArbitroStore((s) => s.registrar);
   const [d, setD] = useState({ nombre: "", apellido: "", telefono: "", pin: "" });
   const [etapa, setEtapa] = useState<"datos" | "codigo" | "repetir">("datos");
@@ -263,7 +227,7 @@ function Registro({ torneoId, hayLista, onVolver, onListo }: { torneoId: string;
               return setEtapa("codigo");
             }
             setOcupado(true);
-            const err = await registrar({ torneoId, ...d, codigo: c });
+            const err = await registrar({ ...d, codigo: c });
             setOcupado(false);
             if (err) {
               setError(err);
@@ -293,7 +257,7 @@ function Registro({ torneoId, hayLista, onVolver, onListo }: { torneoId: string;
       )}
       <div>
         <p className="font-display text-2xl font-bold">Regístrate como árbitro</p>
-        <p className="text-sm text-white/55">Una sola vez por torneo. Tu nombre queda en cada partido que anotes.</p>
+        <p className="text-sm text-white/55">Una sola vez: sirve para todos los torneos del club. Tu nombre queda en cada partido que anotes.</p>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <input className="input !py-4 text-lg" placeholder="Nombre" value={d.nombre} onChange={(e) => setD({ ...d, nombre: e.target.value })} autoComplete="given-name" maxLength={30} />
@@ -301,7 +265,7 @@ function Registro({ torneoId, hayLista, onVolver, onListo }: { torneoId: string;
       </div>
       <input className="input !py-4 text-lg" placeholder="Teléfono (WhatsApp)" inputMode="tel" value={d.telefono} onChange={(e) => setD({ ...d, telefono: e.target.value })} autoComplete="tel" maxLength={20} />
       <div>
-        <label className="label" htmlFor="arb-pin">PIN del torneo (te lo da el staff)</label>
+        <label className="label" htmlFor="arb-pin">PIN de árbitros (te lo da el staff)</label>
         <input
           id="arb-pin"
           className="input !py-4 text-center font-display text-2xl font-bold tracking-[0.4em]"
@@ -343,7 +307,7 @@ export function AnotadorGate({ torneoId, children }: { torneoId: string; childre
         <h1 className="font-display text-2xl font-bold">Anotador oficial</h1>
         <p className="mt-1 max-w-sm text-sm text-white/55">Solo el árbitro del partido o el staff. Entra con tu nombre y tu código.</p>
       </div>
-      <ArbitroLogin torneoFijo={torneoId} />
+      <ArbitroLogin />
       <div className="flex gap-3">
         <Link href={`/torneos/${torneoId}`} className="btn-ghost">
           <ArrowLeft className="size-4" /> Torneo
