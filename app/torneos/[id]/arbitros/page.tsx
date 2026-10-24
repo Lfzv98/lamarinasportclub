@@ -2,7 +2,7 @@
 
 import clsx from "clsx";
 import { use, useCallback, useEffect, useMemo, useState } from "react";
-import { Eye, EyeOff, Flag, MessageCircle, Pause, Play, Share2, Shuffle, Trash2, UserCheck } from "lucide-react";
+import { Eye, EyeOff, Flag, MessageCircle, Pause, Play, Share2, Shuffle, Trash2, UserCheck, RefreshCw } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { StaffGate } from "@/components/StaffGate";
 import { TorneoShell } from "@/components/torneo/TorneoShell";
@@ -123,6 +123,19 @@ function Arbitros({ torneo }: { torneo: Torneo }) {
         </button>
         <button className="btn-ghost !p-2.5" onClick={() => setVerPin((v) => !v)} aria-label={verPin ? "Ocultar PIN" : "Ver PIN"}>
           {verPin ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+        </button>
+        <button
+          className="btn-ghost !p-2.5"
+          onClick={() => {
+            if (!confirm("¿Cambiar el PIN? Los árbitros ya registrados siguen entrando con su nombre y su código; los nuevos usarán el PIN nuevo.")) return;
+            actualizar(torneo.id, (t) => ({ ...t, arbitros: { ...(t.arbitros ?? { turnos: [] }), pin: pinAleatorio(), vence: venceAlTerminar(t.dias) } }));
+            setVerPin(true);
+            toast("PIN de árbitros nuevo");
+          }}
+          aria-label="Cambiar PIN"
+          title="Cambiar PIN"
+        >
+          <RefreshCw className="size-4" />
         </button>
         <button className="btn-neon !py-2.5" onClick={compartir}>
           <Share2 className="size-4" /> Enviar a los árbitros

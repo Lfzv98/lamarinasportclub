@@ -191,13 +191,14 @@ function PinArbitros({ torneo }: { torneo: Torneo }) {
   const arb = torneo.arbitros?.pin ? torneo.arbitros : null;
   const vigente = claveVigente(arb);
   const guardar = (a: Torneo["arbitros"], msg: string) => {
-    actualizar(torneo.id, (t) => ({ ...t, arbitros: a }));
+    // Cambiar el PIN no borra los turnos ya armados.
+    actualizar(torneo.id, (t) => ({ ...t, arbitros: a ? { ...a, turnos: t.arbitros?.turnos ?? [] } : null }));
     vibrar(12);
     toast(msg);
   };
   const compartir = async () => {
     if (!arb) return;
-    const texto = `Árbitros de ${torneo.nombre}\nEntra en ${location.origin}/arbitro con tu nombre y el PIN ${arb.pin}`;
+    const texto = `Árbitros de ${torneo.nombre}\n1. Entra en ${location.origin}/arbitro\n2. Toca "Soy nuevo" y regístrate con el PIN ${arb.pin}\n3. Crea tu código de 4 números: con él entras siempre.`;
     try {
       if (navigator.share) await navigator.share({ title: `Árbitros · ${torneo.nombre}`, text: texto });
       else {
