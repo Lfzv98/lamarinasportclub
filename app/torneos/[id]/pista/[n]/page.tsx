@@ -13,7 +13,7 @@ import { TorneoShellMinimo } from "@/components/torneo/minimo";
 import { FranjaPatrocinadores, PresentaPista } from "@/components/torneo/Patrocinadores";
 import { useAhora, useMarcadoresEnVivo } from "@/components/torneo/vivo";
 import { nombreCategoria } from "@/lib/torneo/categorias";
-import { atencionEnCurso, calcularMarcador, descansoReglamentario, relatoPunto, setsFinales, statsPartido, type Lado } from "@/lib/torneo/marcador";
+import { atencionEnCurso, calcularMarcador, descansoReglamentario, relatoPublico, setsFinales, type Lado } from "@/lib/torneo/marcador";
 import { estadoPistas, limiteWO } from "@/lib/torneo/programacion";
 import { categoria, dupla, nombreDupla, nombreJugador } from "@/lib/torneo/torneo";
 import { useMarcador } from "@/lib/torneosStore";
@@ -91,10 +91,8 @@ function Pantalla({ torneo, numero }: { torneo: Torneo; numero: number }) {
 
 function Marcador({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: MarcadorVivo }) {
   const e = useMemo(() => calcularMarcador(m), [m]);
-  const stats = useMemo(() => statsPartido(m), [m]);
   const sets = setsFinales(e);
   const jug = (id: string) => torneo.jugadores.find((j) => j.id === id);
-  const totales = (l: Lado) => stats.filter((s) => s.lado === l);
   const ahora = useAhora(1000);
   const atencion = atencionEnCurso(m, ahora);
   const descanso = descansoReglamentario(e);
@@ -197,10 +195,11 @@ function Marcador({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marca
             </p>
           )}
         </div>
+        {/* Datos del partido por dupla. Las métricas de cada atleta las ven solo los participantes. */}
         {[
-          { t: "Puntos", f: (l: Lado) => totales(l)[0]?.puntosGanados ?? 0 },
-          { t: "Winners", f: (l: Lado) => totales(l).reduce((s, x) => s + x.winners, 0) },
-          { t: "Puntos de oro", f: (l: Lado) => totales(l)[0]?.puntosDeOroGanados ?? 0 },
+          { t: "Puntos", f: (l: Lado) => e.jugados.filter((x) => x.gana === l).length },
+          { t: "Breaks", f: (l: Lado) => e.jugados.filter((x) => x.gana === l && x.breakPoint && x.gana !== x.equipoSaca).length },
+          { t: "Puntos de oro", f: (l: Lado) => e.jugados.filter((x) => x.gana === l && x.oro).length },
         ].map((s) => (
           <div key={s.t} className="glass rounded-[1.5rem] p-4">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/40">{s.t}</p>
@@ -216,9 +215,9 @@ function Marcador({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marca
 
 function Relato({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: MarcadorVivo }) {
   const e = useMemo(() => calcularMarcador(m), [m]);
-  const jug = (id: string) => torneo.jugadores.find((j) => j.id === id)?.nombre ?? "";
   const lado = (l: Lado) => nombreDupla(torneo, dupla(torneo, l === "A" ? p.duplaA : p.duplaB));
-  const lista = e.jugados.slice(-9).reverse();
+  const lista = e.jugados.slice(-7).reverse();
+  const url = typeof window !== "undefined" ? `${location.origin}/torneos/${torneo.id}/partido/${encodeURIComponent(p.id)}` : "";
   return (
     <div className="glass flex min-h-0 flex-col rounded-[2.5rem] p-6">
       <div className="flex items-center justify-between">
@@ -232,7 +231,7 @@ function Relato({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcado
           {lista.map((x) => (
             <motion.div key={x.n} layout initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className={clsx("rounded-2xl border-l-4 bg-white/[0.04] px-4 py-3", x.gana === "A" ? "border-lima" : "border-cielo")}>
               <div className="flex items-start justify-between gap-3">
-                <p className="text-lg leading-snug text-white/85">{relatoPunto(x, jug, lado)}</p>
+                <p className="text-lg leading-snug text-white/85">{relatoPublico(x, lado)}</p>
                 <span className="shrink-0 text-sm text-white/35">#{x.n}</span>
               </div>
               {x.evento && <p className="mt-1 text-sm font-bold uppercase tracking-wider text-lima">{x.evento === "GAME" ? "Game" : x.evento === "SET" ? "Set" : "Partido"} para {lado(x.gana)}</p>}
@@ -240,6 +239,15 @@ function Relato({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcado
           ))}
         </AnimatePresence>
         {!lista.length && <p className="text-lg text-white/40">El partido está por empezar.</p>}
+      </div>
+      <div className="mt-4 flex items-center gap-4 rounded-2xl bg-white/[0.04] p-3">
+        <div className="shrink-0 rounded-xl bg-blanco p-2">
+          <QR texto={url} size={96} />
+        </div>
+        <p className="text-base leading-snug text-white/60">
+          <span className="block font-semibold text-white">Estadísticas del partido</span>
+          Para los atletas, con la clave del torneo
+        </p>
       </div>
     </div>
   );

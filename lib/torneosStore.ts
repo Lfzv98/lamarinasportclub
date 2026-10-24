@@ -10,6 +10,8 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { fusionarTorneos } from "@/lib/torneo/torneo";
+import { aplicarAccion, type AccionPartido } from "@/lib/torneo/arbitraje";
+import { useArbitroStore } from "@/lib/arbitro";
 import { useAmericanos } from "@/lib/store";
 import type { ApiMarcadoresRespuesta, ApiTorneosRespuesta, MarcadorVivo, Torneo } from "@/types/torneo";
 
@@ -18,6 +20,8 @@ interface EstadoTorneos {
   marcadores: Record<string, MarcadorVivo>;
   pendientes: string[];
   marcadoresPendientes: string[];
+  /** Acciones de árbitro sobre partidos que no llegaron al servidor (sin señal). */
+  accionesPendientes: AccionPendiente[];
   /** torneoId → vence (ISO) de las claves de participante de este dispositivo. */
   accesos: Record<string, string>;
   hidratado: boolean;
@@ -28,6 +32,8 @@ interface EstadoTorneos {
   guardar: (t: Torneo) => void;
   actualizar: (id: string, fn: (t: Torneo) => Torneo) => void;
   guardarMarcador: (m: MarcadorVivo) => void;
+  /** Llamar, empezar, cerrar o dar W.O. a un partido: se aplica ya y el servidor lo aplica sobre su versión. */
+  accionPartido: (torneoId: string, partidoId: string, accion: AccionPartido) => Promise<string | null>;
   entrar: (torneoId: string, clave: string) => Promise<string | null>;
 }
 
@@ -67,6 +73,36 @@ const almacen = {
 };
 
 const esStaff = () => !!useAmericanos.getState().staff;
+const esArbitro = () => !!useArbitroStore.getState().arbitro;
+
+interface AccionPendiente {
+  torneoId: string;
+  partidoId: string;
+  accion: AccionPartido;
+  en: string;
+}
+
+/** Sube una acción de partido. Devuelve el error del servidor, "offline" si no hubo red, o null. */
+async function enviarAccion(a: AccionPendiente): Promise<string | null> {
+  try {
+    const res = await fetch(`/api/torneos/${encodeURIComponent(a.torneoId)}/partidos/${encodeURIComponent(a.partidoId)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(a.accion),
+    });
+    const data = (await res.json().catch(() => ({}))) as { torneo?: Torneo; error?: string };
+    useTorneos.setState((s) => ({
+      // Hecha o rechazada, ya no se reintenta.
+      accionesPendientes: s.accionesPendientes.filter((x) => x !== a && !(x.partidoId === a.partidoId && x.en === a.en)),
+      torneos: data.torneo ? unir(s.torneos, [data.torneo]) : s.torneos,
+      offline: false,
+    }));
+    return res.ok ? null : (data.error ?? "No se pudo guardar.");
+  } catch {
+    useTorneos.setState({ offline: true });
+    return "offline";
+  }
+}
 
 function unir(local: Record<string, Torneo>, remotos: Torneo[]) {
   const out = { ...local };
@@ -131,6 +167,7 @@ export const useTorneos = create<EstadoTorneos>()(
       marcadores: {},
       pendientes: [],
       marcadoresPendientes: [],
+      accionesPendientes: [],
       accesos: {},
       hidratado: false,
       ultimoSync: null,
@@ -143,7 +180,15 @@ export const useTorneos = create<EstadoTorneos>()(
           const data = (await rt.json()) as ApiTorneosRespuesta;
           const accesos = ra.ok ? ((await ra.json()) as { accesos: Record<string, string> }).accesos : get().accesos;
           set((s) => ({ torneos: unir(s.torneos, data.torneos), accesos, ultimoSync: new Date().toISOString(), offline: false }));
-          if (!esStaff()) return;
+          if (!esStaff() && !esArbitro()) return;
+          const { accionesPendientes } = get();
+          for (const a of accionesPendientes) await enviarAccion(a);
+          if (!esStaff()) {
+            // El árbitro solo sube sus marcadores; el torneo lo cambia el servidor con sus acciones.
+            const { marcadores: ms, marcadoresPendientes: mp } = get();
+            await Promise.all(mp.map((id) => ms[id]).filter(Boolean).map(enviarMarcador));
+            return;
+          }
           const remotos = new Map(data.torneos.map((t) => [t.id, t]));
           const { torneos, pendientes, marcadores, marcadoresPendientes } = get();
           await Promise.all([
@@ -199,6 +244,27 @@ export const useTorneos = create<EstadoTorneos>()(
         });
       },
 
+      async accionPartido(torneoId, partidoId, accion) {
+        const t = get().torneos[torneoId];
+        if (!t || t.bloqueado) return "Torneo no disponible en este dispositivo.";
+        const nombre = useAmericanos.getState().staff?.nombre ?? (useArbitroStore.getState().arbitro ? `Árbitro ${useArbitroStore.getState().arbitro!.nombre}` : undefined);
+        const local = aplicarAccion(t, partidoId, accion, nombre);
+        set((s) => ({ torneos: { ...s.torneos, [torneoId]: local } }));
+        canal?.postMessage({ tipo: "torneo", torneo: local });
+        const pendiente: AccionPendiente = { torneoId, partidoId, accion, en: new Date().toISOString() };
+        set((s) => ({ accionesPendientes: [...s.accionesPendientes, pendiente] }));
+        const error = await enviarAccion(pendiente);
+        if (error === "offline") {
+          // Queda en cola (ya está en accionesPendientes) y se sube sola al volver la señal.
+          return null;
+        }
+        if (error) {
+          // El servidor no la aceptó: se vuelve a lo que diga el servidor.
+          await get().sincronizar();
+        }
+        return error;
+      },
+
       async entrar(torneoId, clave) {
         try {
           const r = await fetch("/api/torneos/acceso", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ torneoId, clave }) });
@@ -215,7 +281,14 @@ export const useTorneos = create<EstadoTorneos>()(
     {
       name: "lamarina-torneos-v1",
       storage: createJSONStorage(() => almacen),
-      partialize: (s) => ({ torneos: s.torneos, marcadores: s.marcadores, pendientes: s.pendientes, marcadoresPendientes: s.marcadoresPendientes, accesos: s.accesos }),
+      partialize: (s) => ({
+        torneos: s.torneos,
+        marcadores: s.marcadores,
+        pendientes: s.pendientes,
+        marcadoresPendientes: s.marcadoresPendientes,
+        accionesPendientes: s.accionesPendientes,
+        accesos: s.accesos,
+      }),
       skipHydration: true,
     },
   ),
