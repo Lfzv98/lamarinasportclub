@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { sesionDe } from "@/lib/server/auth";
 import { ErrorApi, leerJson, manejar } from "@/lib/server/http";
 import { getTorneosRepository } from "@/lib/server/repository";
-import { esArbitroDe, paraVisor, visorDe } from "@/lib/server/torneos";
+import { arbitroValido, nombreArbitro } from "@/lib/server/arbitros";
+import { paraVisor, visorDe } from "@/lib/server/torneos";
 import { limiteWO } from "@/lib/torneo/programacion";
 import { validarResultadoTorneo } from "@/lib/torneo/tabla";
 import { cargarResultado, cargarWO, iniciarPartido, llamarAPista, partido, reglasDe } from "@/lib/torneo/torneo";
@@ -28,12 +29,12 @@ export const POST = manejar(async (req: Request, ctx: { params: Promise<{ id: st
   if (!t || t.eliminado) throw new ErrorApi(404, "Torneo no encontrado.");
   const v = visorDe(req);
   const staff = sesionDe(req);
-  const arbitro = esArbitroDe(t, v.arbitro) ? v.arbitro! : null;
+  const arbitro = staff ? null : await arbitroValido(t, v.arbitro);
   if (!staff && !arbitro) throw new ErrorApi(401, "Solo el staff o los árbitros de este torneo pueden anotar.");
   const p = partido(t, pid);
   if (!p || p.bye) throw new ErrorApi(404, "Partido no encontrado.");
   const body = (await leerJson(req)) as Partial<AccionPartido> | null;
-  const por = staff ? staff.nombre : `Árbitro ${arbitro!.nombre}`;
+  const por = staff ? staff.nombre : `Árbitro ${nombreArbitro(arbitro!)}`;
   const pistaValida = (n: unknown) => typeof n === "number" && t.canchas.some((c) => c.numero === n && c.activa);
   let final: Torneo;
 

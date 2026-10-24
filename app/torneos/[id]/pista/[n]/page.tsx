@@ -12,6 +12,7 @@ import { QR } from "@/components/QR";
 import { TorneoShellMinimo } from "@/components/torneo/minimo";
 import { FranjaPatrocinadores, PresentaPista } from "@/components/torneo/Patrocinadores";
 import { useAhora, useMarcadoresEnVivo } from "@/components/torneo/vivo";
+import { useFotoDupla, useFotosTorneo } from "@/lib/fotos";
 import { nombreCategoria } from "@/lib/torneo/categorias";
 import { atencionEnCurso, calcularMarcador, descansoReglamentario, relatoPublico, setsFinales, type Lado } from "@/lib/torneo/marcador";
 import { estadoPistas, limiteWO } from "@/lib/torneo/programacion";
@@ -27,6 +28,7 @@ export default function PistaPage({ params }: { params: Promise<{ id: string; n:
 
 function Pantalla({ torneo, numero }: { torneo: Torneo; numero: number }) {
   useMarcadoresEnVivo(torneo.id, 1500);
+  useFotosTorneo(torneo.id);
   const { full, alternar } = useFullscreenYWakeLock();
   const oculto = useCursorOculto();
   const estado = estadoPistas(torneo).find((p) => p.numero === numero);
@@ -137,11 +139,7 @@ function Marcador({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marca
             <div key={l} className={clsx("grid grid-cols-[1fr_repeat(var(--sets),5rem)_11rem] items-center gap-4 rounded-[2rem] px-6 py-5", gana ? "seleccion" : "bg-white/[0.04]")} style={{ ["--sets" as string]: sets.length }}>
               <div className="flex min-w-0 items-center gap-5">
                 <span className={clsx("h-20 w-2 shrink-0 rounded-full", l === "A" ? "bg-lima" : "bg-cielo")} />
-                <div className="flex -space-x-4">
-                  {ids.map((id) => (
-                    <Avatar key={id} nombre={nombreJugador(jug(id))} fotoUrl={jug(id)?.fotoUrl} size={84} className="ring-4 ring-marino-2" />
-                  ))}
-                </div>
+                <CaraDupla torneo={torneo} duplaId={l === "A" ? p.duplaA : p.duplaB} ids={ids} alto={96} />
                 <div className="min-w-0">
                   <p className="truncate font-display text-5xl font-bold">{nombreDupla(torneo, dupla(torneo, l === "A" ? p.duplaA : p.duplaB))}</p>
                   <p className="mt-1 flex items-center gap-3 text-xl text-white/55">
@@ -277,12 +275,7 @@ function Siguiente({ torneo, p, llamado }: { torneo: Torneo; p: PartidoTorneo | 
       <div className="mt-8 space-y-4">
         {[p.duplaA, p.duplaB].map((d, i) => (
           <div key={i} className="glass flex items-center gap-6 rounded-[2rem] px-8 py-6">
-            <div className="flex -space-x-4">
-              {dupla(torneo, d)?.jugadorIds.map((id) => {
-                const j = torneo.jugadores.find((x) => x.id === id);
-                return <Avatar key={id} nombre={nombreJugador(j)} fotoUrl={j?.fotoUrl} size={80} className="ring-4 ring-marino-2" />;
-              })}
-            </div>
+            <CaraDupla torneo={torneo} duplaId={d} ids={dupla(torneo, d)?.jugadorIds ?? []} alto={92} />
             <p className="font-display text-5xl font-bold">{dupla(torneo, d)?.jugadorIds.map((id) => nombreJugador(torneo.jugadores.find((x) => x.id === id))).join(" / ")}</p>
           </div>
         ))}
@@ -292,6 +285,22 @@ function Siguiente({ torneo, p, llamado }: { torneo: Torneo; p: PartidoTorneo | 
           Presentarse en <span className="font-bold text-lima">{minutos} min</span> o se aplica W.O.
         </p>
       )}
+    </div>
+  );
+}
+
+/** Foto de la dupla tomada en la pista; si no hay, las caras de los dos jugadores. */
+function CaraDupla({ torneo, duplaId, ids, alto }: { torneo: Torneo; duplaId: string | null; ids: string[]; alto: number }) {
+  const url = useFotoDupla(torneo.id, duplaId);
+  const jug = (id: string) => torneo.jugadores.find((j) => j.id === id);
+  if (url)
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={url} alt="" style={{ height: alto, width: alto * 1.35 }} className="shrink-0 rounded-[1.5rem] object-cover ring-4 ring-marino-2" />;
+  return (
+    <div className="flex shrink-0 -space-x-4">
+      {ids.map((id) => (
+        <Avatar key={id} nombre={nombreJugador(jug(id))} fotoUrl={jug(id)?.fotoUrl} size={alto - 10} className="ring-4 ring-marino-2" />
+      ))}
     </div>
   );
 }

@@ -14,6 +14,7 @@ La app funciona sola en **modo DEMO** (datos de `data/mockData.json`, guardados 
 | `SUPABASE_CLUB_TABLE` | Opcional, por defecto `club_config` |
 | `SUPABASE_TORNEOS_TABLE` | Opcional, por defecto `torneos` |
 | `SUPABASE_MARCADORES_TABLE` | Opcional, por defecto `torneos_marcadores` |
+| `SUPABASE_EXTRAS_TABLE` | Opcional, por defecto `eventos_extras` (registro de árbitros y fotos) |
 | `STAFF_PIN` | PIN del staff (4 a 8 dígitos). En DEMO, si falta, es `1234`. Con Supabase, si falta, el PIN queda desactivado |
 | `STAFF_SECRET` | Secreto (≥16 caracteres) para firmar la sesión de staff. **Obligatorio en producción** |
 | `STAFF_EMAILS` | Opcional: correos con permiso de staff, separados por coma |
@@ -26,7 +27,7 @@ Con las dos primeras definidas, `getRepository()` cambia de DEMO a SUPABASE auto
 
 ## 2. Tablas
 
-La opción rápida es correr `supabase/schema.sql`: guarda cada evento como JSONB y no toca las tablas existentes.
+La opción rápida es correr `supabase/schema.sql`: guarda cada evento como JSONB y no toca las tablas existentes. Incluye `eventos_extras (id, evento_id, tipo, data jsonb, actualizado_en)` para el registro de árbitros y las fotos de duplas y jugadores (RLS activado; solo la usa el servidor con la service role).
 
 Si prefieres usar las tablas normalizadas de PadelReserve (jugadores = usuarios, reservas de pista, etc.), implementa la interfaz `AmericanosRepository` en `lib/server/repository.ts`. Es lo único que hay que cambiar: el frontend solo habla con los endpoints.
 
@@ -76,9 +77,17 @@ Puntos de enganche útiles:
 | POST | `/api/torneos/acceso` | `{ torneoId, clave }` → cookie `lm_torneos` hasta que vence la clave. `401` clave incorrecta, `410` vencida, `429` demasiados intentos |
 | GET | `/api/marcadores?torneoId=` | marcadores punto a punto del torneo (si el visitante puede verlo) |
 | POST | `/api/marcadores` | `{ marcador }` (staff o árbitro del torneo) → gana el más reciente por `actualizadoEn`. Un árbitro no puede reabrir un marcador finalizado ni tocar otro torneo (`409`) |
-| GET | `/api/arbitro` | `{ arbitro: { torneoId, nombre } \| null }` |
-| POST | `/api/arbitro` | `{ torneoId, pin, nombre }` → cookie `lm_arbitro`. `401` PIN incorrecto, `403` el torneo no tiene PIN, `410` vencido, `429` demasiados intentos |
+| GET | `/api/arbitro` | `{ arbitro: { torneoId, id, nombre } \| null }` (null si lo pausaron, lo borraron o cambió su código) |
+| POST | `/api/arbitro` | `{ torneoId, arbitroId, codigo }` → cookie `lm_arbitro`. `401` código incorrecto, `403` el torneo no tiene PIN o el árbitro está pausado, `404` no registrado, `410` PIN vencido, `429` demasiados intentos |
 | DELETE | `/api/arbitro` | cierra la sesión de árbitro |
+| POST | `/api/arbitro/registro` | `{ torneoId, pin, nombre, apellido, telefono, codigo }` (código de 4 dígitos) → `201` + cookie. Mismo teléfono = cambia su código (olvidó el código). Mismo nombre con otro teléfono = `409`. Máximo 60 por torneo |
+| GET | `/api/arbitros?torneoId=` | Staff: lista completa con teléfono, `activo`, partidos y puntos anotados. Público (PIN vigente): solo `{ id, nombre }` de los activos ("Carla R.") |
+| PATCH | `/api/arbitros` | `{ torneoId, arbitroId, activo }` (staff) → pausar o reactivar |
+| DELETE | `/api/arbitros?torneoId=&arbitroId=` | borra al árbitro (staff); sus puntos conservan el nombre |
+| GET | `/api/fotos?torneoId=` | `{ fotos: { [duplaId]: url } }` (con acceso al torneo) |
+| POST | `/api/fotos` | `{ eventoId, tipo: "dupla" \| "jugador", id, img }` (`img` = data URL JPEG ≤450 KB) → `{ url }`. Duplas: staff o árbitro del torneo. Jugadores: solo staff (torneo o americano) |
+| DELETE | `/api/fotos?eventoId=&tipo=&id=` | borra la foto (staff) |
+| GET | `/api/fotos/:eventoId/:clave?v=` | la imagen (`d-<duplaId>` o `j-<jugadorId>`), con caché inmutable por versión |
 | POST | `/api/torneos/:id/partidos/:pid` | `{ accion: "llamar" \| "iniciar" \| "resultado" \| "wo", … }` (staff o árbitro) → aplica la acción sobre la versión guardada y devuelve `{ torneo }` |
 
 ### Errores (siempre JSON)
@@ -124,7 +133,9 @@ Toda la lógica de juego (rotación, validación de marcadores, tabla) es TypeSc
 - Un torneo guarda categorías, duplas, cuadros (grupos y llaves), programación, bloqueos (incluidas suspensiones por lluvia), sedes, patrocinadores, historial y la clave de participantes. El marcador punto a punto vive aparte por partido para no reenviar el torneo en cada punto.
 - **Fusión:** la configuración sale de la versión más reciente y cada partido conserva su versión más reciente (`fusionarTorneos`).
 - **Clave:** el servidor nunca la envía a quien no es staff. La cookie `lm_torneos` guarda, por torneo, una huella de la clave vigente: si el staff la cambia, los accesos anteriores dejan de valer.
-- **Árbitros:** cookie `lm_arbitro` firmada (HMAC) con torneo, nombre y huella del PIN; dura hasta 16 h o hasta que vence el PIN. Solo puede usar `/api/torneos/:id/partidos/:pid` y `/api/marcadores` de su torneo: nunca sube el torneo entero, así no pisa cambios del staff. Un W.O. solo se acepta pasado el límite FIP; un resultado ya finalizado solo lo corrige el staff. El PIN nunca sale del servidor salvo para el staff.
+- **Árbitros:** se registran una vez por torneo en `eventos_extras` (id `arbitros:<torneoId>`, tipo `arbitros`): nombre, apellido, teléfono, `activo` y el código propio guardado solo como HMAC (`STAFF_SECRET`), nunca sale del servidor. La cookie `lm_arbitro` va firmada (HMAC) con `{ torneoId, arbitroId, nombre, huella del PIN, huella del código, exp }`; dura hasta 16 h o hasta que vence el PIN, y deja de valer si el staff lo pausa, lo borra o cambia el PIN. Cada punto guarda `por` (id del árbitro o `staff`) y el marcador la lista `anotadores` (relevos). Los turnos van en `torneo.arbitros.turnos` (`{ arbitroId, fecha, pista, desde, hasta }`).
+- **Fotos:** también en `eventos_extras`: dupla `foto:<torneoId>:<duplaId>` (tipo `foto`), jugador `fotoj:<eventoId>:<jugadorId>` (tipo `foto-jugador`), con la imagen como data URL. La foto del jugador queda además en `jugador.fotoUrl` apuntando a `/api/fotos/...`, así sale en todo sitio con avatar. Si más adelante prefieres Supabase Storage, solo cambia `lib/server/fotos.ts` y la ruta `/api/fotos`.
+- **Sesión del árbitro (detalle):** Solo puede usar `/api/torneos/:id/partidos/:pid` y `/api/marcadores` de su torneo: nunca sube el torneo entero, así no pisa cambios del staff. Un W.O. solo se acepta pasado el límite FIP; un resultado ya finalizado solo lo corrige el staff. El PIN nunca sale del servidor salvo para el staff.
 - **Lógica pura reutilizable:** `lib/torneo/*` (sorteo, tablas, programación, imprevistos, marcador) no depende de React ni del servidor.
 
 ## Ranking FVP: pasos pendientes para producción (Juan)

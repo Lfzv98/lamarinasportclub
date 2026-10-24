@@ -4,7 +4,7 @@ import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, BarChart3, CalendarClock, GitFork, KeyRound, LayoutDashboard, Lock, Settings, Users } from "lucide-react";
+import { ArrowLeft, BarChart3, CalendarClock, Flag, GitFork, KeyRound, LayoutDashboard, Lock, Settings, Users } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "@/components/Logo";
 import { StaffChip } from "@/components/StaffGate";
@@ -137,6 +137,11 @@ export function TorneoShell({ id, children, ancho = "max-w-6xl" }: { id: string;
           </div>
         </div>
         <StaffChip />
+        {esStaff && (
+          <Link href={`/torneos/${id}/arbitros`} className={clsx("btn-ghost !p-2.5", pathname.endsWith("/arbitros") && "!border-neon/50 !text-neon")} aria-label="Árbitros y turnos" title="Árbitros y turnos">
+            <Flag className="size-5" />
+          </Link>
+        )}
         {esStaff && (
           <Link href={`/torneos/${id}/ajustes`} className={clsx("btn-ghost !p-2.5", pathname.endsWith("/ajustes") && "!border-neon/50 !text-neon")} aria-label="Ajustes del torneo">
             <Settings className="size-5" />

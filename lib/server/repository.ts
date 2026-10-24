@@ -132,9 +132,24 @@ export interface TorneosRepository {
   listarMarcadores(torneoId?: string | null): Promise<MarcadorVivo[]>;
   obtenerMarcador(id: string): Promise<MarcadorVivo | null>;
   guardarMarcador(m: MarcadorVivo): Promise<MarcadorVivo>;
+  /** Datos sueltos de un torneo o americano (registro de árbitros, fotos): tabla `eventos_extras`. */
+  /** Lista sin `data` para las fotos (solo id y versión); con `data` para el registro de árbitros. */
+  listarExtras(torneoId: string, tipo: string): Promise<ExtraTorneo[]>;
+  obtenerExtra(id: string): Promise<ExtraTorneo | null>;
+  guardarExtra(x: ExtraTorneo): Promise<ExtraTorneo>;
+  borrarExtra(id: string): Promise<void>;
 }
 
-const memoriaT = globalThis as unknown as { __torneosDemo?: Map<string, Torneo>; __marcadoresDemo?: Map<string, MarcadorVivo> };
+export interface ExtraTorneo<T = unknown> {
+  id: string;
+  /** Torneo o americano al que pertenece. */
+  torneoId: string;
+  tipo: string;
+  data: T;
+  actualizadoEn: string;
+}
+
+const memoriaT = globalThis as unknown as { __torneosDemo?: Map<string, Torneo>; __marcadoresDemo?: Map<string, MarcadorVivo>; __extrasDemo?: Map<string, ExtraTorneo> };
 
 function torneosDemo(): Map<string, Torneo> {
   if (!memoriaT.__torneosDemo) {
@@ -145,6 +160,9 @@ function torneosDemo(): Map<string, Torneo> {
 }
 const marcadoresDemo = () =>
   (memoriaT.__marcadoresDemo ??= new Map(((mock as unknown as { marcadores?: MarcadorVivo[] }).marcadores ?? []).map((m) => [m.id, structuredClone(m)] as const)));
+
+const extrasDemo = () =>
+  (memoriaT.__extrasDemo ??= new Map(((mock as unknown as { extras?: ExtraTorneo[] }).extras ?? []).map((x) => [x.id, structuredClone(x)] as const)));
 
 const demoTorneos: TorneosRepository = {
   modo: "DEMO",
@@ -168,12 +186,26 @@ const demoTorneos: TorneosRepository = {
     marcadoresDemo().set(m.id, m);
     return m;
   },
+  async listarExtras(torneoId, tipo) {
+    return [...extrasDemo().values()].filter((x) => x.torneoId === torneoId && x.tipo === tipo);
+  },
+  async obtenerExtra(id) {
+    return extrasDemo().get(id) ?? null;
+  },
+  async guardarExtra(x) {
+    extrasDemo().set(x.id, x);
+    return x;
+  },
+  async borrarExtra(id) {
+    extrasDemo().delete(id);
+  },
 };
 
 function supabaseTorneos(url: string, key: string): TorneosRepository {
   const raiz = `${url.replace(/\/$/, "")}/rest/v1/`;
   const tablaT = process.env.SUPABASE_TORNEOS_TABLE ?? "torneos";
   const tablaM = process.env.SUPABASE_MARCADORES_TABLE ?? "torneos_marcadores";
+  const tablaX = process.env.SUPABASE_EXTRAS_TABLE ?? "eventos_extras";
   const headers = { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" };
   async function pedir<T>(tabla: string, path: string, init?: RequestInit): Promise<T> {
     const res = await fetch(`${raiz}${tabla}${path}`, { ...init, headers: { ...headers, ...init?.headers }, cache: "no-store" });
@@ -204,6 +236,24 @@ function supabaseTorneos(url: string, key: string): TorneosRepository {
     async guardarMarcador(m) {
       await upsert(tablaM, { id: m.id, torneo_id: m.torneoId, data: m, actualizado_en: m.actualizadoEn });
       return m;
+    },
+    async listarExtras(torneoId, tipo) {
+      const filas = await pedir<{ id: string; evento_id: string; tipo: string; data: unknown; actualizado_en: string }[]>(
+        tablaX,
+        `?select=id,evento_id,tipo,actualizado_en${tipo === "arbitros" ? ",data" : ""}&evento_id=eq.${encodeURIComponent(torneoId)}&tipo=eq.${encodeURIComponent(tipo)}`,
+      );
+      return filas.map((f) => ({ id: f.id, torneoId: f.evento_id, tipo: f.tipo, data: f.data ?? null, actualizadoEn: f.actualizado_en }));
+    },
+    async obtenerExtra(id) {
+      const f = (await pedir<{ id: string; evento_id: string; tipo: string; data: unknown; actualizado_en: string }[]>(tablaX, `?select=*&id=eq.${encodeURIComponent(id)}`))[0];
+      return f ? { id: f.id, torneoId: f.evento_id, tipo: f.tipo, data: f.data, actualizadoEn: f.actualizado_en } : null;
+    },
+    async guardarExtra(x) {
+      await upsert(tablaX, { id: x.id, evento_id: x.torneoId, tipo: x.tipo, data: x.data, actualizado_en: x.actualizadoEn });
+      return x;
+    },
+    async borrarExtra(id) {
+      await pedir(tablaX, `?id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
     },
   };
 }

@@ -320,7 +320,7 @@ export interface Torneo {
    * anotar punto a punto, dar un W.O. vencido y cerrar su partido. Caduca en `vence`.
    * Solo el staff recibe el PIN; al resto la API le llega vacío.
    */
-  arbitros?: { pin: string; vence: string } | null;
+  arbitros?: { pin: string; vence: string; turnos?: TurnoArbitro[] } | null;
   /** Solo en respuestas de la API: sin clave válida se recibe un resumen sin datos. */
   bloqueado?: boolean;
   creadoEn: string;
@@ -382,6 +382,8 @@ export interface PuntoRegistrado {
   primerSaqueFalla?: boolean;
   /** ISO */
   t: string;
+  /** Quién lo anotó: id del árbitro registrado o "staff" (trazabilidad). */
+  por?: string;
 }
 
 export interface MarcadorVivo {
@@ -407,6 +409,14 @@ export interface MarcadorVivo {
   atenciones?: AtencionMedica[];
   pista?: number | null;
   anotador?: string;
+  /** Árbitro registrado que lo empezó (id). */
+  arbitroId?: string;
+  /** Todos los que anotaron puntos en este partido, en orden (relevos incluidos). */
+  anotadores?: { id: string; nombre: string }[];
+  /** Sorteo previo (FIP): quién lo ganó y qué eligió. */
+  sorteo?: { gana: "A" | "B"; eligio: EleccionSorteo } | null;
+  /** Lado de la pista donde empezó la dupla A, visto desde la silla del árbitro. */
+  ladoInicialA?: "IZQ" | "DER";
   iniciadoEn: string;
   finalizado: boolean;
   actualizadoEn: string;
@@ -420,4 +430,30 @@ export interface ApiTorneosRespuesta {
 export interface ApiMarcadoresRespuesta {
   modo: "DEMO" | "SUPABASE";
   marcadores: MarcadorVivo[];
+}
+
+/** Lo que elige quien gana el sorteo (FIP): sacar, restar o el lado de la pista. */
+export type EleccionSorteo = "SACAR" | "RESTAR" | "LADO";
+
+/** Turno de un árbitro: una pista durante una franja de un día. */
+export interface TurnoArbitro {
+  id: string;
+  arbitroId: string;
+  /** YYYY-MM-DD */
+  fecha: string;
+  pista: number;
+  /** HH:mm */
+  desde: string;
+  hasta: string;
+}
+
+/** Árbitro registrado en un torneo (sin su código personal, que nunca sale del servidor). */
+export interface ArbitroRegistrado {
+  id: string;
+  nombre: string;
+  apellido: string;
+  /** Solo lo ve el staff. */
+  telefono?: string;
+  activo: boolean;
+  registradoEn: string;
 }

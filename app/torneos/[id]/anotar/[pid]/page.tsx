@@ -5,14 +5,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowLeftRight, Check, CircleSlash, Flag, HeartPulse, MoreHorizontal, ShieldAlert, Timer, Undo2, Zap } from "lucide-react";
+import { ArrowLeft, ArrowLeftRight, Camera, Check, ChevronRight, CircleSlash, Flag, HeartPulse, MoreHorizontal, Play, ShieldAlert, Timer, Trophy, Undo2, X, Zap } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
+import { FotoDupla, TomarFoto } from "@/components/Foto";
+import { PelotaPadel } from "@/components/torneo/PelotaPadel";
 import { AnotadorGate, useVolverAnotador } from "@/components/torneo/Arbitraje";
 import { Hoja } from "@/components/ui/Hoja";
 import { toast } from "@/components/ui/Toaster";
 import { TorneoShellMinimo } from "@/components/torneo/minimo";
 import { useAhora } from "@/components/torneo/vivo";
 import { sonar, vibrar } from "@/lib/feedback";
+import { subirFoto, useFotos, useFotosTorneo } from "@/lib/fotos";
+import { otroLado, resolverSorteo, sortear, type LadoPista } from "@/lib/torneo/arbitros";
 import { nombreCorto } from "@/lib/torneo/categorias";
 import {
   ace,
@@ -24,6 +28,7 @@ import {
   deshacer,
   detallarUltimo,
   faltaSaque,
+  ladoActual,
   NOMBRE_GOLPE,
   NOMBRE_SANCION,
   nuevoMarcador,
@@ -46,7 +51,7 @@ import { categoria, dupla, nombreDupla, partido, reglasDe } from "@/lib/torneo/t
 import { useArbitro } from "@/lib/arbitro";
 import { useAmericanos } from "@/lib/store";
 import { useMarcador, useTorneos } from "@/lib/torneosStore";
-import type { FinPunto, Golpe, JugadorTorneo, MarcadorVivo, PartidoTorneo, Torneo } from "@/types/torneo";
+import type { EleccionSorteo, FinPunto, Golpe, JugadorTorneo, MarcadorVivo, PartidoTorneo, Torneo } from "@/types/torneo";
 
 export default function AnotarPage({ params }: { params: Promise<{ id: string; pid: string }> }) {
   const { id, pid } = use(params);
@@ -82,7 +87,9 @@ function Anotador({ torneo, partidoId }: { torneo: Torneo; partidoId: string }) 
   return <Tablero torneo={torneo} p={p} m={marcador} />;
 }
 
-/* ---------- 1. quién saca: dos toques ---------- */
+/* ---------- 1. antes de empezar: fotos, sorteo, elección y saque ---------- */
+
+type PasoPrevio = "fotos" | "sorteo" | "eleccion" | "lado" | "otra" | "saque1" | "saque2" | "listo";
 
 function Preparar({ torneo, p }: { torneo: Torneo; p: PartidoTorneo }) {
   const guardarMarcador = useTorneos((s) => s.guardarMarcador);
@@ -90,14 +97,40 @@ function Preparar({ torneo, p }: { torneo: Torneo; p: PartidoTorneo }) {
   const staff = useAmericanos((s) => s.staff);
   const arbitro = useArbitro();
   const volver = useVolverAnotador(torneo.id);
+  const fotos = useFotosTorneo(torneo.id);
   const dA = dupla(torneo, p.duplaA)!;
   const dB = dupla(torneo, p.duplaB)!;
-  const [primero, setPrimero] = useState<{ lado: Lado; id: string } | null>(null);
   const jug = (id: string) => torneo.jugadores.find((j) => j.id === id);
+  const nombre = (l: Lado) => nombreDupla(torneo, l === "A" ? dA : dB);
   const pista = p.pistaReal ?? p.programacion?.pista ?? torneo.canchas[0]?.numero ?? 1;
 
-  function empezar(otro: string) {
-    if (!primero) return;
+  const [paso, setPaso] = useState<PasoPrevio>(() => (fotos[dA.id] && fotos[dB.id] ? "sorteo" : "fotos"));
+  const [gana, setGana] = useState<Lado | null>(null);
+  const [eligio, setEligio] = useState<EleccionSorteo | null>(null);
+  const [lado, setLado] = useState<LadoPista | null>(null);
+  const [otraElige, setOtraElige] = useState<"SACAR" | "RESTAR" | null>(null);
+  const [primero, setPrimero] = useState<string | null>(null);
+  const [segundo, setSegundo] = useState<string | null>(null);
+  const [historial, setHistorial] = useState<PasoPrevio[]>([]);
+
+  const ir = (x: PasoPrevio) => {
+    vibrar(10);
+    setHistorial((h) => [...h, paso]);
+    setPaso(x);
+  };
+  const atras = () => {
+    const h = [...historial];
+    const prev = h.pop();
+    setHistorial(h);
+    if (prev) setPaso(prev);
+  };
+
+  const plan = gana && eligio && lado ? resolverSorteo({ gana, eligio, lado, otraElige: otraElige ?? undefined }) : null;
+  const saca = plan?.sacaPrimero ?? null;
+  const eligeLado: Lado | null = gana && eligio ? (eligio === "LADO" ? gana : otroLado(gana)) : null;
+
+  function empezar() {
+    if (!plan || !primero || !segundo) return;
     const m = nuevoMarcador({
       partidoId: p.id,
       torneoId: torneo.id,
@@ -105,11 +138,14 @@ function Preparar({ torneo, p }: { torneo: Torneo; p: PartidoTorneo }) {
       reglas: reglasDe(torneo, p),
       jugadoresA: dA.jugadorIds,
       jugadoresB: dB.jugadorIds,
-      sacaPrimero: primero.lado,
-      primerA: primero.lado === "A" ? primero.id : otro,
-      primerB: primero.lado === "B" ? primero.id : otro,
+      sacaPrimero: plan.sacaPrimero,
+      primerA: plan.sacaPrimero === "A" ? primero : segundo,
+      primerB: plan.sacaPrimero === "B" ? primero : segundo,
       pista,
       anotador: staff?.nombre ?? arbitro?.nombre,
+      arbitroId: staff ? "staff" : arbitro?.id,
+      sorteo: gana && eligio ? { gana, eligio } : null,
+      ladoInicialA: plan.ladoInicialA,
     });
     vibrar([10, 40, 10]);
     sonar("ok");
@@ -117,59 +153,354 @@ function Preparar({ torneo, p }: { torneo: Torneo; p: PartidoTorneo }) {
     accionPartido(torneo.id, p.id, { accion: "iniciar", pista }).then((err) => err && toast(err, "error"));
   }
 
-  const Equipo = ({ lado, ids }: { lado: Lado; ids: string[] }) => {
-    const elegible = !primero || primero.lado !== lado;
-    return (
-      <div className={clsx("glass rounded-3xl p-4 transition", !elegible && "opacity-40")}>
-        <p className="mb-3 font-display text-lg font-bold">{nombreDupla(torneo, lado === "A" ? dA : dB)}</p>
-        <div className="grid grid-cols-2 gap-3">
-          {ids.map((id) => {
-            const j = jug(id);
-            const sel = primero?.id === id;
-            return (
-              <button
-                key={id}
-                disabled={!elegible}
-                onClick={() => {
-                  vibrar(10);
-                  if (!primero) setPrimero({ lado, id });
-                  else empezar(id);
-                }}
-                className={clsx("flex flex-col items-center gap-2 rounded-2xl border p-4 transition active:scale-95", sel ? "seleccion sobre-marca" : "border-white/10 hover:border-neon/40")}
-              >
-                <Avatar nombre={[j?.nombre, j?.apellido].join(" ")} fotoUrl={j?.fotoUrl} size={56} />
-                <span className="text-sm font-semibold">{corto(j)}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
+  const Titulo = ({ t, sub }: { t: React.ReactNode; sub?: React.ReactNode }) => (
+    <div className="mb-6 text-center">
+      <h1 className="font-display text-3xl font-bold leading-tight sm:text-4xl">{t}</h1>
+      {sub && <p className="mt-2 text-white/55">{sub}</p>}
+    </div>
+  );
+  const Grande = ({ onClick, children, primario }: { onClick: () => void; children: React.ReactNode; primario?: boolean }) => (
+    <button onClick={onClick} className={clsx("flex min-h-24 flex-1 flex-col items-center justify-center gap-2 rounded-3xl border p-5 text-lg font-bold transition active:scale-95", primario ? "seleccion sobre-marca text-lima" : "glass hover:border-neon/40")}>
+      {children}
+    </button>
+  );
+  const pasos: PasoPrevio[] = ["fotos", "sorteo", "eleccion", "lado", "saque1", "listo"];
+  const iPaso = pasos.indexOf(paso === "otra" ? "lado" : paso === "saque2" ? "saque1" : paso);
 
   return (
-    <main className="mx-auto max-w-2xl px-4 pb-10 pt-[max(1rem,env(safe-area-inset-top))]">
-      <header className="flex items-center gap-3 py-3">
-        <Link href={volver} className="btn-ghost !p-2.5" aria-label="Volver">
-          <ArrowLeft className="size-5" />
-        </Link>
-        <div className="min-w-0">
-          <p className="truncate font-semibold">{p.etiqueta}</p>
-          <p className="text-xs text-white/50">{nombreCorto(categoria(torneo, p.categoriaId)!.categoria)} · {nombrePista(torneo, pista)}</p>
+    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col px-4 pb-8 pt-[max(1rem,env(safe-area-inset-top))]">
+      <header className="flex items-center gap-3 py-2">
+        {historial.length ? (
+          <button className="btn-ghost !p-2.5" onClick={atras} aria-label="Atrás">
+            <ArrowLeft className="size-5" />
+          </button>
+        ) : (
+          <Link href={volver} className="btn-ghost !p-2.5" aria-label="Volver">
+            <ArrowLeft className="size-5" />
+          </Link>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-semibold">
+            {nombreCorto(categoria(torneo, p.categoriaId)!.categoria)} · {p.etiqueta}
+          </p>
+          <p className="text-xs text-white/50">{nombrePista(torneo, pista)} · Antes de empezar</p>
+        </div>
+        <div className="flex gap-1.5">
+          {pasos.map((x, i) => (
+            <span key={x} className={clsx("h-1.5 rounded-full transition-all", i === iPaso ? "w-6 bg-lima" : i < iPaso ? "w-2 bg-lima/60" : "w-2 bg-white/15")} />
+          ))}
         </div>
       </header>
-      <h1 className="mt-4 font-display text-3xl font-bold">{primero ? "¿Y quién saca primero en la otra dupla?" : "¿Quién saca primero?"}</h1>
-      <p className="mt-1 text-white/55">{primero ? "Un toque más y empieza el partido." : "Toca al jugador. Con esto el orden de saque y los cambios de lado van solos."}</p>
-      <div className="mt-6 space-y-4">
-        <Equipo lado="A" ids={dA.jugadorIds} />
-        <Equipo lado="B" ids={dB.jugadorIds} />
-      </div>
-      {primero && (
-        <button className="btn-ghost mt-4 w-full" onClick={() => setPrimero(null)}>
-          Cambiar sacador
-        </button>
-      )}
+
+      <AnimatePresence mode="wait">
+        <motion.section key={paso} initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.2 }} className="flex flex-1 flex-col pt-6">
+          {paso === "fotos" && (
+            <>
+              <Titulo t="Foto de las duplas" sub="Junto a la red, las dos juntas. Sale en la TV y en el partido de los atletas." />
+              <div className="grid gap-4 sm:grid-cols-2">
+                {(["A", "B"] as const).map((l) => {
+                  const d = l === "A" ? dA : dB;
+                  const js = d.jugadorIds.map(jug);
+                  const url = fotos[d.id];
+                  return (
+                    <TomarFoto
+                      key={l}
+                      className="group relative block overflow-hidden rounded-[2rem] border border-white/10 text-left"
+                      etiqueta={`Foto de ${nombre(l)}`}
+                      onFoto={async (img) => {
+                        const r = await subirFoto(torneo.id, "dupla", d.id, img);
+                        if (r.url) useFotos.getState().poner(torneo.id, d.id, r.url);
+                        else toast(r.error!, "error");
+                      }}
+                    >
+                      <FotoDupla url={url} nombres={js.map((j) => j?.nombre ?? "?")} fotos={js.map((j) => j?.fotoUrl)} className="aspect-[4/3] w-full" avatar={64} />
+                      <span className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-gradient-to-t from-black/80 to-transparent p-4 pt-10">
+                        <span className={clsx("h-6 w-1.5 rounded-full", l === "A" ? "bg-lima" : "bg-cielo")} />
+                        <span className="min-w-0 flex-1 truncate font-display text-lg font-bold">{nombre(l)}</span>
+                        <span className={clsx("flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold", url ? "bg-white/15" : "bg-lima text-marino-2")}>
+                          <Camera className="size-4" /> {url ? "Repetir" : "Tomar"}
+                        </span>
+                      </span>
+                    </TomarFoto>
+                  );
+                })}
+              </div>
+              <button className={clsx("mt-auto w-full !py-5 text-lg", fotos[dA.id] || fotos[dB.id] ? "btn-neon" : "btn-ghost")} onClick={() => ir("sorteo")}>
+                {fotos[dA.id] && fotos[dB.id] ? "Listo, al sorteo" : "Seguir sin foto"} <ChevronRight className="size-5" />
+              </button>
+            </>
+          )}
+
+          {paso === "sorteo" && (
+            <Sorteo
+              nombre={nombre}
+              fotos={{ A: fotos[dA.id], B: fotos[dB.id] }}
+              onGanador={(l) => {
+                setGana(l);
+                setEligio(null);
+                setLado(null);
+                setOtraElige(null);
+                ir("eleccion");
+              }}
+            />
+          )}
+
+          {paso === "eleccion" && gana && (
+            <>
+              <Titulo t={<>Ganó <span className="text-lima">{nombre(gana)}</span></>} sub="¿Qué elige?" />
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Grande onClick={() => (setEligio("SACAR"), ir("lado"))}>
+                  <Zap className="size-8 text-lima" /> Sacar
+                </Grande>
+                <Grande onClick={() => (setEligio("RESTAR"), ir("lado"))}>
+                  <Undo2 className="size-8 -scale-x-100 text-cielo" /> Restar
+                </Grande>
+                <Grande onClick={() => (setEligio("LADO"), ir("lado"))}>
+                  <ArrowLeftRight className="size-8 text-white/80" /> Elegir lado
+                </Grande>
+              </div>
+              <p className="mt-5 text-center text-sm text-white/45">Reglamento FIP: quien gana el sorteo elige sacar, restar o el lado. La otra dupla elige lo que queda.</p>
+            </>
+          )}
+
+          {paso === "lado" && eligeLado && (
+            <>
+              <Titulo t={<><span className={eligeLado === "A" ? "text-lima" : "text-cielo"}>{nombre(eligeLado)}</span>: ¿de qué lado empieza?</>} sub="Visto desde tu silla de árbitro." />
+              <Cancha
+                onElegir={(x) => {
+                  setLado(x);
+                  ir(eligio === "LADO" ? "otra" : "saque1");
+                }}
+              />
+            </>
+          )}
+
+          {paso === "otra" && gana && (
+            <>
+              <Titulo t={<><span className={otroLado(gana) === "A" ? "text-lima" : "text-cielo"}>{nombre(otroLado(gana))}</span>: ¿saca o resta?</>} />
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Grande onClick={() => (setOtraElige("SACAR"), ir("saque1"))}>
+                  <Zap className="size-8 text-lima" /> Sacar
+                </Grande>
+                <Grande onClick={() => (setOtraElige("RESTAR"), ir("saque1"))}>
+                  <Undo2 className="size-8 -scale-x-100 text-cielo" /> Restar
+                </Grande>
+              </div>
+            </>
+          )}
+
+          {(paso === "saque1" || paso === "saque2") && saca && (() => {
+            const l = paso === "saque1" ? saca : otroLado(saca);
+            const d = l === "A" ? dA : dB;
+            return (
+              <>
+                <Titulo t={paso === "saque1" ? <>¿Quién saca primero en <span className={l === "A" ? "text-lima" : "text-cielo"}>{nombre(l)}</span>?</> : <>¿Y en <span className={l === "A" ? "text-lima" : "text-cielo"}>{nombre(l)}</span>, quién sacará?</>} sub={paso === "saque1" ? "Abre el partido sacando." : "Saca en el segundo game."} />
+                <div className="grid grid-cols-2 gap-4">
+                  {d.jugadorIds.map((id) => {
+                    const j = jug(id);
+                    return (
+                      <button
+                        key={id}
+                        onClick={() => {
+                          if (paso === "saque1") {
+                            setPrimero(id);
+                            ir("saque2");
+                          } else {
+                            setSegundo(id);
+                            ir("listo");
+                          }
+                        }}
+                        className="glass flex flex-col items-center gap-3 rounded-[2rem] p-6 transition hover:border-neon/40 active:scale-95"
+                      >
+                        <Avatar nombre={[j?.nombre, j?.apellido].join(" ")} fotoUrl={j?.fotoUrl} size={96} />
+                        <span className="font-display text-xl font-bold">{corto(j)}</span>
+                        <span className="text-sm text-white/45">{j?.apellido}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            );
+          })()}
+
+          {paso === "listo" && plan && primero && segundo && (
+            <>
+              <Titulo t="Todo listo" sub="Revisa y empieza." />
+              <Cancha
+                duplas={{
+                  [plan.ladoInicialA]: { lado: "A" as Lado, nombre: nombre("A"), saca: plan.sacaPrimero === "A" ? corto(jug(primero)) : null, foto: fotos[dA.id] },
+                  [plan.ladoInicialA === "IZQ" ? "DER" : "IZQ"]: { lado: "B" as Lado, nombre: nombre("B"), saca: plan.sacaPrimero === "B" ? corto(jug(primero)) : null, foto: fotos[dB.id] },
+                }}
+              />
+              <ul className="mt-5 space-y-1.5 text-sm text-white/65">
+                <li>
+                  · Ganó el sorteo <b className="text-white">{nombre(gana!)}</b> y eligió {eligio === "SACAR" ? "sacar" : eligio === "RESTAR" ? "restar" : "lado"}.
+                </li>
+                <li>
+                  · Saca <b className="text-white">{corto(jug(primero))}</b>; en el 2º game, <b className="text-white">{corto(jug(segundo))}</b>.
+                </li>
+                <li>· Los cambios de lado, el orden de saque y los descansos van solos.</li>
+              </ul>
+              <button className="btn-neon mt-auto w-full !py-6 text-xl" onClick={empezar}>
+                <Play className="size-6" /> Empezar partido
+              </button>
+            </>
+          )}
+        </motion.section>
+      </AnimatePresence>
     </main>
+  );
+}
+
+/**
+ * Sorteo con la pelota: un toque y la pelota rebota de un lado al otro hasta caer en una dupla.
+ * Usa el azar criptográfico del dispositivo. Si ya lo sortearon con moneda o raqueta, se marca a mano.
+ */
+function Sorteo({ nombre, fotos, onGanador }: { nombre: (l: Lado) => string; fotos: Record<Lado, string | undefined>; onGanador: (l: Lado) => void }) {
+  const [girando, setGirando] = useState(false);
+  const [gano, setGano] = useState<Lado | null>(null);
+  const [x, setX] = useState<number[]>([0]);
+  const ancho = useRef<HTMLDivElement>(null);
+
+  function lanzar() {
+    if (girando || gano) return;
+    const g = sortear();
+    const w = (ancho.current?.clientWidth ?? 600) / 2 - 70;
+    const signo = (l: Lado) => (l === "A" ? -1 : 1);
+    // Rebotes que se van achicando y terminan del lado ganador.
+    const camino = [0, -0.9 * w, 0.8 * w, -0.65 * w, 0.5 * w, -0.3 * w, signo(g) * 0.95 * w];
+    setX(camino);
+    setGirando(true);
+    sonar("tap");
+    vibrar([10, 60, 10, 60, 10, 60, 10]);
+    setTimeout(() => {
+      setGirando(false);
+      setGano(g);
+      sonar("ok");
+      vibrar([30, 40, 80]);
+    }, 2300);
+  }
+
+  return (
+    <>
+      <div className="mb-6 text-center">
+        <h1 className="font-display text-3xl font-bold leading-tight sm:text-4xl">{gano ? <>Ganó <span className={gano === "A" ? "text-lima" : "text-cielo"}>{nombre(gano)}</span></> : "Sorteo"}</h1>
+        <p className="mt-2 text-white/55">{gano ? "Elige qué hace: sacar, restar o el lado." : girando ? "La pelota decide…" : "Toca la pelota."}</p>
+      </div>
+      <div ref={ancho} className="relative grid grid-cols-2 gap-4">
+        {(["A", "B"] as const).map((l) => (
+          <motion.div
+            key={l}
+            animate={gano ? { scale: gano === l ? 1.04 : 0.96, opacity: gano === l ? 1 : 0.4 } : { scale: 1, opacity: 1 }}
+            className={clsx("relative flex min-h-48 flex-col justify-end overflow-hidden rounded-[2rem] border p-5", gano === l ? "seleccion sobre-marca" : "glass")}
+          >
+            {fotos[l] && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={fotos[l]} alt="" className="absolute inset-0 size-full object-cover opacity-50" />
+            )}
+            <span className="absolute inset-0 bg-gradient-to-t from-marino-2/95 via-marino-2/30 to-transparent" />
+            <span className={clsx("relative mb-2 h-1.5 w-10 rounded-full", l === "A" ? "bg-lima" : "bg-cielo")} />
+            <span className="relative font-display text-xl font-bold leading-tight sm:text-2xl">{nombre(l)}</span>
+            {gano === l && (
+              <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="relative mt-2 inline-flex w-fit items-center gap-1.5 rounded-full bg-lima px-3 py-1 text-sm font-bold text-marino-2">
+                <Trophy className="size-4" /> Ganó el sorteo
+              </motion.span>
+            )}
+          </motion.div>
+        ))}
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <motion.button
+            type="button"
+            onClick={lanzar}
+            aria-label="Sortear con la pelota"
+            className="pointer-events-auto relative size-32 rounded-full drop-shadow-[0_12px_30px_rgba(217,243,57,0.45)] sm:size-36"
+            animate={
+              girando
+                ? { x, y: [0, -70, -10, -55, -10, -35, 0], rotate: 1080 }
+                : gano
+                  ? { x: x.at(-1), y: 0, rotate: 1080, scale: 0.55 }
+                  : { x: 0, y: [0, -14, 0], rotate: 0, scale: 1 }
+            }
+            transition={girando ? { duration: 2.2, ease: "easeOut" } : gano ? { duration: 0.3 } : { y: { repeat: Infinity, duration: 1.6, ease: "easeInOut" } }}
+          >
+            <PelotaPadel className="size-full" />
+            {!girando && !gano && <span className="absolute inset-0 animate-ping rounded-full border-2 border-lima/40" />}
+          </motion.button>
+        </div>
+      </div>
+      {gano ? (
+        <div className="mt-auto grid grid-cols-3 gap-2 pt-6">
+          <button className="btn-ghost" onClick={() => (setGano(null), setX([0]))}>
+            Repetir
+          </button>
+          <button className="btn-neon col-span-2 !py-5 text-lg" onClick={() => onGanador(gano)}>
+            Seguir <ChevronRight className="size-5" />
+          </button>
+        </div>
+      ) : (
+        <div className="mt-auto pt-8 text-center">
+          <p className="mb-2 text-sm text-white/45">¿Ya lo sortearon con moneda o raqueta? Marca quién ganó:</p>
+          <div className="grid grid-cols-2 gap-2">
+            {(["A", "B"] as const).map((l) => (
+              <button key={l} disabled={girando} className="btn-ghost !py-3 text-sm" onClick={() => onGanador(l)}>
+                Ganó {nombre(l)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/** La pista vista desde la silla del árbitro: para elegir lado o para ver cómo empiezan. */
+function Cancha({
+  onElegir,
+  duplas,
+}: {
+  onElegir?: (l: LadoPista) => void;
+  duplas?: Partial<Record<LadoPista, { lado: Lado; nombre: string; saca: string | null; foto?: string }>>;
+}) {
+  return (
+    <div className="relative grid aspect-[2/1] grid-cols-2 overflow-hidden rounded-[2rem] border-4 border-white/70 bg-gradient-to-b from-[#1f4fd1] to-[#163ba3]">
+      {/* red */}
+      <span className="pointer-events-none absolute inset-y-0 left-1/2 z-10 w-1.5 -translate-x-1/2 bg-white shadow-[0_0_12px_rgba(255,255,255,0.6)]" />
+      {/* líneas de saque */}
+      <span className="pointer-events-none absolute inset-y-0 left-[18%] w-0.5 bg-white/60" />
+      <span className="pointer-events-none absolute inset-y-0 right-[18%] w-0.5 bg-white/60" />
+      <span className="pointer-events-none absolute left-[18%] right-[18%] top-1/2 h-0.5 bg-white/60" />
+      {(["IZQ", "DER"] as const).map((x) => {
+        const d = duplas?.[x];
+        const Comp = onElegir ? "button" : "div";
+        return (
+          <Comp
+            key={x}
+            onClick={onElegir ? () => onElegir(x) : undefined}
+            className={clsx("relative flex flex-col items-center justify-center gap-2 p-4 text-center transition", onElegir && "hover:bg-white/10 active:bg-lima/25")}
+          >
+            {d?.foto && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={d.foto} alt="" className="absolute inset-0 size-full object-cover opacity-35" />
+            )}
+            {d ? (
+              <>
+                <span className={clsx("relative rounded-full px-3 py-1 font-display text-lg font-bold text-marino-2 sm:text-xl", d.lado === "A" ? "bg-lima" : "bg-cielo")}>{d.nombre}</span>
+                {d.saca && (
+                  <span className="relative flex items-center gap-1 rounded-full bg-black/40 px-3 py-1 text-sm font-semibold">
+                    <Zap className="size-3.5 text-lima" /> Saca {d.saca}
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="relative z-10 flex flex-col items-center rounded-2xl bg-marino-2/70 px-5 py-3 backdrop-blur">
+                <span className="font-display text-2xl font-bold">{x === "IZQ" ? "Izquierda" : "Derecha"}</span>
+                <span className="text-sm text-white/70">Toca este lado</span>
+              </span>
+            )}
+          </Comp>
+        );
+      })}
+    </div>
   );
 }
 
@@ -192,10 +523,10 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
   const [menu, setMenu] = useState(false);
   const [sancionDe, setSancionDe] = useState<Lado | null>(null);
   const ahora = useAhora(1000);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const jug = (id: string) => torneo.jugadores.find((j) => j.id === id);
   const nombreLado = (l: Lado) => nombreDupla(torneo, dupla(torneo, l === "A" ? p.duplaA : p.duplaB));
   const ultimo = e.jugados.at(-1);
+  const fotos = useFotosTorneo(torneo.id);
 
   // Partido que se reanuda (suspendido por lluvia, cambio de pista…): vuelve a estar en juego
   // en su pista nueva y sigue con el mismo marcador.
@@ -214,11 +545,6 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const cerrarLuego = (ms: number) => {
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => setBandeja(null), ms);
-  };
-  useEffect(() => () => void (timer.current && clearTimeout(timer.current)), []);
 
   // Avisos al anotador: cambio de lado, fin de set.
   const avisado = useRef(m.puntos.length);
@@ -230,7 +556,7 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
     avisado.current = m.puntos.length;
     if (ultimo?.evento === "SET") toast(`Set para ${nombreLado(ultimo.gana)}`, "info");
     if (e.cambioDeLado) {
-      toast("Cambio de lado", "info");
+      toast("Cambio de lado: las duplas se cambian también en la pantalla", "info");
       vibrar([30, 60, 30]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -243,7 +569,6 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
     const nuevo = anotarPunto(m, l);
     guardarMarcador(nuevo);
     setBandeja({ n: nuevo.puntos.length, gana: l, paso: "COMO" });
-    cerrarLuego(4000);
   }
 
   function como(fin: FinPunto, jugadorId: string) {
@@ -251,7 +576,6 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
     vibrar(8);
     guardarMarcador(detallarUltimo(m, { fin, jugadorId }));
     setBandeja({ ...bandeja, paso: "GOLPE" });
-    cerrarLuego(3500);
   }
 
   function golpe(g: Golpe) {
@@ -278,16 +602,27 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
     const i = lado === "A" ? 0 : 1;
     const saca = !e.terminado && e.equipoSaca === lado;
     const ids = lado === "A" ? m.jugadoresA : m.jugadoresB;
+    const foto = fotos[(lado === "A" ? p.duplaA : p.duplaB) ?? ""];
     return (
-      <button
+      <motion.button
+        layout
+        transition={{ type: "spring", stiffness: 260, damping: 30 }}
         onClick={() => punto(lado)}
         disabled={e.terminado}
         className={clsx(
-          "relative flex flex-1 select-none flex-col items-center justify-center overflow-hidden rounded-[2rem] border transition active:scale-[0.985]",
+          "relative flex flex-1 select-none flex-col items-center justify-center overflow-hidden rounded-[2rem] border active:scale-[0.985]",
           lado === "A" ? "border-lima/25 bg-gradient-to-br from-marino to-marino-2" : "border-cielo/25 bg-gradient-to-br from-[#122a6b] to-marino-2",
         )}
       >
+        {foto && (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={foto} alt="" className="pointer-events-none absolute inset-0 size-full object-cover opacity-30" />
+            <span className="pointer-events-none absolute inset-0 bg-gradient-to-b from-marino-2/40 via-marino-2/70 to-marino-2/95" />
+          </>
+        )}
         <span className={clsx("pointer-events-none absolute inset-x-10 top-0 h-24 rounded-full blur-3xl", lado === "A" ? "bg-lima/15" : "bg-cielo/20")} />
+        <span className={clsx("relative mb-2 rounded-full px-3 py-0.5 text-xs font-bold uppercase tracking-[0.18em]", lado === "A" ? "bg-lima/15 text-lima" : "bg-cielo/15 text-cielo")}>{nombreLado(lado)}</span>
         <span className="relative flex items-center gap-2 text-sm font-semibold text-white/75">
           {ids.map((id) => (
             <span key={id} className={clsx("flex items-center gap-1.5 rounded-full px-2 py-0.5", saca && e.sacador === id && "bg-lima text-marino-2")}>
@@ -300,9 +635,11 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
           {e.texto[i]}
         </motion.span>
         <span className="relative mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Toca para punto</span>
-      </button>
+      </motion.button>
     );
   };
+  // Cada dupla se dibuja en el lado de la pista donde está (visto desde la silla) y se cambian solas.
+  const izquierda: Lado = ladoActual(m, e, "A") === "IZQ" ? "A" : "B";
 
   const sets = setsFinales(e);
   const esMixto = categoria(torneo, p.categoriaId)?.categoria.rama === "MIXTO";
@@ -400,8 +737,8 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
         <Final torneo={torneo} m={m} nombreLado={nombreLado} onConfirmar={() => confirmar()} onDeshacer={() => guardarMarcador(deshacer(m))} />
       ) : (
         <div className="relative flex flex-1 flex-col gap-2 landscape:flex-row">
-          <Mitad lado="A" />
-          <Mitad lado="B" />
+          <Mitad key={izquierda} lado={izquierda} />
+          <Mitad key={izquierda === "A" ? "B" : "A"} lado={izquierda === "A" ? "B" : "A"} />
 
           {/* Toques 2 y 3, opcionales: no bloquean el siguiente punto. */}
           <AnimatePresence>
@@ -415,28 +752,28 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
                 onClick={(ev) => ev.stopPropagation()}
               >
                 {bandeja.paso === "COMO" ? (
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-3 pr-10">
                     <div>
-                      <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-lima">Winner de</p>
+                      <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-lima">Winner de</p>
                       <div className="grid grid-cols-2 gap-1.5">
                         {(bandeja.gana === "A" ? m.jugadoresA : m.jugadoresB).map((id) => (
-                          <button key={id} className="btn-ghost !flex-col !gap-1 !px-1 !py-2 text-xs" onClick={() => como("WINNER", id)}>
-                            <Avatar nombre={corto(jug(id))} size={28} />
+                          <button key={id} className="btn-ghost !flex-col !gap-1 !px-1 !py-3 text-sm" onClick={() => como("WINNER", id)}>
+                            <Avatar nombre={corto(jug(id))} fotoUrl={jug(id)?.fotoUrl} size={40} />
                             {corto(jug(id))}
                           </button>
                         ))}
                       </div>
                     </div>
                     <div>
-                      <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-coral">Error de</p>
+                      <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-coral">Error de</p>
                       <div className="grid grid-cols-2 gap-1.5">
                         {(bandeja.gana === "A" ? m.jugadoresB : m.jugadoresA).map((id) => (
                           <div key={id} className="flex flex-col gap-1">
-                            <button className="btn-ghost !flex-col !gap-1 !px-1 !py-2 text-xs" onClick={() => como("ERROR_NO_FORZADO", id)}>
-                              <Avatar nombre={corto(jug(id))} size={28} />
+                            <button className="btn-ghost !flex-col !gap-1 !px-1 !py-3 text-sm" onClick={() => como("ERROR_NO_FORZADO", id)}>
+                              <Avatar nombre={corto(jug(id))} fotoUrl={jug(id)?.fotoUrl} size={40} />
                               {corto(jug(id))}
                             </button>
-                            <button className="rounded-lg bg-white/5 py-1 text-[10px] font-semibold text-white/60" onClick={() => como("ERROR_FORZADO", id)}>
+                            <button className="rounded-xl bg-white/5 py-2 text-xs font-semibold text-white/65" onClick={() => como("ERROR_FORZADO", id)}>
                               forzado
                             </button>
                           </div>
@@ -456,7 +793,6 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
                             onClick={() => {
                               vibrar(8);
                               guardarMarcador(detallarUltimo(m, { zona: m.puntos.at(-1)?.zona === z ? null : z }));
-                              cerrarLuego(3500);
                             }}
                           >
                             {z === "RED" ? "A la red" : "Afuera"}
@@ -464,17 +800,19 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
                         ))}
                       </div>
                     )}
-                    <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-white/50">¿Con qué golpe? (opcional)</p>
-                    <div className="flex flex-wrap gap-1.5">
+                    <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-white/50">¿Con qué golpe? (opcional)</p>
+                    <div className="flex flex-wrap gap-2 pr-10">
                       {GOLPES.map((g) => (
-                        <button key={g} className="btn-ghost !px-3 !py-2 text-xs capitalize" onClick={() => golpe(g)}>
+                        <button key={g} className="btn-ghost !px-4 !py-2.5 text-sm capitalize" onClick={() => golpe(g)}>
                           {NOMBRE_GOLPE[g]}
                         </button>
                       ))}
                     </div>
                   </div>
                 )}
-                <motion.span className="absolute inset-x-6 bottom-1 h-0.5 origin-left rounded-full bg-lima/60" initial={{ scaleX: 1 }} animate={{ scaleX: 0 }} transition={{ duration: bandeja.paso === "COMO" ? 4 : 3.5, ease: "linear" }} key={bandeja.paso} />
+                <button className="absolute right-2 top-2 flex size-9 items-center justify-center rounded-full bg-white/10 text-white/70" onClick={() => setBandeja(null)} aria-label="Cerrar sin detalle">
+                  <X className="size-4" />
+                </button>
               </motion.div>
             )}
           </AnimatePresence>

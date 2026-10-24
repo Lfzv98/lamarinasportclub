@@ -8,6 +8,7 @@ import { ArrowLeft, Clock, Flag, Info, Share2, Trophy } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { TorneoShell } from "@/components/torneo/TorneoShell";
 import { useAhora, useMarcadoresEnVivo } from "@/components/torneo/vivo";
+import { useFotoDupla, useFotosTorneo } from "@/lib/fotos";
 import { toast } from "@/components/ui/Toaster";
 import { nombreCorto } from "@/lib/torneo/categorias";
 import { nombrePista } from "@/lib/torneo/imprevistos";
@@ -36,6 +37,7 @@ const BARRA: Record<Lado, string> = { A: "bg-lima", B: "bg-cielo" };
 function Partido({ torneo, partidoId }: { torneo: Torneo; partidoId: string }) {
   const p = partido(torneo, partidoId);
   useMarcadoresEnVivo(torneo.id, p?.estado === "EN_JUEGO" ? 2500 : 15000);
+  useFotosTorneo(torneo.id);
   const m = useMarcador(partidoId);
   const e = useMemo(() => (m ? calcularMarcador(m) : null), [m]);
 
@@ -116,6 +118,7 @@ function Cabecera({ torneo, p, m, e, nombreLado }: { torneo: Torneo; p: PartidoT
           return (
             <div key={l} className={clsx("flex items-center gap-3 rounded-2xl px-3 py-2.5", ganador === l ? "bg-lima/10" : "bg-white/[0.03]")}>
               <span className={clsx("h-10 w-1.5 shrink-0 rounded-full", BARRA[l])} />
+              <FotoDuplaMini torneoId={torneo.id} duplaId={l === "A" ? p.duplaA : p.duplaB} />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-display text-lg font-bold sm:text-xl">{nombreLado(l)}</p>
                 <p className="flex flex-wrap gap-x-2 text-xs text-white/50">
@@ -157,7 +160,7 @@ function Cabecera({ torneo, p, m, e, nombreLado }: { torneo: Torneo; p: PartidoT
         )}
         {m?.anotador && (
           <span className="flex items-center gap-1">
-            <Flag className="size-3.5" /> Árbitro: {m.anotador}
+            <Flag className="size-3.5" /> {(m.anotadores?.length ?? 0) > 1 ? `Árbitros: ${m.anotadores!.map((a) => a.nombre).join(" → ")}` : `Árbitro: ${m.anotador}`}
           </span>
         )}
         {p.resultado && p.resultado.tipo !== "NORMAL" && <span className="font-semibold text-amber-200">{p.resultado.tipo === "WO" ? "W.O." : p.resultado.tipo === "RETIRO" ? "Retiro" : "Descalificación"}</span>}
@@ -420,4 +423,10 @@ function Relato({ p, nombre, ladoDe, nombreLado }: { p: PuntoJugado; nombre: (id
       {extra && <span className="text-white/45"> · {extra}</span>}
     </>
   );
+}
+
+function FotoDuplaMini({ torneoId, duplaId }: { torneoId: string; duplaId: string | null }) {
+  const url = useFotoDupla(torneoId, duplaId);
+  // eslint-disable-next-line @next/next/no-img-element
+  return url ? <img src={url} alt="" className="h-11 w-14 shrink-0 rounded-xl object-cover" /> : null;
 }

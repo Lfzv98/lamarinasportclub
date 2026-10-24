@@ -38,8 +38,21 @@ create table if not exists public.torneos_marcadores (
 );
 create index if not exists torneos_marcadores_torneo_idx on public.torneos_marcadores (torneo_id);
 
+-- Datos sueltos de torneos y americanos (evento_id = id del torneo o del americano):
+-- registro de árbitros (tipo 'arbitros'), foto de dupla (tipo 'foto') y foto de jugador (tipo 'foto-jugador').
+-- Las fotos son JPEG de ~40-80 KB en base64; si prefieres Storage, cambia guardarExtra/obtenerExtra.
+create table if not exists public.eventos_extras (
+  id             text primary key,
+  evento_id      text not null,
+  tipo           text not null,
+  data           jsonb not null,
+  actualizado_en timestamptz not null default now()
+);
+create index if not exists eventos_extras_evento_idx on public.eventos_extras (evento_id, tipo);
+
 alter table public.torneos enable row level security;
 alter table public.torneos_marcadores enable row level security;
+alter table public.eventos_extras enable row level security;
 
 -- Ranking FVP vigente (RankingFvp en types/ranking.ts): una sola fila id = 'fvp'.
 -- La llena la sincronización diaria con la hoja de la FVP o el archivo que sube el staff.

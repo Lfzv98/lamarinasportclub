@@ -33,6 +33,12 @@ export function validarTorneo(x: unknown): string[] {
   if (!Array.isArray(t.jugadores)) err("jugadores debe ser una lista.");
   if (t.acceso != null && (typeof t.acceso.clave !== "string" || t.acceso.clave.length > 40 || typeof t.acceso.vence !== "string")) err("acceso inválido.");
   if (t.arbitros != null && (typeof t.arbitros.pin !== "string" || !/^\d{4,8}$/.test(t.arbitros.pin) || typeof t.arbitros.vence !== "string")) err("arbitros: PIN de 4 a 8 números.");
+  const turnos = t.arbitros?.turnos;
+  if (turnos != null) {
+    if (!Array.isArray(turnos) || turnos.length > 500) err("arbitros.turnos: máximo 500.");
+    else if (turnos.some((x) => !x || typeof x.arbitroId !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(x.fecha) || !/^\d{2}:\d{2}$/.test(x.desde) || !/^\d{2}:\d{2}$/.test(x.hasta) || !Number.isInteger(x.pista)))
+      err("arbitros.turnos: cada turno necesita árbitro, fecha, pista y horario.");
+  }
   if (t.sedes != null && (!Array.isArray(t.sedes) || t.sedes.length > 8 || t.sedes.some((s) => !texto(s?.nombre, 80) || typeof s.trasladoMin !== "number"))) err("sedes: máximo 8, con nombre y traslado.");
   if (t.patrocinadores != null) {
     if (!Array.isArray(t.patrocinadores) || t.patrocinadores.length > 16) err("patrocinadores: máximo 16.");
@@ -54,6 +60,8 @@ export function validarMarcador(x: unknown): string[] {
   else if (m.puntos.some((p) => p?.gana !== "A" && p?.gana !== "B")) errores.push("Cada punto necesita gana: A o B.");
   if (m.sanciones != null && (!Array.isArray(m.sanciones) || m.sanciones.length > 20)) errores.push("sanciones: máximo 20.");
   if (m.atenciones != null && (!Array.isArray(m.atenciones) || m.atenciones.length > 20)) errores.push("atenciones: máximo 20.");
+  if (m.anotadores != null && (!Array.isArray(m.anotadores) || m.anotadores.length > 20)) errores.push("anotadores: máximo 20.");
+  if (m.ladoInicialA != null && m.ladoInicialA !== "IZQ" && m.ladoInicialA !== "DER") errores.push("ladoInicialA: IZQ o DER.");
   if (typeof m.actualizadoEn !== "string") errores.push("actualizadoEn es obligatorio.");
   return errores;
 }

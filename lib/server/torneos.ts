@@ -9,9 +9,12 @@ export function visorDe(req: Request): Visor {
   return { staff: !!sesionDe(req), accesos: leerAccesos(req), arbitro: arbitroDe(req) };
 }
 
-/** ¿La sesión de árbitro vale para este torneo? (mismo PIN vigente y sin vencer) */
+/**
+ * ¿La sesión de árbitro vale para ver este torneo? (mismo PIN vigente y sin vencer).
+ * Para escribir, además, `arbitroValido` (lib/server/arbitros) revisa su registro.
+ */
 export function esArbitroDe(t: Torneo, a?: SesionArbitro | null): boolean {
-  if (!a || a.torneoId !== t.id || !t.arbitros?.pin || t.eliminado) return false;
+  if (!a || !a.arbitroId || a.torneoId !== t.id || !t.arbitros?.pin || t.eliminado) return false;
   if (!(new Date(t.arbitros.vence).getTime() > Date.now())) return false;
   return a.huella === huellaClave(t.arbitros.pin);
 }
@@ -32,12 +35,12 @@ export function puedeVer(t: Torneo, v: Visor): boolean {
 export function paraVisor(t: Torneo, v: Visor): Torneo {
   if (v.staff) return t;
   const acceso = t.acceso?.clave ? { clave: "", vence: t.acceso.vence } : null;
-  const arbitros = t.arbitros?.pin ? { pin: "", vence: t.arbitros.vence } : null;
+  const arbitros = t.arbitros?.pin ? { pin: "", vence: t.arbitros.vence, turnos: t.arbitros.turnos } : null;
   if (puedeVer(t, v)) return { ...t, acceso, arbitros, historial: [] };
   return {
     ...t,
     acceso,
-    arbitros,
+    arbitros: arbitros && { pin: "", vence: arbitros.vence },
     bloqueado: true,
     jugadores: [],
     historial: [],

@@ -57,6 +57,8 @@ export interface EstadoMarcador {
   matchPoint: Lado | null;
   /** Tras el último punto, los jugadores cambian de lado. */
   cambioDeLado: boolean;
+  /** Cambios de lado hechos hasta ahora (para dibujar a cada dupla en su lado real). */
+  cambiosDeLado: number;
   /** Texto de los puntos: ["40", "AD"] o ["5", "4"] en tie. */
   texto: [string, string];
   jugados: PuntoJugado[];
@@ -135,6 +137,7 @@ export function calcularMarcador(m: Pick<MarcadorVivo, "reglas" | "ordenSaque" |
   let terminado = false;
   let ganador: Lado | null = null;
   let cambioDeLado = false;
+  let cambiosDeLado = 0;
   const jugados: PuntoJugado[] = [];
   let racha = { lado: null as Lado | null, puntos: 0 };
 
@@ -195,6 +198,7 @@ export function calcularMarcador(m: Pick<MarcadorVivo, "reglas" | "ordenSaque" |
       }
     }
 
+    if (cambioDeLado) cambiosDeLado++;
     jugados.push({ ...pt, n: n + 1, sacador, equipoSaca, antes, oro, breakPoint, enTie: tieAntes, evento, games: { ...sets[setAntes] }, setIndex: setAntes });
   });
 
@@ -226,6 +230,7 @@ export function calcularMarcador(m: Pick<MarcadorVivo, "reglas" | "ordenSaque" |
     setPoint,
     matchPoint,
     cambioDeLado,
+    cambiosDeLado,
     texto,
     jugados,
     racha,
@@ -600,6 +605,9 @@ export function nuevoMarcador(input: {
   primerB: string;
   pista?: number | null;
   anotador?: string;
+  arbitroId?: string;
+  sorteo?: MarcadorVivo["sorteo"];
+  ladoInicialA?: MarcadorVivo["ladoInicialA"];
 }): MarcadorVivo {
   const segA = input.jugadoresA.find((j) => j !== input.primerA)!;
   const segB = input.jugadoresB.find((j) => j !== input.primerB)!;
@@ -617,8 +625,19 @@ export function nuevoMarcador(input: {
     puntos: [],
     pista: input.pista ?? null,
     anotador: input.anotador,
+    arbitroId: input.arbitroId,
+    anotadores: input.arbitroId && input.anotador ? [{ id: input.arbitroId, nombre: input.anotador }] : undefined,
+    sorteo: input.sorteo ?? null,
+    ladoInicialA: input.ladoInicialA,
     iniciadoEn: ahora,
     finalizado: false,
     actualizadoEn: ahora,
   };
+}
+
+/** Lado de la pista (visto desde la silla del árbitro) donde está ahora cada dupla. */
+export function ladoActual(m: MarcadorVivo, e: Pick<EstadoMarcador, "cambiosDeLado">, l: Lado): "IZQ" | "DER" {
+  const inicialA = m.ladoInicialA ?? "IZQ";
+  const a = e.cambiosDeLado % 2 === 0 ? inicialA : inicialA === "IZQ" ? "DER" : "IZQ";
+  return l === "A" ? a : a === "IZQ" ? "DER" : "IZQ";
 }

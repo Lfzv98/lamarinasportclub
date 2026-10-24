@@ -82,7 +82,7 @@ Al cargar el marcador, la app solo acepta resultados posibles con esas reglas y 
 - Si hay más duplas (o jugadores) que pistas, abajo aparece **En espera**: quién descansa esta ronda y en qué ronda vuelve a jugar. En el Modo TV también se muestra.
 - Toca una pista para **cargar marcador**. El modal no deja guardar un resultado imposible para el método elegido. Cada carga tiene **Deshacer**.
 - Con todas las pistas cargadas, toca **Siguiente** (o **Finalizar** en la última ronda). Se puede volver a una ronda anterior para corregir.
-- Botón **Jugadores** (o Parejas): retirar a alguien, sumar a quien llegó tarde o reincorporar. Solo se re-sortean las rondas que faltan.
+- Botón **Jugadores y fotos** (o Parejas y fotos): retirar a alguien, sumar a quien llegó tarde o reincorporar. Solo se re-sortean las rondas que faltan. Tocando la cara de un jugador se le toma una foto con la cámara; sale en el cuadro, el ranking y el Modo TV.
 - **Eliminar evento** pide confirmar y escribir ELIMINAR.
 
 ### Ranking y Modo TV
@@ -104,6 +104,39 @@ En el inicio, **Mi club** permite editar las pistas (nombre y si es techada), el
 
 - **Android / Chrome:** botón **Instalar** en la app, o menú ⋮ → Instalar app.
 - **iPhone:** en Safari, Compartir → Agregar a inicio.
+
+## Torneos: árbitros, sorteo y fotos
+
+Los torneos tienen su propio rol de **árbitro** (anotador), aparte del staff. El árbitro solo puede llamar, empezar y anotar partidos de su torneo y fotografiar a las duplas; no abre cuadros, horarios ni ajustes.
+
+### Registro del árbitro (una sola vez por torneo)
+
+1. El staff abre el torneo → icono de bandera (**Árbitros**) y toca **Enviar a los árbitros**: comparte el PIN del torneo por WhatsApp. Solo el staff ve ese PIN.
+2. El árbitro entra en Inicio → **Árbitros**, elige el torneo y toca **Soy nuevo: registrarme**: nombre, apellido, teléfono y el PIN del torneo.
+3. Crea su **código personal** de 4 dígitos y lo repite. El código se guarda cifrado (HMAC) y nunca sale del servidor.
+4. Desde ahí, para entrar solo toca su nombre en la cuadrícula **¿Quién eres?** y escribe su código (entra solo al cuarto dígito). Si lo olvida, se registra otra vez con el mismo teléfono y elige uno nuevo.
+
+Así cada punto queda firmado con el nombre de quien lo anotó y no hay "yo no fui". Si dos árbitros se relevan en un partido, la página del partido muestra "Árbitros: A → B".
+
+### Turnos y pistas
+
+En **Árbitros** (staff) se ve cada árbitro registrado con sus turnos, partidos y puntos anotados, un botón de WhatsApp, **Pausar** (lo deja fuera al instante) y borrar. Abajo está la grilla de **Turnos** por día, franja (mañana y tarde si el día pasa de 8 h) y pista: cada casilla se asigna con un selector y avisa si alguien quedaría en dos pistas a la vez. **Repartir automáticamente** reparte parejo, sin choques y con descanso entre franjas cuando sobran árbitros.
+
+En la tablet, el árbitro ve **Tu turno: Pista N · hh:mm–hh:mm** con cuántos partidos le tocan; la app abre su pista sola y solo muestra las pistas que le tocan hoy (con **Otra pista** para cubrir a un compañero). **Mis turnos** lista todo su torneo.
+
+### Antes de empezar el partido: asistente de 5 toques
+
+1. **Fotos**: una foto por dupla en la pista (opcional; **Saltar**). Sale junto a sus nombres en el anotador, la TV de la pista y la página del partido.
+2. **Sorteo**: se toca la **pelota de pádel**, rebota de un lado a otro y cae en la dupla ganadora (sorteo aleatorio del dispositivo). También se puede marcar a mano si se hizo con moneda.
+3. **Elección del ganador** (reglamento FIP): **Sacar**, **Restar** o **Elegir lado**. Si elige sacar o restar, la otra dupla elige el lado; si elige lado, la otra dupla decide si saca o resta. Es decir, quien gana y entrega el saque puede quedarse con el lado.
+4. **Lado**: un dibujo de la pista visto desde la silla del árbitro; se toca el lado.
+5. **Quién saca** en cada dupla, con botones grandes. **Empezar partido**.
+
+En el tablero, cada mitad de la pantalla corresponde al lado real de la pista y se cambia sola (con animación) en cada cambio de lado. El detalle Winner/Error ya no tiene barra de tiempo: queda abierto hasta que el árbitro elige o lo cierra con la X.
+
+### Fotos de jugadores en Torneos
+
+En **Inscritos** el staff puede tocar la cara de cada jugador para tomarle la foto, o el recuadro de cámara para la foto de la dupla. Las fotos se comprimen en el teléfono (menos de 400 KB) antes de subir.
 
 ## Tecnología y arquitectura
 
@@ -199,12 +232,13 @@ npm test                     # 55 tests de lógica
 
 ### 2. Crear las tablas en Supabase
 
-En el SQL Editor del proyecto de PadelReserve, corre `supabase/schema.sql`. Crea dos tablas con RLS activado:
+En el SQL Editor del proyecto de PadelReserve, corre `supabase/schema.sql`. Crea las tablas con RLS activado (las de torneos y marcadores se detallan en `docs/BACKEND.md`):
 
 | Tabla | Columnas | Contenido |
 | --- | --- | --- |
 | `americanos_eventos` | `id` text PK, `data` jsonb, `estado` text, `actualizado_en` timestamptz | Un `EventoAmericano` completo por fila |
 | `club_config` | `id` text PK (`la-marina`), `data` jsonb | `ConfigClub`: pistas, horarios, contacto |
+| `eventos_extras` | `id` text PK, `evento_id` text, `tipo` text, `data` jsonb, `actualizado_en` timestamptz | Registro de árbitros de cada torneo (código solo como HMAC) y fotos de duplas y jugadores |
 
 ### 3. Variables de entorno en Vercel
 
