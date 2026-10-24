@@ -14,7 +14,7 @@ import { FranjaPatrocinadores, PresentaPista } from "@/components/torneo/Patroci
 import { useAhora, useMarcadoresEnVivo } from "@/components/torneo/vivo";
 import { useFotoDupla, useFotosTorneo } from "@/lib/fotos";
 import { nombreCategoria } from "@/lib/torneo/categorias";
-import { atencionEnCurso, calcularMarcador, descansoReglamentario, relatoPublico, setsFinales, type Lado } from "@/lib/torneo/marcador";
+import { atencionEnCurso, calcularMarcador, cambioDeLadoEnCurso, descansoReglamentario, relatoPublico, setsFinales, type Lado } from "@/lib/torneo/marcador";
 import { estadoPistas, limiteWO } from "@/lib/torneo/programacion";
 import { categoria, dupla, nombreDupla, nombreJugador } from "@/lib/torneo/torneo";
 import { useMarcador } from "@/lib/torneosStore";
@@ -100,11 +100,18 @@ function Marcador({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marca
   const descanso = descansoReglamentario(e);
   const ultimoT = e.jugados.at(-1)?.t;
   const quedaDescanso = descanso && ultimoT ? Math.ceil((new Date(ultimoT).getTime() + descanso.segundos * 1000 - ahora) / 1000) : 0;
+  const cambio = cambioDeLadoEnCurso(e, ahora);
   const mmss = (seg: number) => `${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, "0")}`;
   const aviso = e.terminado
     ? null
     : atencion
       ? `ATENCIÓN MÉDICA · ${mmss(atencion.quedan)}`
+      : cambio
+        ? cambio.directo
+          ? "CAMBIO DE LADO · SIN DESCANSO"
+          : cambio.quedan > 0
+            ? `CAMBIO DE LADO · ${mmss(cambio.quedan)}`
+            : "CAMBIO DE LADO · ¡A JUGAR!"
       : descanso && descanso.segundos >= 90 && quedaDescanso > 0
         ? `${descanso.motivo.toUpperCase()} · ${mmss(quedaDescanso)}`
         : e.matchPoint

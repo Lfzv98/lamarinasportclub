@@ -328,6 +328,21 @@ export function descansoReglamentario(e: EstadoMarcador): Descanso | null {
   return { segundos: 20, motivo: "Entre puntos" };
 }
 
+/**
+ * Cambio de lado que está corriendo ahora (para el aviso del árbitro y las pantallas):
+ * tras el primer game del set se cambia sin descanso (se avisa 20 s), en los demás games
+ * impares hay 90 s, al terminar un set 120 s y en el tie-break 20 s cada 6 puntos.
+ */
+export function cambioDeLadoEnCurso(e: EstadoMarcador, ahora: number): (Descanso & { quedan: number; directo: boolean }) | null {
+  const d = descansoReglamentario(e);
+  const u = e.jugados.at(-1);
+  if (!d || !u || !e.cambioDeLado) return null;
+  const directo = d.segundos === 0;
+  const quedan = Math.ceil((new Date(u.t).getTime() + (directo ? 20 : d.segundos) * 1000 - ahora) / 1000);
+  if (quedan <= -10) return null;
+  return { ...d, quedan, directo };
+}
+
 /** Peloteo al reanudar un partido suspendido por causas ajenas a los jugadores (FIP Regla 2.11–2.14). */
 export function peloteoTrasSuspension(minutosSuspendido: number): number {
   if (minutosSuspendido <= 5) return 0;

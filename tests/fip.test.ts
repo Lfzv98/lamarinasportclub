@@ -5,6 +5,7 @@ import {
   alternarOrdenSet,
   anotarPunto,
   atencionEnCurso,
+  cambioDeLadoEnCurso,
   calcularMarcador,
   descansoReglamentario,
   deshacer,
@@ -101,6 +102,21 @@ test("FIP 2: descansos de 20 s, 90 s, sin descanso tras el primer game y 120 s e
   assert.equal(peloteoTrasSuspension(4), 0);
   assert.equal(peloteoTrasSuspension(12), 3);
   assert.equal(peloteoTrasSuspension(45), 5);
+});
+
+test("Cambio de lado en curso: directo tras el 1-0, 90 s en 2-1, nada en 2-0", () => {
+  const t = (m: MarcadorVivo) => new Date(m.puntos.at(-1)!.t).getTime();
+  let m = puntos(marcador(), "AAAA"); // 1-0
+  let c = cambioDeLadoEnCurso(calcularMarcador(m), t(m));
+  assert.ok(c?.directo);
+  assert.equal(c?.segundos, 0);
+  m = puntos(m, "BBBB"); // 1-1: no se cambia
+  assert.equal(cambioDeLadoEnCurso(calcularMarcador(m), t(m)), null);
+  m = puntos(m, "AAAA"); // 2-1: 90 s
+  c = cambioDeLadoEnCurso(calcularMarcador(m), t(m) + 30_000);
+  assert.equal(c?.segundos, 90);
+  assert.equal(c?.quedan, 60);
+  assert.equal(cambioDeLadoEnCurso(calcularMarcador(m), t(m) + 101_000), null, "se apaga pasado el tiempo");
 });
 
 test("FIP sanciones: advertencia, punto y descalificación, acumuladas por dupla", () => {

@@ -22,7 +22,7 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 | `/torneos/:id/cuadros` | Grupos con tabla y "¿Por qué este orden?", llaves con byes, 3er puesto, consolación |
 | `/torneos/:id/programacion` | Horarios por día y pista, "¿Cuándo juego?", Programar / Desde ahora / Imprevistos |
 | `/torneos/:id/partido/:partido` | Partido para los atletas (con la clave): comparativa de estadísticas, tabla por jugador y punto a punto |
-| `/torneos/:id/anotar/:partido` | Anotador del árbitro o del staff: asistente previo (fotos, sorteo con la pelota según FIP, lado, quién saca), un toque por punto, detalle opcional sin barra de tiempo, saque y cambios de lado solos |
+| `/torneos/:id/anotar/:partido` | Anotador del árbitro o del staff: asistente previo (fotos, sorteo con la pelota según FIP, lado, quién saca), un toque por punto, detalle opcional sin barra de tiempo, saque solo y aviso de cambio de lado con cronómetro FIP (directo tras el 1-0, 1:30 en impares, 2:00 entre sets) que también sale en la TV de la pista |
 | `/torneos/:id/arbitros` | Árbitros (staff): PIN, registrados con lo que anotó cada uno, pausar o borrar, y turnos por día, franja y pista con reparto automático |
 | `/torneos/:id/pista/:n` | Pantalla de la esquina de cada pista (1920×1080) para el público: marcador, datos por dupla y relato sin métricas individuales |
 | `/torneos/:id/tv` | Modo TV del torneo: todas las pistas, próximos, resultados y patrocinadores |

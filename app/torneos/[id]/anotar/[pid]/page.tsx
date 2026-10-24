@@ -24,6 +24,7 @@ import {
   anotarPunto,
   atencionEnCurso,
   calcularMarcador,
+  cambioDeLadoEnCurso,
   descansoReglamentario,
   deshacer,
   detallarUltimo,
@@ -520,6 +521,7 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
   const volver = useVolverAnotador(torneo.id);
   const e = useMemo(() => calcularMarcador(m), [m]);
   const [bandeja, setBandeja] = useState<Bandeja | null>(null);
+  const [cerradoCambio, setCerradoCambio] = useState(-1);
   const [menu, setMenu] = useState(false);
   const [sancionDe, setSancionDe] = useState<Lado | null>(null);
   const ahora = useAhora(1000);
@@ -556,7 +558,7 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
     avisado.current = m.puntos.length;
     if (ultimo?.evento === "SET") toast(`Set para ${nombreLado(ultimo.gana)}`, "info");
     if (e.cambioDeLado) {
-      toast("Cambio de lado: las duplas se cambian también en la pantalla", "info");
+      sonar("ok");
       vibrar([30, 60, 30]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -646,6 +648,7 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
   const descanso = descansoReglamentario(e);
   const quedaDescanso = descanso && ultimo ? Math.ceil((new Date(ultimo.t).getTime() + descanso.segundos * 1000 - ahora) / 1000) : 0;
   const atencion = atencionEnCurso(m, ahora);
+  const cambio = !e.terminado && !atencion && cerradoCambio !== m.puntos.length ? cambioDeLadoEnCurso(e, ahora) : null;
   const eligeOrden = puedeElegirOrden(e);
   const orden = ordenDelSet(m, e.setActual);
   const siguiente = orden[(orden.indexOf(e.sacador) + 1) % 4];
@@ -712,13 +715,10 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
         </div>
       )}
 
-      {!e.terminado && !atencion && descanso && quedaDescanso > 0 && descanso.segundos >= 90 && (
+      {!e.terminado && !atencion && descanso && !e.cambioDeLado && quedaDescanso > 0 && descanso.segundos >= 90 && (
         <div className="flex items-center justify-center gap-2 rounded-2xl bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/70">
           <Timer className="size-3.5 text-lima" /> {descanso.motivo} · {mmss(quedaDescanso)}
         </div>
-      )}
-      {!e.terminado && descanso && descanso.segundos === 0 && e.cambioDeLado && (
-        <p className="text-center text-xs font-semibold text-white/60">{descanso.motivo}</p>
       )}
 
       {eligeOrden && (
@@ -739,6 +739,13 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
         <div className="relative flex flex-1 flex-col gap-2 landscape:flex-row">
           <Mitad key={izquierda} lado={izquierda} />
           <Mitad key={izquierda === "A" ? "B" : "A"} lado={izquierda === "A" ? "B" : "A"} />
+
+          {/* Cambio de lado reglamentario: aviso grande con la cuenta regresiva. */}
+          <AnimatePresence>
+            {cambio && (
+              <CambioDeLado key={m.puntos.length} cambio={cambio} onCerrar={() => setCerradoCambio(m.puntos.length)} />
+            )}
+          </AnimatePresence>
 
           {/* Toques 2 y 3, opcionales: no bloquean el siguiente punto. */}
           <AnimatePresence>
@@ -1007,3 +1014,74 @@ function Final({ torneo, m, nombreLado, onConfirmar, onDeshacer }: { torneo: Tor
     </div>
   );
 }
+
+/** Aviso de cambio de lado con cuenta regresiva (FIP Regla 2: sin descanso tras el 1-0, 90 s en games impares, 120 s entre sets). */
+function CambioDeLado({ cambio, onCerrar }: { cambio: NonNullable<ReturnType<typeof cambioDeLadoEnCurso>>; onCerrar: () => void }) {
+  const total = cambio.directo ? 20 : cambio.segundos;
+  const quedan = Math.max(0, cambio.quedan);
+  const tiempo = !cambio.directo && cambio.quedan <= 0;
+  const aviso = useRef(false);
+  useEffect(() => {
+    if (tiempo && !aviso.current) {
+      aviso.current = true;
+      sonar("alarma");
+      vibrar([80, 60, 80]);
+    }
+  }, [tiempo]);
+  const r = 44;
+  const largo = 2 * Math.PI * r;
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.92, y: -10 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      role="status"
+      aria-live="polite"
+      className={clsx(
+        "glass-strong absolute left-1/2 top-3 z-20 flex w-[min(30rem,calc(100%-1.5rem))] -translate-x-1/2 items-center gap-4 rounded-3xl border p-4 shadow-2xl",
+        tiempo ? "border-coral/60" : "border-lima/50",
+      )}
+      onClick={(ev) => ev.stopPropagation()}
+    >
+      {cambio.directo ? (
+        <motion.span animate={{ x: [-6, 6, -6] }} transition={{ repeat: Infinity, duration: 1.2 }} className="flex size-24 shrink-0 items-center justify-center rounded-full bg-lima text-marino-2">
+          <ArrowLeftRight className="size-11" />
+        </motion.span>
+      ) : (
+        <span className="relative size-24 shrink-0">
+          <svg viewBox="0 0 100 100" className="size-full -rotate-90">
+            <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="8" />
+            <circle
+              cx="50"
+              cy="50"
+              r={r}
+              fill="none"
+              stroke={tiempo ? "#ff6b6b" : "#c6ef3c"}
+              strokeWidth="8"
+              strokeLinecap="round"
+              strokeDasharray={largo}
+              strokeDashoffset={largo * (1 - quedan / total)}
+              style={{ transition: "stroke-dashoffset 1s linear" }}
+            />
+          </svg>
+          <span className={clsx("absolute inset-0 flex items-center justify-center font-display text-2xl font-bold tabular", tiempo && "text-coral")}>
+            {Math.floor(quedan / 60)}:{String(quedan % 60).padStart(2, "0")}
+          </span>
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className={clsx("font-display text-2xl font-bold leading-tight", tiempo ? "text-coral" : "text-lima")}>
+          {tiempo ? "¡Tiempo! A jugar" : cambio.directo ? "Cambien de lado ya" : "Cambio de lado"}
+        </p>
+        <p className="mt-0.5 text-sm text-white/65">
+          {cambio.directo ? "Primer game del set: sin descanso." : tiempo ? "Se cumplió el descanso reglamentario." : `${cambio.segundos === 120 ? "Fin de set" : cambio.segundos === 90 ? "Game impar" : "Tie-break"}: descanso máximo ${cambio.segundos === 120 ? "2:00" : cambio.segundos === 90 ? "1:30" : `${cambio.segundos} s`}`}
+        </p>
+        <p className="mt-1 text-xs text-white/45">Las duplas ya se cambiaron en la pantalla.</p>
+      </div>
+      <button className="btn-ghost shrink-0 !p-2.5" onClick={onCerrar} aria-label="Cerrar aviso">
+        <X className="size-5" />
+      </button>
+    </motion.div>
+  );
+}
+

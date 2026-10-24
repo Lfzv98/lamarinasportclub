@@ -134,6 +134,8 @@ En la tablet, el árbitro ve **Tu turno: Pista N · hh:mm–hh:mm** con cuántos
 
 En el tablero, cada mitad de la pantalla corresponde al lado real de la pista y se cambia sola (con animación) en cada cambio de lado. El detalle Winner/Error ya no tiene barra de tiempo: queda abierto hasta que el árbitro elige o lo cierra con la X.
 
+**Cambio de lado (FIP Regla 2):** se cambia en los games impares (1-0, 2-1, 3-0, 3-2…). Tras el primer game del set se cambia directo, sin descanso; en los demás impares hay un máximo de 1:30; al terminar un set, 2:00; en el tie-break, cada 6 puntos con 20 s. En cada cambio la tablet del árbitro suena y muestra un aviso grande con un cronómetro circular; al llegar a cero suena una alarma y dice "¡Tiempo! A jugar". La TV de la pista muestra al público "CAMBIO DE LADO · 1:24" con la misma cuenta regresiva.
+
 ### Fotos de jugadores en Torneos
 
 En **Inscritos** el staff puede tocar la cara de cada jugador para tomarle la foto, o el recuadro de cámara para la foto de la dupla. Las fotos se comprimen en el teléfono (menos de 400 KB) antes de subir.
