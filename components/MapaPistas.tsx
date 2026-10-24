@@ -21,10 +21,10 @@ export function MapaPistas({ pistas, seleccion, onToggle }: { pistas: PistaClub[
       <Isometrico pistas={pistas} seleccion={seleccion} onToggle={tocar} />
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/55">
         <span className="flex items-center gap-1.5">
-          <i className="size-3 rounded bg-disponible" /> Libre
+          <i className="size-3 rounded bg-pista" /> Libre
         </span>
         <span className="flex items-center gap-1.5">
-          <i className="size-3 rounded bg-lima ring-1 ring-[#b7d63a]" /> En el evento
+          <i className="size-3 rounded bg-pista-sel ring-2 ring-lima" /> En el evento
         </span>
         <span className="flex items-center gap-1.5">
           <Warehouse className="size-3 text-cielo" /> Techada
@@ -50,7 +50,7 @@ export function MapaPistas({ pistas, seleccion, onToggle }: { pistas: PistaClub[
               <span
                 className={clsx(
                   "flex size-10 shrink-0 items-center justify-center rounded-full font-display text-lg font-bold transition",
-                  on ? "bg-lima text-noche shadow-[0_0_0_4px_rgba(207,243,91,0.25)]" : "bg-disponible text-blanco",
+                  on ? "bg-lima text-noche shadow-[0_0_0_4px_rgba(207,243,91,0.25)]" : "bg-pista text-blanco",
                 )}
               >
                 {on ? <Check className="size-5" strokeWidth={3} /> : c.numero}
@@ -87,17 +87,28 @@ const rect = (x: number, y: number, w: number, h: number, z = 0) => pts(iso(x, y
 function Isometrico({ pistas, seleccion, onToggle }: { pistas: PistaClub[]; seleccion: number[]; onToggle: (n: number) => void }) {
   const techadas = pistas.filter((p) => p.techada);
   const libres = pistas.filter((p) => !p.techada);
-  // Techadas en 2 columnas bajo la estructura; las de aire libre en fila al costado.
+  // Cada pista ocupa ANCHO en x y LARGO en y. Bajo techo van en 2 columnas.
+  const PASO_X = ANCHO + 8;
+  const PASO_Y = LARGO + GAP;
+  const celdas = new Map<number, [number, number]>();
+  // Distribución real de La Marina: 1 al fondo, 3 a la izquierda, 2 a la derecha y 4 adelante.
+  const laMarina = techadas.length === 4 && [1, 2, 3, 4].every((n) => techadas.some((p) => p.numero === n));
+  const LA_MARINA: Record<number, [number, number]> = { 1: [0, 0], 2: [1, 0], 3: [0, 1], 4: [1, 1] };
+  techadas.forEach((p, i) => celdas.set(p.numero, laMarina ? LA_MARINA[p.numero] : [i % 2, Math.floor(i / 2)]));
   const filas = Math.max(1, Math.ceil(techadas.length / 2));
   const cols = techadas.length > 1 ? 2 : 1;
-  const nave = { x: 0, y: 0, w: cols * LARGO + (cols - 1) * GAP + 4, h: filas * ANCHO + (filas - 1) * GAP + 4 };
+  const nave = { x: 0, y: 0, w: (cols - 1) * PASO_X + ANCHO + 6, h: (filas - 1) * PASO_Y + LARGO + 4 };
   const pos = new Map<number, { x: number; y: number }>();
-  techadas.forEach((p, i) => pos.set(p.numero, { x: 2 + (i % 2) * (LARGO + GAP), y: 2 + Math.floor(i / 2) * (ANCHO + GAP) }));
-  const xLibre = techadas.length ? nave.w + 4 : 0;
-  libres.forEach((p, i) => pos.set(p.numero, { x: xLibre, y: 2 + i * (ANCHO + GAP) }));
-  const ancho = Math.max(techadas.length ? nave.w : 0, libres.length ? xLibre + LARGO : 0);
-  const alto = Math.max(techadas.length ? nave.h : 0, libres.length ? 2 + libres.length * (ANCHO + GAP) : 0);
-  const terreno = { x: -6, y: -6, w: ancho + 12, h: alto + 12 };
+  celdas.forEach(([c, f], n) => pos.set(n, { x: 3 + c * PASO_X, y: 2 + f * PASO_Y }));
+  // Las de aire libre, afuera junto a la nave, a la altura de la fila de adelante.
+  const xLibre = techadas.length ? nave.w + 6 : 0;
+  const filaLibre = Math.min(filas - 1, 1);
+  libres.forEach((p, i) => pos.set(p.numero, { x: xLibre, y: 2 + (filaLibre + i) * PASO_Y }));
+  const ancho = Math.max(techadas.length ? nave.w : 0, libres.length ? xLibre + ANCHO + 6 : 0);
+  const alto = Math.max(techadas.length ? nave.h : 0, libres.length ? 2 + (filaLibre + libres.length) * PASO_Y : 0);
+  const terreno = { x: -7, y: -5, w: ancho + 12, h: alto + 12 };
+  const patio = libres.length ? { x: xLibre - 3, y: 0, w: ANCHO + 6, h: alto + 1 } : null;
+  const primeraLibre = libres.length ? pos.get(libres[0].numero)! : null;
 
   // Caja de la vista a partir de las esquinas del terreno (con la altura del techo).
   const esquinas = [iso(terreno.x, terreno.y, 9), iso(terreno.x + terreno.w, terreno.y, 9), iso(terreno.x, terreno.y + terreno.h), iso(terreno.x + terreno.w, terreno.y + terreno.h)];
@@ -108,24 +119,25 @@ function Isometrico({ pistas, seleccion, onToggle }: { pistas: PistaClub[]; sele
 
   const H = 7; // altura del techo
   const arboles: P[] = [
-    [terreno.x + 2, terreno.y + 3],
-    [terreno.x + 2, terreno.y + terreno.h * 0.45],
-    [terreno.x + terreno.w * 0.4, terreno.y + 1.5],
+    [terreno.x + 2.5, terreno.y + terreno.h * 0.55],
+    [terreno.x + terreno.w * 0.45, terreno.y + 1.5],
     [terreno.x + terreno.w - 2, terreno.y + 2],
-    [terreno.x + terreno.w * 0.25, terreno.y + terreno.h - 1.5],
+    [terreno.x + terreno.w - 2, terreno.y + 9],
+    [terreno.x + terreno.w * 0.3, terreno.y + terreno.h - 6.5],
+    [terreno.x + terreno.w * 0.7, terreno.y + terreno.h - 6.5],
   ];
 
   return (
     <div className="sobre-marca overflow-hidden rounded-3xl bg-gradient-to-br from-[#1b2a7a] via-marino to-marino-2 shadow-[0_18px_40px_-18px_rgba(12,17,61,0.7)]">
       <svg viewBox={`${minX} ${minY} ${maxX - minX} ${maxY - minY}`} className="block h-auto w-full" role="img" aria-label="Mapa de las pistas del club">
         <defs>
-          <linearGradient id="mp-cesped" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#5fc184" />
-            <stop offset="1" stopColor="#3e9d63" />
+          <linearGradient id="mp-alfombra" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#2f86e0" />
+            <stop offset="1" stopColor="#1c5fb8" />
           </linearGradient>
           <linearGradient id="mp-sel" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#e3fb8a" />
-            <stop offset="1" stopColor="#bfe84a" />
+            <stop offset="0" stopColor="#5cbcff" />
+            <stop offset="1" stopColor="#2a8cf2" />
           </linearGradient>
         </defs>
 
@@ -139,7 +151,11 @@ function Isometrico({ pistas, seleccion, onToggle }: { pistas: PistaClub[]; sele
         {/* piso de la nave techada */}
         {techadas.length > 0 && <polygon points={rect(nave.x, nave.y, nave.w, nave.h)} fill="#7a3d2f" stroke="#8f4b3a" strokeWidth="0.3" />}
         {/* piso del área exterior */}
-        {libres.length > 0 && <polygon points={rect(xLibre - 1.5, 0.5, LARGO + 3, libres.length * (ANCHO + GAP) + 1)} fill="#3a4370" />}
+        {patio && <polygon points={rect(patio.x, patio.y, patio.w, patio.h)} fill="#3a4370" />}
+        {patio &&
+          Array.from({ length: Math.floor(patio.h / 3) }, (_, i) => (
+            <polyline key={i} points={pts(iso(patio.x, patio.y + i * 3), iso(patio.x + patio.w, patio.y + i * 3))} stroke="#fff" strokeOpacity="0.06" strokeWidth="0.15" />
+          ))}
 
         {/* pistas: de atrás hacia adelante para que se tapen bien */}
         {[...pistas]
@@ -151,21 +167,21 @@ function Isometrico({ pistas, seleccion, onToggle }: { pistas: PistaClub[]; sele
           .map((c) => {
             const { x, y } = pos.get(c.numero)!;
             const on = seleccion.includes(c.numero);
-            const centro = iso(x + LARGO / 2, y + ANCHO / 2, 3.2);
+            const centro = iso(x + ANCHO / 2, y + 4, 3.2);
             return (
               <g key={c.numero} className="cursor-pointer" onClick={() => onToggle(c.numero)}>
-                <polygon points={rect(x + 0.6, y + 0.8, LARGO, ANCHO)} fill="#000" opacity={on ? 0.35 : 0.18} />
+                <polygon points={rect(x + 0.6, y + 0.8, ANCHO, LARGO)} fill="#000" opacity={on ? 0.35 : 0.18} />
                 <motion.g animate={{ y: on ? -1.2 : 0 }} transition={{ type: "spring", stiffness: 300, damping: 18 }}>
-                  <polygon points={rect(x, y, LARGO, ANCHO)} fill={on ? "url(#mp-sel)" : "url(#mp-cesped)"} stroke={on ? "#f6ff7a" : "#2c7a4b"} strokeWidth={on ? 0.55 : 0.3} />
+                  <polygon points={rect(x, y, ANCHO, LARGO)} fill={on ? "url(#mp-sel)" : "url(#mp-alfombra)"} stroke={on ? "#cff35b" : "#154a91"} strokeWidth={on ? 0.6 : 0.3} style={on ? { filter: "drop-shadow(0 0 1.2px #cff35b)" } : undefined} />
                   {/* líneas de la pista */}
-                  <polyline points={pts(iso(x + 3, y), iso(x + 3, y + ANCHO))} stroke="#fff" strokeOpacity="0.6" strokeWidth="0.18" fill="none" />
-                  <polyline points={pts(iso(x + LARGO - 3, y), iso(x + LARGO - 3, y + ANCHO))} stroke="#fff" strokeOpacity="0.6" strokeWidth="0.18" fill="none" />
-                  <polyline points={pts(iso(x + 3, y + ANCHO / 2), iso(x + LARGO - 3, y + ANCHO / 2))} stroke="#fff" strokeOpacity="0.6" strokeWidth="0.18" fill="none" />
+                  <polyline points={pts(iso(x, y + 3), iso(x + ANCHO, y + 3))} stroke="#fff" strokeOpacity="0.85" strokeWidth="0.2" fill="none" />
+                  <polyline points={pts(iso(x, y + LARGO - 3), iso(x + ANCHO, y + LARGO - 3))} stroke="#fff" strokeOpacity="0.85" strokeWidth="0.2" fill="none" />
+                  <polyline points={pts(iso(x + ANCHO / 2, y + 3), iso(x + ANCHO / 2, y + LARGO - 3))} stroke="#fff" strokeOpacity="0.85" strokeWidth="0.2" fill="none" />
                   {/* red */}
-                  <polygon points={pts(iso(x + LARGO / 2, y), iso(x + LARGO / 2, y + ANCHO), iso(x + LARGO / 2, y + ANCHO, 0.9), iso(x + LARGO / 2, y, 0.9))} fill="#0b1030" opacity="0.85" />
+                  <polygon points={pts(iso(x, y + LARGO / 2), iso(x + ANCHO, y + LARGO / 2), iso(x + ANCHO, y + LARGO / 2, 0.9), iso(x, y + LARGO / 2, 0.9))} fill="#0b1030" opacity="0.85" />
                   {/* vidrios del fondo */}
-                  <polygon points={pts(iso(x, y), iso(x, y + ANCHO), iso(x, y + ANCHO, 2.2), iso(x, y, 2.2))} fill="#fff" fillOpacity="0.08" stroke="#fff" strokeOpacity="0.35" strokeWidth="0.15" />
-                  <polygon points={pts(iso(x + LARGO, y), iso(x + LARGO, y + ANCHO), iso(x + LARGO, y + ANCHO, 2.2), iso(x + LARGO, y, 2.2))} fill="#fff" fillOpacity="0.08" stroke="#fff" strokeOpacity="0.35" strokeWidth="0.15" />
+                  <polygon points={pts(iso(x, y), iso(x + ANCHO, y), iso(x + ANCHO, y, 2.2), iso(x, y, 2.2))} fill="#fff" fillOpacity="0.08" stroke="#fff" strokeOpacity="0.35" strokeWidth="0.15" />
+                  <polygon points={pts(iso(x, y + LARGO), iso(x + ANCHO, y + LARGO), iso(x + ANCHO, y + LARGO, 2.2), iso(x, y + LARGO, 2.2))} fill="#fff" fillOpacity="0.08" stroke="#fff" strokeOpacity="0.35" strokeWidth="0.15" />
                   {/* número */}
                   <circle cx={centro[0]} cy={centro[1]} r="1.9" fill={on ? "#cff35b" : "#0c113d"} stroke={on ? "#0c113d" : "#fff"} strokeWidth="0.35" />
                   <text x={centro[0]} y={centro[1] + 0.75} textAnchor="middle" fontSize="2.2" fontWeight="800" fill={on ? "#0c113d" : "#fff"} style={{ fontFamily: "var(--font-display)" }}>
@@ -199,10 +215,23 @@ function Isometrico({ pistas, seleccion, onToggle }: { pistas: PistaClub[]; sele
           </g>
         )}
 
-        {/* palmeras junto a las de aire libre */}
-        {libres.map((p, i) => {
-          const base = iso(xLibre + LARGO + 1.5, 2 + i * (ANCHO + GAP) + ANCHO * 0.7);
-          return <Palmera key={p.numero} x={base[0]} y={base[1]} />;
+        {/* carpa y palmeras junto a las de aire libre */}
+        {primeraLibre && (
+          <g pointerEvents="none">
+            <polygon points={pts(iso(primeraLibre.x - 2, primeraLibre.y - 1.5, 3.2), iso(primeraLibre.x + ANCHO * 0.55, primeraLibre.y - 4.5, 4.6), iso(primeraLibre.x + ANCHO * 0.35, primeraLibre.y + 1, 2.6))} fill="#e8ecf5" opacity="0.92" />
+            <polygon points={pts(iso(primeraLibre.x + ANCHO * 0.55, primeraLibre.y - 4.5, 4.6), iso(primeraLibre.x + ANCHO + 1, primeraLibre.y - 1, 3), iso(primeraLibre.x + ANCHO * 0.35, primeraLibre.y + 1, 2.6))} fill="#c3cad9" opacity="0.92" />
+          </g>
+        )}
+        {libres.flatMap((p) => {
+          const q = pos.get(p.numero)!;
+          return [
+            [q.x + ANCHO + 2.5, q.y + 3],
+            [q.x + ANCHO + 2.5, q.y + LARGO - 4],
+            [q.x + ANCHO * 0.8, q.y + LARGO + 2.2],
+          ].map(([x, y], i) => {
+            const b = iso(x, y);
+            return <Palmera key={`${p.numero}-${i}`} x={b[0]} y={b[1]} />;
+          });
         })}
         {arboles.map(([x, y], i) => {
           const b = iso(x, y);

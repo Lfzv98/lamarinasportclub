@@ -27,6 +27,9 @@
   --color-coral: #e0365c;
   --color-cielo: #1f78c8;
   --color-disponible: #5ab073;
+  /* Alfombra de las pistas de La Marina: azul. */
+  --color-pista: #1f6fcf;
+  --color-pista-sel: #3ea2fb;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-display), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --animate-pulse-neon: pulse-neon 2.4s ease-in-out infinite;
