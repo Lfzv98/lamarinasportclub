@@ -94,6 +94,8 @@ function Reloj() {
 
 function TV({ evento }: { evento: EventoAmericano }) {
   const { full, alternar } = useFullscreenYWakeLock();
+  const vertical = useVertical();
+  const filasPorPagina = vertical ? 8 : FILAS_POR_PAGINA;
   const cursorOculto = useCursorOculto();
   const tabla = useMemo(() => calcularTabla(evento), [evento]);
   const ronda = evento.rondas.find((r) => r.numero === evento.rondaActual);
@@ -101,21 +103,21 @@ function TV({ evento }: { evento: EventoAmericano }) {
   const reloj = useReloj(evento.estado !== "FINALIZADO" && conReloj ? ronda : undefined, evento.duracionRondaMin);
 
   // Paginación automática del ranking cuando hay muchos jugadores.
-  const paginas = Math.max(1, Math.ceil(tabla.filas.length / FILAS_POR_PAGINA));
+  const paginas = Math.max(1, Math.ceil(tabla.filas.length / filasPorPagina));
   const [pagina, setPagina] = useState(0);
   useEffect(() => {
     if (paginas <= 1) return setPagina(0);
     const t = setInterval(() => setPagina((p) => (p + 1) % paginas), SEGUNDOS_POR_PAGINA * 1000);
     return () => clearInterval(t);
   }, [paginas]);
-  const tablaPagina = { ...tabla, filas: tabla.filas.slice(pagina * FILAS_POR_PAGINA, (pagina + 1) * FILAS_POR_PAGINA) };
+  const tablaPagina = { ...tabla, filas: tabla.filas.slice(pagina * filasPorPagina, (pagina + 1) * filasPorPagina) };
 
   const terminado = evento.estado === "FINALIZADO";
   const campeon = tabla.filas[0];
   const espera = ronda ? enEspera(evento, ronda) : [];
 
   return (
-    <Escenario oculto={cursorOculto}>
+    <Escenario oculto={cursorOculto} vertical={vertical}>
       <header className="flex items-center gap-6">
         <Logo className="!h-14" />
         <div className="h-12 w-px bg-white/10" />
@@ -139,7 +141,7 @@ function TV({ evento }: { evento: EventoAmericano }) {
 
       <AnimatePresence mode="wait">
         {terminado && campeon ? (
-          <motion.section key="campeon" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="grid flex-1 grid-cols-[1fr_1.3fr] items-center gap-10">
+          <motion.section key="campeon" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className={clsx("grid flex-1 items-center gap-10", vertical ? "grid-cols-1 content-center" : "grid-cols-[1fr_1.3fr]")}>
             <div className="flex flex-col items-center text-center">
               <motion.div animate={{ rotate: [0, -8, 8, 0] }} transition={{ repeat: Infinity, duration: 3 }}>
                 <Trophy className="size-28 text-neon drop-shadow-[0_0_40px_rgba(127,227,2,0.6)]" />
@@ -151,10 +153,10 @@ function TV({ evento }: { evento: EventoAmericano }) {
               <p className="mt-6 font-display text-6xl font-bold">{campeon.nombre}</p>
               <p className="mt-2 font-display text-4xl font-bold text-neon">{campeon.puntos} pts</p>
             </div>
-            <Leaderboard tabla={{ ...tabla, filas: tabla.filas.slice(0, FILAS_POR_PAGINA) }} nombresPorFila={(f) => nombresDeFila(evento, f)} modoTV />
+            <Leaderboard tabla={{ ...tabla, filas: tabla.filas.slice(0, filasPorPagina) }} nombresPorFila={(f) => nombresDeFila(evento, f)} modoTV />
           </motion.section>
         ) : (
-          <motion.section key="vivo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] gap-8">
+          <motion.section key="vivo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={clsx("grid min-h-0 flex-1 gap-8", vertical ? "grid-cols-1 grid-rows-[minmax(0,1.1fr)_minmax(0,1fr)]" : "grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]")}>
             <div className="flex min-h-0 flex-col gap-6">
               <div className="glass flex items-center gap-8 rounded-[2rem] p-6">
                 {conReloj ? (
@@ -218,19 +220,32 @@ function TV({ evento }: { evento: EventoAmericano }) {
  * Lienzo fijo de 1920×1080 escalado para llenar cualquier pantalla (proyector
  * 720p, TV Full HD o 4K, monitor vertical) sin que cambie el diseño.
  */
-function Escenario({ oculto, children }: { oculto: boolean; children: React.ReactNode }) {
+/** Pantalla en vertical (celular, tablet o TV girada): el lienzo pasa a 1080×1920 y todo va en una columna. */
+function useVertical() {
+  const [vertical, setVertical] = useState(false);
+  useEffect(() => {
+    const ver = () => setVertical(window.innerHeight > window.innerWidth * 1.1);
+    ver();
+    window.addEventListener("resize", ver);
+    return () => window.removeEventListener("resize", ver);
+  }, []);
+  return vertical;
+}
+
+function Escenario({ oculto, vertical, children }: { oculto: boolean; vertical: boolean; children: React.ReactNode }) {
+  const [ancho, alto] = vertical ? [1080, 1920] : [1920, 1080];
   const [escala, setEscala] = useState(1);
   useEffect(() => {
-    const ajustar = () => setEscala(Math.min(window.innerWidth / 1920, window.innerHeight / 1080));
+    const ajustar = () => setEscala(Math.min(window.innerWidth / ancho, window.innerHeight / alto));
     ajustar();
     window.addEventListener("resize", ajustar);
     return () => window.removeEventListener("resize", ajustar);
-  }, []);
+  }, [ancho, alto]);
   return (
     <main className={clsx("tema-noche pantalla fixed inset-0 flex items-center justify-center overflow-hidden", oculto && "cursor-none")}>
       <div
         className="flex shrink-0 flex-col gap-6 p-10"
-        style={{ width: 1920, height: 1080, transform: `scale(${escala})`, transformOrigin: "center" }}
+        style={{ width: ancho, height: alto, transform: `scale(${escala})`, transformOrigin: "center" }}
       >
         {children}
       </div>

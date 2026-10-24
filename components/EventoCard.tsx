@@ -46,7 +46,7 @@ export function EventoCard({ evento, index = 0 }: { evento: EventoAmericano; ind
           </div>
           <ChevronRight className="mt-1 size-5 shrink-0 text-white/30 transition group-hover:translate-x-1 group-hover:text-neon" />
         </div>
-        <div className="mt-4 flex items-center gap-4 text-xs text-white/50">
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/50">
           <span className="flex items-center gap-1.5"><Users className="size-3.5" /> {evento.jugadores.length}</span>
           <span className="flex items-center gap-1.5"><LayoutGrid className="size-3.5" /> {evento.pistas} pistas</span>
           <span className="flex items-center gap-1.5"><CalendarDays className="size-3.5" /> {new Date(evento.fecha + "T12:00:00").toLocaleDateString("es", { day: "numeric", month: "short" })}</span>

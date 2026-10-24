@@ -72,10 +72,11 @@ export function MapaPistas({ pistas, seleccion, onToggle }: { pistas: PistaClub[
 
 /* ---------- dibujo isométrico ---------- */
 
-// Medidas en metros: una pista de pádel mide 20 × 10.
+// Medidas en metros: una pista de pádel mide 20 × 10. Cada pista ocupa ANCHO en x y LARGO en y.
 const LARGO = 20;
 const ANCHO = 10;
 const GAP = 3;
+const GROSOR = 1.1;
 const COS = Math.cos(Math.PI / 6);
 const SIN = 0.5;
 
@@ -84,178 +85,174 @@ const iso = (x: number, y: number, z = 0): P => [(x - y) * COS, (x + y) * SIN - 
 const pts = (...ps: P[]) => ps.map((p) => p.map((n) => n.toFixed(2)).join(",")).join(" ");
 const rect = (x: number, y: number, w: number, h: number, z = 0) => pts(iso(x, y, z), iso(x + w, y, z), iso(x + w, y + h, z), iso(x, y + h, z));
 
-function Isometrico({ pistas, seleccion, onToggle }: { pistas: PistaClub[]; seleccion: number[]; onToggle: (n: number) => void }) {
+/** Dónde va cada pista. La Marina tiene su distribución real; otros clubes, en cuadrícula. */
+function distribucion(pistas: PistaClub[]) {
   const techadas = pistas.filter((p) => p.techada);
   const libres = pistas.filter((p) => !p.techada);
-  // Cada pista ocupa ANCHO en x y LARGO en y. Bajo techo van en 2 columnas.
   const PASO_X = ANCHO + 8;
   const PASO_Y = LARGO + GAP;
-  const celdas = new Map<number, [number, number]>();
-  // Distribución real de La Marina: 1 al fondo, 3 a la izquierda, 2 a la derecha y 4 adelante.
-  const laMarina = techadas.length === 4 && [1, 2, 3, 4].every((n) => techadas.some((p) => p.numero === n));
-  const LA_MARINA: Record<number, [number, number]> = { 1: [0, 0], 2: [1, 0], 3: [0, 1], 4: [1, 1] };
-  techadas.forEach((p, i) => celdas.set(p.numero, laMarina ? LA_MARINA[p.numero] : [i % 2, Math.floor(i / 2)]));
-  const filas = Math.max(1, Math.ceil(techadas.length / 2));
-  const cols = techadas.length > 1 ? 2 : 1;
-  const nave = { x: 0, y: 0, w: (cols - 1) * PASO_X + ANCHO + 6, h: (filas - 1) * PASO_Y + LARGO + 4 };
   const pos = new Map<number, { x: number; y: number }>();
-  celdas.forEach(([c, f], n) => pos.set(n, { x: 3 + c * PASO_X, y: 2 + f * PASO_Y }));
-  // Las de aire libre, afuera junto a la nave, a la altura de la fila de adelante.
-  const xLibre = techadas.length ? nave.w + 6 : 0;
-  const filaLibre = Math.min(filas - 1, 1);
-  libres.forEach((p, i) => pos.set(p.numero, { x: xLibre, y: 2 + (filaLibre + i) * PASO_Y }));
-  const ancho = Math.max(techadas.length ? nave.w : 0, libres.length ? xLibre + ANCHO + 6 : 0);
-  const alto = Math.max(techadas.length ? nave.h : 0, libres.length ? 2 + (filaLibre + libres.length) * PASO_Y : 0);
-  const terreno = { x: -7, y: -5, w: ancho + 12, h: alto + 12 };
-  const patio = libres.length ? { x: xLibre - 3, y: 0, w: ANCHO + 6, h: alto + 1 } : null;
-  const primeraLibre = libres.length ? pos.get(libres[0].numero)! : null;
+  const laMarina = techadas.length === 4 && [1, 2, 3, 4].every((n) => techadas.some((p) => p.numero === n));
+  // Bajo techo: 1 al fondo, 3 a la izquierda, 2 a la derecha y 4 adelante.
+  const LA_MARINA: Record<number, [number, number]> = { 1: [0, 0], 2: [1, 0], 3: [0, 1], 4: [1, 1] };
+  techadas.forEach((p, i) => {
+    const [c, f] = laMarina ? LA_MARINA[p.numero] : [i % 2, Math.floor(i / 2)];
+    pos.set(p.numero, { x: c * PASO_X, y: f * PASO_Y });
+  });
+  const cols = techadas.length > 1 ? 2 : techadas.length;
+  // Aire libre: afuera, a la derecha de la nave y un poco hacia el frente (bajo la vela blanca).
+  const xLibre = cols ? (cols - 1) * PASO_X + ANCHO + 12 : 0;
+  libres.forEach((p, i) => pos.set(p.numero, { x: xLibre, y: (techadas.length ? 6 : 0) + i * PASO_Y }));
+  return pos;
+}
 
-  // Caja de la vista a partir de las esquinas del terreno (con la altura del techo).
-  const esquinas = [iso(terreno.x, terreno.y, 9), iso(terreno.x + terreno.w, terreno.y, 9), iso(terreno.x, terreno.y + terreno.h), iso(terreno.x + terreno.w, terreno.y + terreno.h)];
-  const minX = Math.min(...esquinas.map((p) => p[0])) - 2;
-  const maxX = Math.max(...esquinas.map((p) => p[0])) + 2;
-  const minY = Math.min(...esquinas.map((p) => p[1])) - 2;
-  const maxY = Math.max(...esquinas.map((p) => p[1])) + 2;
-
-  const H = 7; // altura del techo
-  const arboles: P[] = [
-    [terreno.x + 2.5, terreno.y + terreno.h * 0.55],
-    [terreno.x + terreno.w * 0.45, terreno.y + 1.5],
-    [terreno.x + terreno.w - 2, terreno.y + 2],
-    [terreno.x + terreno.w - 2, terreno.y + 9],
-    [terreno.x + terreno.w * 0.3, terreno.y + terreno.h - 6.5],
-    [terreno.x + terreno.w * 0.7, terreno.y + terreno.h - 6.5],
-  ];
+function Isometrico({ pistas, seleccion, onToggle }: { pistas: PistaClub[]; seleccion: number[]; onToggle: (n: number) => void }) {
+  const pos = distribucion(pistas);
+  const esquinas = [...pos.values()].flatMap(({ x, y }) => [iso(x - 3, y - 3, 12), iso(x + ANCHO + 8, y - 3, 12), iso(x - 3, y + LARGO + 3, -4), iso(x + ANCHO + 6, y + LARGO + 3, -4)]);
+  const minX = Math.min(...esquinas.map((p) => p[0]));
+  const maxX = Math.max(...esquinas.map((p) => p[0]));
+  const minY = Math.min(...esquinas.map((p) => p[1]));
+  const maxY = Math.max(...esquinas.map((p) => p[1]));
+  // De atrás hacia adelante para que se tapen bien.
+  const orden = [...pistas].sort((a, b) => {
+    const pa = pos.get(a.numero)!;
+    const pb = pos.get(b.numero)!;
+    return pa.x + pa.y - (pb.x + pb.y);
+  });
 
   return (
-    <div className="sobre-marca overflow-hidden rounded-3xl bg-gradient-to-br from-[#1b2a7a] via-marino to-marino-2 shadow-[0_18px_40px_-18px_rgba(12,17,61,0.7)]">
-      <svg viewBox={`${minX} ${minY} ${maxX - minX} ${maxY - minY}`} className="block h-auto w-full" role="img" aria-label="Mapa de las pistas del club">
+    <div className="relative">
+      {/* luz ambiente detrás de las pistas */}
+      <div className="pointer-events-none absolute inset-x-8 top-1/4 h-1/2 rounded-full bg-marca-2/25 blur-3xl" />
+      <svg viewBox={`${minX} ${minY} ${maxX - minX} ${maxY - minY}`} className="relative mx-auto block h-auto max-h-[min(62svh,560px)] w-full overflow-visible" role="img" aria-label="Mapa de las pistas del club">
         <defs>
           <linearGradient id="mp-alfombra" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor="#2f86e0" />
-            <stop offset="1" stopColor="#1c5fb8" />
+            <stop offset="1" stopColor="#1a5ab3" />
           </linearGradient>
           <linearGradient id="mp-sel" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#5cbcff" />
+            <stop offset="0" stopColor="#6cc6ff" />
             <stop offset="1" stopColor="#2a8cf2" />
           </linearGradient>
+          <linearGradient id="mp-vidrio" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stopColor="#fff" stopOpacity="0.32" />
+            <stop offset="1" stopColor="#fff" stopOpacity="0.04" />
+          </linearGradient>
+          {/* reflejo que recorre la pista elegida */}
+          <linearGradient id="mp-brillo" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="#fff" stopOpacity="0" />
+            <stop offset="0.45" stopColor="#fff" stopOpacity="0" />
+            <stop offset="0.5" stopColor="#fff" stopOpacity="0.45" />
+            <stop offset="0.55" stopColor="#fff" stopOpacity="0" />
+            <stop offset="1" stopColor="#fff" stopOpacity="0" />
+            <animate attributeName="x1" values="-1;1" dur="3.2s" repeatCount="indefinite" />
+            <animate attributeName="x2" values="0;2" dur="3.2s" repeatCount="indefinite" />
+          </linearGradient>
+          <filter id="mp-sombra" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="1.6" />
+          </filter>
+          <filter id="mp-halo" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2.6" />
+          </filter>
         </defs>
 
-        {/* terreno y estacionamiento */}
-        <polygon points={rect(terreno.x, terreno.y, terreno.w, terreno.h)} fill="#1a2560" />
-        <polygon points={rect(terreno.x + 1, terreno.y + terreno.h - 4.5, terreno.w - 2, 3)} fill="#141d4d" />
-        {Array.from({ length: Math.floor((terreno.w - 4) / 4) }, (_, i) => (
-          <polygon key={i} points={rect(terreno.x + 2 + i * 4, terreno.y + terreno.h - 4, 2.4, 1.6, 0.6)} fill={i % 3 === 1 ? "#a33b3b" : "#dfe3ee"} opacity="0.85" />
-        ))}
-
-        {/* piso de la nave techada */}
-        {techadas.length > 0 && <polygon points={rect(nave.x, nave.y, nave.w, nave.h)} fill="#7a3d2f" stroke="#8f4b3a" strokeWidth="0.3" />}
-        {/* piso del área exterior */}
-        {patio && <polygon points={rect(patio.x, patio.y, patio.w, patio.h)} fill="#3a4370" />}
-        {patio &&
-          Array.from({ length: Math.floor(patio.h / 3) }, (_, i) => (
-            <polyline key={i} points={pts(iso(patio.x, patio.y + i * 3), iso(patio.x + patio.w, patio.y + i * 3))} stroke="#fff" strokeOpacity="0.06" strokeWidth="0.15" />
-          ))}
-
-        {/* pistas: de atrás hacia adelante para que se tapen bien */}
-        {[...pistas]
-          .sort((a, b) => {
-            const pa = pos.get(a.numero)!;
-            const pb = pos.get(b.numero)!;
-            return pa.x + pa.y - (pb.x + pb.y);
-          })
-          .map((c) => {
-            const { x, y } = pos.get(c.numero)!;
-            const on = seleccion.includes(c.numero);
-            const centro = iso(x + ANCHO / 2, y + 4, 3.2);
-            return (
-              <g key={c.numero} className="cursor-pointer" onClick={() => onToggle(c.numero)}>
-                <polygon points={rect(x + 0.6, y + 0.8, ANCHO, LARGO)} fill="#000" opacity={on ? 0.35 : 0.18} />
-                <motion.g animate={{ y: on ? -1.2 : 0 }} transition={{ type: "spring", stiffness: 300, damping: 18 }}>
-                  <polygon points={rect(x, y, ANCHO, LARGO)} fill={on ? "url(#mp-sel)" : "url(#mp-alfombra)"} stroke={on ? "#cff35b" : "#154a91"} strokeWidth={on ? 0.6 : 0.3} style={on ? { filter: "drop-shadow(0 0 1.2px #cff35b)" } : undefined} />
-                  {/* líneas de la pista */}
-                  <polyline points={pts(iso(x, y + 3), iso(x + ANCHO, y + 3))} stroke="#fff" strokeOpacity="0.85" strokeWidth="0.2" fill="none" />
-                  <polyline points={pts(iso(x, y + LARGO - 3), iso(x + ANCHO, y + LARGO - 3))} stroke="#fff" strokeOpacity="0.85" strokeWidth="0.2" fill="none" />
-                  <polyline points={pts(iso(x + ANCHO / 2, y + 3), iso(x + ANCHO / 2, y + LARGO - 3))} stroke="#fff" strokeOpacity="0.85" strokeWidth="0.2" fill="none" />
-                  {/* red */}
-                  <polygon points={pts(iso(x, y + LARGO / 2), iso(x + ANCHO, y + LARGO / 2), iso(x + ANCHO, y + LARGO / 2, 0.9), iso(x, y + LARGO / 2, 0.9))} fill="#0b1030" opacity="0.85" />
-                  {/* vidrios del fondo */}
-                  <polygon points={pts(iso(x, y), iso(x + ANCHO, y), iso(x + ANCHO, y, 2.2), iso(x, y, 2.2))} fill="#fff" fillOpacity="0.08" stroke="#fff" strokeOpacity="0.35" strokeWidth="0.15" />
-                  <polygon points={pts(iso(x, y + LARGO), iso(x + ANCHO, y + LARGO), iso(x + ANCHO, y + LARGO, 2.2), iso(x, y + LARGO, 2.2))} fill="#fff" fillOpacity="0.08" stroke="#fff" strokeOpacity="0.35" strokeWidth="0.15" />
-                  {/* número */}
-                  <circle cx={centro[0]} cy={centro[1]} r="1.9" fill={on ? "#cff35b" : "#0c113d"} stroke={on ? "#0c113d" : "#fff"} strokeWidth="0.35" />
-                  <text x={centro[0]} y={centro[1] + 0.75} textAnchor="middle" fontSize="2.2" fontWeight="800" fill={on ? "#0c113d" : "#fff"} style={{ fontFamily: "var(--font-display)" }}>
-                    {c.numero}
-                  </text>
-                </motion.g>
-              </g>
-            );
-          })}
-
-        {/* estructura del techo (alambre) */}
-        {techadas.length > 0 && (
-          <g stroke="#fff" strokeOpacity="0.45" strokeWidth="0.18" fill="none" pointerEvents="none">
-            <polygon points={rect(nave.x, nave.y, nave.w, nave.h, H)} />
-            {Array.from({ length: Math.round(nave.w / 6) + 1 }, (_, i) => {
-              const x = nave.x + (i * nave.w) / Math.round(nave.w / 6);
-              return (
-                <g key={i}>
-                  <polyline points={pts(iso(x, nave.y), iso(x, nave.y, H))} />
-                  <polyline points={pts(iso(x, nave.y, H), iso(x, nave.y + nave.h, H))} strokeOpacity="0.18" />
-                </g>
-              );
-            })}
-            {Array.from({ length: Math.round(nave.h / 6) + 1 }, (_, i) => {
-              const y = nave.y + (i * nave.h) / Math.round(nave.h / 6);
-              return <polyline key={i} points={pts(iso(nave.x, y), iso(nave.x, y, H))} />;
-            })}
-            <polyline points={pts(iso(nave.x + nave.w, nave.y), iso(nave.x + nave.w, nave.y, H))} />
-            <polyline points={pts(iso(nave.x + nave.w, nave.y + nave.h), iso(nave.x + nave.w, nave.y + nave.h, H))} />
-            <polyline points={pts(iso(nave.x, nave.y + nave.h), iso(nave.x, nave.y + nave.h, H))} />
-          </g>
-        )}
-
-        {/* carpa y palmeras junto a las de aire libre */}
-        {primeraLibre && (
-          <g pointerEvents="none">
-            <polygon points={pts(iso(primeraLibre.x - 2, primeraLibre.y - 1.5, 3.2), iso(primeraLibre.x + ANCHO * 0.55, primeraLibre.y - 4.5, 4.6), iso(primeraLibre.x + ANCHO * 0.35, primeraLibre.y + 1, 2.6))} fill="#e8ecf5" opacity="0.92" />
-            <polygon points={pts(iso(primeraLibre.x + ANCHO * 0.55, primeraLibre.y - 4.5, 4.6), iso(primeraLibre.x + ANCHO + 1, primeraLibre.y - 1, 3), iso(primeraLibre.x + ANCHO * 0.35, primeraLibre.y + 1, 2.6))} fill="#c3cad9" opacity="0.92" />
-          </g>
-        )}
-        {libres.flatMap((p) => {
-          const q = pos.get(p.numero)!;
-          return [
-            [q.x + ANCHO + 2.5, q.y + 3],
-            [q.x + ANCHO + 2.5, q.y + LARGO - 4],
-            [q.x + ANCHO * 0.8, q.y + LARGO + 2.2],
-          ].map(([x, y], i) => {
-            const b = iso(x, y);
-            return <Palmera key={`${p.numero}-${i}`} x={b[0]} y={b[1]} />;
-          });
-        })}
-        {arboles.map(([x, y], i) => {
-          const b = iso(x, y);
-          return <Arbol key={i} x={b[0]} y={b[1]} />;
+        {orden.map((c, i) => {
+          const { x, y } = pos.get(c.numero)!;
+          return <Pista key={c.numero} c={c} x={x} y={y} on={seleccion.includes(c.numero)} indice={i} onToggle={onToggle} />;
         })}
       </svg>
     </div>
   );
 }
 
-function Arbol({ x, y }: { x: number; y: number }) {
+function Pista({ c, x, y, on, indice, onToggle }: { c: PistaClub; x: number; y: number; on: boolean; indice: number; onToggle: (n: number) => void }) {
+  const W = ANCHO;
+  const L = LARGO;
+  const pin = iso(x + W / 2, y + L / 2, GROSOR);
+  const linea = { stroke: "#fff", strokeOpacity: 0.85, strokeWidth: 0.2, fill: "none" } as const;
+  const T = GROSOR;
+  return (
+    <motion.g
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.08 * indice, type: "spring", stiffness: 140, damping: 16 }}
+      className="mp-pista cursor-pointer"
+      onClick={() => onToggle(c.numero)}
+    >
+      {/* sombra en el "piso" invisible y luz lima debajo de la elegida */}
+      <motion.polygon points={rect(x, y, W, L, -4)} fill="#02041a" filter="url(#mp-sombra)" animate={{ opacity: on ? 0.32 : 0.5 }} transition={{ duration: 0.4 }} />
+      <motion.polygon points={rect(x - 1, y - 1, W + 2, L + 2, -4)} fill="#cff35b" filter="url(#mp-halo)" initial={false} animate={{ opacity: on ? 0.22 : 0 }} transition={{ duration: 0.5 }} />
+
+      <motion.g
+        animate={on ? { y: [-2.4, -3.4, -2.4] } : { y: 0 }}
+        transition={on ? { duration: 3.4, repeat: Infinity, ease: "easeInOut" } : { type: "spring", stiffness: 260, damping: 18 }}
+      >
+        <g className="mp-tapa">
+          {/* canto de la losa */}
+          <polygon points={pts(iso(x, y + L, T), iso(x + W, y + L, T), iso(x + W, y + L, 0), iso(x, y + L, 0))} fill={on ? "#1d6fd0" : "#123f84"} />
+          <polygon points={pts(iso(x + W, y, T), iso(x + W, y + L, T), iso(x + W, y + L, 0), iso(x + W, y, 0))} fill={on ? "#2a83e6" : "#185399"} />
+          {/* alfombra */}
+          <polygon
+            points={rect(x, y, W, L, T)}
+            fill={on ? "url(#mp-sel)" : "url(#mp-alfombra)"}
+            stroke={on ? "#cff35b" : "#0f3a78"}
+            strokeWidth={on ? 0.55 : 0.25}
+            style={on ? { filter: "drop-shadow(0 0 1.4px #cff35b)" } : undefined}
+          />
+          {on && <polygon points={rect(x, y, W, L, T)} fill="url(#mp-brillo)" pointerEvents="none" />}
+          {/* líneas */}
+          <polyline points={pts(iso(x, y + 3, T), iso(x + W, y + 3, T))} {...linea} />
+          <polyline points={pts(iso(x, y + L - 3, T), iso(x + W, y + L - 3, T))} {...linea} />
+          <polyline points={pts(iso(x + W / 2, y + 3, T), iso(x + W / 2, y + L - 3, T))} {...linea} />
+          {/* vidrio del fondo */}
+          <polygon points={pts(iso(x, y, T), iso(x + W, y, T), iso(x + W, y, T + 2.6), iso(x, y, T + 2.6))} fill="url(#mp-vidrio)" stroke="#fff" strokeOpacity="0.45" strokeWidth="0.12" />
+          {/* red */}
+          <polygon points={pts(iso(x, y + L / 2, T), iso(x + W, y + L / 2, T), iso(x + W, y + L / 2, T + 0.9), iso(x, y + L / 2, T + 0.9))} fill="#071033" opacity="0.8" />
+          <polyline points={pts(iso(x, y + L / 2, T + 0.9), iso(x + W, y + L / 2, T + 0.9))} stroke="#fff" strokeWidth="0.15" />
+          {/* vidrio de adelante, más transparente para ver la pista */}
+          <polygon points={pts(iso(x, y + L, T), iso(x + W, y + L, T), iso(x + W, y + L, T + 2.6), iso(x, y + L, T + 2.6))} fill="url(#mp-vidrio)" fillOpacity="0.6" stroke="#fff" strokeOpacity="0.35" strokeWidth="0.12" />
+          {!c.techada && <Vela x={x} y={y} />}
+          {/* número flotante */}
+          <line x1={pin[0]} y1={pin[1]} x2={pin[0]} y2={pin[1] - 5.2} stroke={on ? "#cff35b" : "#fff"} strokeOpacity="0.7" strokeWidth="0.18" />
+          <circle cx={pin[0]} cy={pin[1] - 7.2} r="2.1" fill={on ? "#cff35b" : "#0c113d"} stroke={on ? "#0c113d" : "#fff"} strokeWidth="0.35" style={on ? { filter: "drop-shadow(0 0 1.5px #cff35b)" } : undefined} />
+          <text x={pin[0]} y={pin[1] - 6.35} textAnchor="middle" fontSize="2.4" fontWeight="800" fill={on ? "#0c113d" : "#fff"} style={{ fontFamily: "var(--font-display)" }}>
+            {c.numero}
+          </text>
+        </g>
+      </motion.g>
+    </motion.g>
+  );
+}
+
+/** Vela blanca (carpa) sobre la pista de aire libre, con palmeras alrededor. */
+function Vela({ x, y }: { x: number; y: number }) {
+  const W = ANCHO;
+  // Vela tensada sobre el fondo de la pista: dos puntas altas y dos bajas.
+  const alturas = [3.6, 6.8, 3.4, 5.6];
+  const a = iso(x - 0.8, y + 0.5, alturas[0]);
+  const b = iso(x + W + 0.8, y - 0.8, alturas[1]);
+  const c = iso(x + W + 0.8, y + 6.5, alturas[2]);
+  const d = iso(x - 0.8, y + 7.5, alturas[3]);
+  const palmas: P[] = [iso(x + W + 2.2, y - 1.5, 0), iso(x + W + 4.5, y + 3, 0), iso(x + W + 3, y + LARGO + 0.5, 0)];
   return (
     <g pointerEvents="none">
-      <rect x={x - 0.25} y={y - 2} width="0.5" height="2" fill="#5b3a29" />
-      <polygon points={`${x},${y - 5} ${x + 1.7},${y - 3.6} ${x + 1.4},${y - 1.8} ${x},${y - 1.2} ${x - 1.4},${y - 1.8} ${x - 1.7},${y - 3.6}`} fill="#1f5a3a" />
-      <polygon points={`${x},${y - 5} ${x + 1.7},${y - 3.6} ${x},${y - 3}`} fill="#2d7a4f" />
+      {[a, b, c, d].map((p, i) => (
+        <line key={i} x1={p[0]} y1={p[1]} x2={p[0]} y2={p[1] + alturas[i] - GROSOR} stroke="#dfe5f2" strokeWidth="0.2" />
+      ))}
+      <polygon points={pts(a, b, d)} fill="#f4f6fb" />
+      <polygon points={pts(b, c, d)} fill="#c9d1e3" />
+      <polyline points={pts(b, d)} stroke="#fff" strokeWidth="0.15" />
+      {palmas.map((p, i) => (
+        <Palmera key={i} x={p[0]} y={p[1] - GROSOR} />
+      ))}
     </g>
   );
 }
 
 function Palmera({ x, y }: { x: number; y: number }) {
   return (
-    <g pointerEvents="none" stroke="#3f9a52" strokeWidth="0.45" strokeLinecap="round" fill="none">
-      <path d={`M${x} ${y} q0.4 -2.5 0 -5`} stroke="#8a6a3a" strokeWidth="0.35" />
+    <g pointerEvents="none" stroke="#45b062" strokeWidth="0.45" strokeLinecap="round" fill="none">
+      <path d={`M${x} ${y} q0.4 -2.5 0 -5`} stroke="#9a7444" strokeWidth="0.35" />
       <path d={`M${x} ${y - 5} q2 -0.8 3 0.6`} />
       <path d={`M${x} ${y - 5} q-2 -0.8 -3 0.6`} />
       <path d={`M${x} ${y - 5} q1.2 -1.6 2.6 -1.4`} />

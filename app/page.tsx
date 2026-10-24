@@ -63,7 +63,7 @@ export default function Home() {
           transition={{ type: "spring", stiffness: 200, damping: 22 }}
           className="relative mx-auto mt-2 flex max-w-5xl justify-center px-6 sm:mt-6"
         >
-          <Logo className="!h-auto w-full max-w-[22rem] sm:max-w-md" />
+          <Logo className="!h-auto max-h-[26svh] w-full max-w-[22rem] object-contain sm:max-w-md" />
         </motion.div>
       </div>
 
@@ -108,7 +108,7 @@ export default function Home() {
               <span className="text-xs text-white/40">{enVivo.length} evento(s)</span>
             </div>
             {!hidratado ? (
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {[0, 1].map((i) => (
                   <div key={i} className="glass h-40 animate-pulse rounded-3xl" />
                 ))}
@@ -123,7 +123,7 @@ export default function Home() {
                 Aún no hay eventos. ¡Crea el primero!
               </Link>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {enVivo.map((e, i) => (
                   <EventoCard key={e.id} evento={e} index={i} />
                 ))}
@@ -134,7 +134,7 @@ export default function Home() {
           {pasados.length > 0 && (
             <section className="mt-10">
               <h2 className="mb-4 font-display text-xl font-semibold">Historial</h2>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {pasados.map((e, i) => (
                   <EventoCard key={e.id} evento={e} index={i} />
                 ))}

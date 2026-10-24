@@ -67,7 +67,7 @@ export function EventoShell({ id, children }: { id: string; children: (evento: E
           {tabs.map((t) => {
             const activo = pathname === t.href;
             return (
-              <Link key={t.href} href={t.href} className={clsx("relative flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm font-semibold transition sm:px-4", activo ? "text-noche" : "text-white/60 hover:text-white")}>
+              <Link key={t.href} href={t.href} className={clsx("relative flex items-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 py-2.5 text-sm font-semibold transition min-[380px]:gap-2 min-[380px]:px-3 sm:px-4", activo ? "text-noche" : "text-white/60 hover:text-white")}>
                 {activo && <motion.span layoutId="tab-activa" className="absolute inset-0 rounded-xl bg-neon" transition={{ type: "spring", stiffness: 500, damping: 35 }} />}
                 <t.icon className="relative size-4" />
                 <span className="relative">
@@ -83,7 +83,7 @@ export function EventoShell({ id, children }: { id: string; children: (evento: E
               </Link>
             );
           })}
-          <QRBoton evento={evento} className="flex items-center rounded-xl px-3 py-2.5 text-white/60 transition hover:text-white" />
+          <QRBoton evento={evento} className="flex items-center rounded-xl px-2.5 py-2.5 text-white/60 transition hover:text-white min-[380px]:px-3" />
         </div>
       </nav>
     </div>
