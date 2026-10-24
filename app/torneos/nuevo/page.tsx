@@ -77,7 +77,7 @@ function NuevoTorneo() {
   const [pistas, setPistas] = useState<number[]>(pistasClub.map((p) => p.numero));
   const [categorias, setCategorias] = useState<CategoriaTorneo[]>([]);
   const [descanso, setDescanso] = useState(45);
-  const [tolerancia, setTolerancia] = useState(15);
+  const [tolerancia, setTolerancia] = useState(10);
   const [finalesUltimo, setFinalesUltimo] = useState(true);
   const catalogo = useMemo(catalogoCategorias, []);
 
@@ -250,7 +250,7 @@ function NuevoTorneo() {
           <div className="flex flex-wrap items-center justify-between gap-3 p-4">
             <div>
               <p className="font-semibold">Tolerancia de W.O.</p>
-              <p className="text-xs text-white/50">Minutos desde el llamado a pista antes de proponer W.O.</p>
+              <p className="text-xs text-white/50">FIP: 10 min desde la hora prevista (o 5 min después de que termine el partido anterior en la pista).</p>
             </div>
             <Stepper valor={tolerancia} onChange={setTolerancia} min={5} max={30} paso={5} sufijo="min" />
           </div>

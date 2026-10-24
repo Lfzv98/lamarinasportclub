@@ -41,6 +41,7 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 - **Programación sin choques:** pistas, descanso mínimo (también entre categorías), dependencias de la llave, finales el último día en la pista principal, franjas bloqueadas y disponibilidad de cada dupla.
 - **Imprevistos:** suspender pistas por lluvia (el partido en juego guarda su marcador y se reanuda), reanudar, sumar una sede de apoyo con su horario y tiempo de traslado, agregar un día. Todo reprograma solo.
 - **Anotador punto a punto:** punto de oro, tie-break y súper tie-break, orden de saque, faltas, aces, winners y errores por jugador y golpe; estadísticas por jugador al instante.
+- **Reglamento FIP (rev. 2021):** puntuación con ventaja o punto de oro (en mixto resta el del mismo sexo), mini set a 4 con tie-break 4-4, tie-break decisivo a 10 o a 7, tercer set sin tie-break; cambios de lado en games impares y cada 6 puntos del tie-break; cada dupla elige quién saca al empezar cada set; descansos de 20 s, 90 s y 120 s (sin descanso tras el primer game); W.O. a los 10 min de la hora prevista (o 5 min después de que terminó el partido anterior en la pista); peloteo de 0, 3 o 5 min al reanudar una suspensión; atención médica de 3 min una vez por jugador y accidente de hasta 15 min; tabla de penalizaciones (advertencia, pérdida de punto, descalificación) acumulada por dupla. El orden de desempate en grupos no lo fija el reglamento de juego: se configura por torneo.
 - **Clave de participantes:** una por torneo, vence al terminar el último día; el staff la ve y cambia en Ajustes. Cambiarla deja fuera a quien entró con la anterior.
 
 ## Permisos
@@ -66,7 +67,7 @@ Al crear el evento se elige cómo suma cada jugador: **todos los puntos** de su 
 ```bash
 npm install
 npm run dev        # http://localhost:3000
-npm test           # 79 tests: americanos (rotación, marcadores, horarios, fusión, plantel, validación) y torneos (sorteo, desempates, programación, lluvia, sedes, anotador)
+npm test           # 87 tests: americanos (rotación, marcadores, horarios, fusión, plantel, validación) y torneos (sorteo, desempates, programación, lluvia, sedes, anotador, reglamento FIP)
 node tests/e2e/robustez.e2e.mjs   # 22 pruebas en navegador (con la app corriendo)
 node tests/e2e/horario.e2e.mjs    # 18 pruebas del selector de fecha y horas (celular y computadora)
 npm run typecheck

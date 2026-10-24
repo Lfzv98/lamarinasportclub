@@ -120,18 +120,23 @@ export const CONFIG_CUADRO_BASE: ConfigCuadro = {
   consolacion: false,
 };
 
+/** Juego en el que se juega el tie-break según el largo del set (FIP: mini set 4-4, set 6-6; set largo a 9, 8-8). */
+export function tieBreakPorDefecto(games: number): number {
+  return games === 9 ? 8 : games;
+}
+
 export function descripcionReglas(r: ReglasPartido): string {
   const sets = r.sets === 1 ? `1 set a ${r.games}` : `Mejor de 3 a ${r.games}`;
-  const extra = [r.puntoDeOro ? "punto de oro" : "ventaja", r.sets === 3 && r.superTie ? "súper tie-break" : r.sets === 3 ? "tercer set" : null]
-    .filter(Boolean)
-    .join(" · ");
+  const decisivo =
+    r.sets !== 3 ? null : r.superTie ? ((r.tieDecisivo ?? 10) === 7 ? "tie-break a 7 en vez del 3er set" : "súper tie-break") : r.tercerSetLargo ? "tercer set sin tie-break" : "tercer set";
+  const extra = [r.puntoDeOro ? "punto de oro" : "ventaja", r.tieBreakEn === null ? "sin tie-break" : null, decisivo].filter(Boolean).join(" · ");
   return `${sets} · ${extra}`;
 }
 
-/** Duración estimada de un partido según sus reglas (para la programación). */
-export function minutosEstimados(r: Pick<ReglasPartido, "sets" | "games" | "superTie">): number {
+/** Duración estimada de un partido según sus reglas (para la programación). Incluye los 5 min de peloteo (FIP Regla 2.2). */
+export function minutosEstimados(r: Pick<ReglasPartido, "sets" | "games" | "superTie" | "tieDecisivo" | "tercerSetLargo">): number {
   const porSet = r.games * 7; // ~7 min por game ganado (el set promedia ~1,6 games por cada uno ganado)
   if (r.sets === 1) return Math.round((porSet * 1.1) / 15) * 15;
-  const total = porSet * 2 + (r.superTie ? 12 : porSet * 0.6);
-  return Math.round(total / 15) * 15;
+  const decisivo = r.superTie ? ((r.tieDecisivo ?? 10) === 7 ? 8 : 12) : porSet * (r.tercerSetLargo ? 0.7 : 0.6);
+  return Math.round((porSet * 2 + decisivo) / 15) * 15;
 }

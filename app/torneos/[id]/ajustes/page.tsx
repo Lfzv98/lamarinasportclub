@@ -122,7 +122,7 @@ function Ajustes({ torneo }: { torneo: Torneo }) {
         <div className="flex items-center justify-between gap-3 text-sm">
           <div>
             <p className="font-semibold">Tolerancia para W.O.</p>
-            <p className="text-xs text-white/50">Corre desde la hora programada, nunca antes</p>
+            <p className="text-xs text-white/50">FIP: 10 min desde la hora prevista, nunca antes</p>
           </div>
           <Stepper valor={b.toleranciaWO} onChange={(v) => setB({ ...b, toleranciaWO: v })} min={5} max={30} paso={5} sufijo="min" />
         </div>

@@ -68,7 +68,7 @@ export function crearTorneo(input: NuevoTorneoInput): Torneo {
     dias: [...input.dias].sort((a, b) => a.fecha.localeCompare(b.fecha)),
     canchas: input.canchas,
     descansoMin: input.descansoMin ?? 45,
-    toleranciaWO: input.toleranciaWO ?? 15,
+    toleranciaWO: input.toleranciaWO ?? 10, // FIP Regla 2.1
     finalesUltimoDia: input.finalesUltimoDia ?? true,
     bloqueos: [],
     criterios: CRITERIOS_POR_DEFECTO.map((c) => ({ ...c })),
