@@ -45,8 +45,9 @@ Al crear el evento se elige cómo suma cada jugador: **todos los puntos** de su 
 ```bash
 npm install
 npm run dev        # http://localhost:3000
-npm test           # 37 tests: rotación, marcadores (reglas personalizadas), horarios, fusión, plantel, validación
+npm test           # 55 tests: rotación, marcadores (reglas personalizadas), horarios, fusión, plantel, validación
 node tests/e2e/robustez.e2e.mjs   # 22 pruebas en navegador (con la app corriendo)
+node tests/e2e/horario.e2e.mjs    # 18 pruebas del selector de fecha y horas (celular y computadora)
 npm run typecheck
 npm run build
 ```

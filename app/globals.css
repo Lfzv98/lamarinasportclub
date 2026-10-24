@@ -1,74 +1,176 @@
 @import "tailwindcss";
 
+/*
+ * Tema La Marina: los mismos colores del sistema de reservas.
+ * La app usa "noche" (índigo profundo de la marca, clase tema-noche en <html>).
+ * El tema claro (fondo gris perla y tarjetas blancas, como las reservas) queda
+ * listo: basta con quitar tema-noche del <html> en app/layout.tsx.
+ *
+ * Truco: las clases de siempre (text-white, bg-white/5…) leen variables. En el
+ * tema claro "white" es la tinta, así que todo se invierte sin tocar cada pantalla.
+ * Para un blanco de verdad se usa "blanco".
+ */
 @theme {
-  --color-noche: #0b0f19;
-  --color-noche-2: #121829;
-  --color-noche-3: #1a2236;
-  --color-neon: #7fe302;
-  --color-neon-soft: #9bf03a;
-  --color-lima: #d2ff00;
-  --color-coral: #ff5c7a;
-  --color-cielo: #5cc8ff;
+  --color-white: #0f1a2e;
+  --color-blanco: #ffffff;
+  --color-noche: #0f1a2e;
+  --color-noche-2: #16203d;
+  --color-noche-3: #1c2850;
+  --color-fondo: #f4f5f7;
+  --color-marca: #0f058c;
+  --color-marca-2: #2b3bd6;
+  --color-marino: #14214c;
+  --color-marino-2: #0c113d;
+  --color-neon: #8ddc2f;
+  --color-neon-soft: #a6ec4c;
+  --color-lima: #cff35b;
+  --color-coral: #e0365c;
+  --color-cielo: #1f78c8;
+  --color-disponible: #5ab073;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-display), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --animate-pulse-neon: pulse-neon 2.4s ease-in-out infinite;
 
   @keyframes pulse-neon {
-    0%, 100% { box-shadow: 0 0 0 0 rgb(127 227 2 / 0.45); }
-    50% { box-shadow: 0 0 0 10px rgb(127 227 2 / 0); }
+    0%, 100% { box-shadow: 0 0 0 0 rgb(141 220 47 / 0.5); }
+    50% { box-shadow: 0 0 0 10px rgb(141 220 47 / 0); }
   }
 }
 
 :root {
+  color-scheme: light;
+  /* Colores de texto de acento: legibles sobre blanco. */
+  --tx-neon: #3b7a0c;
+  --tx-coral: #d42a52;
+  --tx-cielo: #1d6fb8;
+  --tx-ambar: #a85a00;
+  --tx-fucsia: #a3239e;
+  --tx-lima: #4d7c0f;
+  --sombra-tarjeta: 0 1px 2px rgb(15 26 46 / 0.05), 0 14px 32px -20px rgb(20 33 76 / 0.28);
+}
+
+/* Noche índigo: TV, superficies azul marino y el encabezado con el logo. */
+.tema-noche,
+.sobre-marca {
   color-scheme: dark;
+  --color-white: #ffffff;
+  --color-fondo: #090d33;
+  --color-noche-2: #121a45;
+  --color-neon: #a6e84a;
+  --color-coral: #ff6b86;
+  --color-cielo: #6cc4ff;
+  --tx-neon: #cff35b;
+  --tx-coral: #ff7d95;
+  --tx-cielo: #7cc8ff;
+  --tx-ambar: #ffd27a;
+  --tx-fucsia: #f5a6f0;
+  --tx-lima: #cff35b;
+  --sombra-tarjeta: inset 0 1px 0 0 rgb(255 255 255 / 0.06), 0 20px 50px -20px rgb(0 0 0 / 0.6);
+  color: var(--color-white);
 }
 
 html,
 body {
-  background: var(--color-noche);
-  color: #fff;
+  background: var(--color-fondo);
+  color: var(--color-white);
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
 }
 
 body {
-  background-image:
-    radial-gradient(60rem 40rem at 110% -10%, rgb(127 227 2 / 0.09), transparent 60%),
-    radial-gradient(50rem 40rem at -20% 110%, rgb(92 200 255 / 0.08), transparent 60%);
-  background-attachment: fixed;
   min-height: 100dvh;
 }
 
+.tema-noche body,
+.tema-noche.pantalla {
+  background:
+    radial-gradient(70rem 45rem at 110% -10%, rgb(43 59 214 / 0.35), transparent 60%),
+    radial-gradient(50rem 40rem at -20% 110%, rgb(141 220 47 / 0.08), transparent 60%),
+    linear-gradient(180deg, #0f058c 0%, #090d33 55%, #070a28 100%);
+  background-attachment: fixed;
+}
+
+/* Acentos de texto (sin capa: ganan a las utilidades y se adaptan al tema). */
+.text-neon { color: var(--tx-neon); }
+.text-coral { color: var(--tx-coral); }
+.text-cielo { color: var(--tx-cielo); }
+.text-amber-100,
+.text-amber-200,
+.text-amber-300 { color: var(--tx-ambar); }
+.text-amber-200\/80 { color: color-mix(in oklab, var(--tx-ambar) 85%, transparent); }
+.text-fuchsia-200,
+.text-fuchsia-300 { color: var(--tx-fucsia); }
+.text-lima { color: var(--tx-lima); }
+
 @utility glass {
-  border: 1px solid rgb(255 255 255 / 0.1);
-  background-color: rgb(255 255 255 / 0.04);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 0.06), 0 20px 50px -20px rgb(0 0 0 / 0.6);
+  border: 1px solid color-mix(in oklab, var(--color-white) 8%, transparent);
+  background-color: color-mix(in oklab, var(--color-fondo) 0%, #ffffff);
+  box-shadow: var(--sombra-tarjeta);
+  .tema-noche &,
+  .sobre-marca & {
+    background-color: rgb(255 255 255 / 0.05);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
 }
 
 @utility glass-strong {
-  border: 1px solid rgb(255 255 255 / 0.1);
-  background-color: rgb(18 24 41 / 0.85);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid color-mix(in oklab, var(--color-white) 8%, transparent);
+  background-color: #ffffff;
+  box-shadow: 0 -10px 40px -10px rgb(15 26 46 / 0.25);
+  .tema-noche & {
+    background-color: rgb(16 22 64 / 0.92);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+  }
+}
+
+/* Superficie seleccionada: azul marino con brillo lima (como "Pista 4 · Seleccionada"). */
+@utility seleccion {
+  background: linear-gradient(135deg, #1e2f6e 0%, var(--color-marino) 45%, var(--color-marino-2) 100%);
+  border-color: color-mix(in oklab, var(--color-lima) 70%, transparent);
+  box-shadow: 0 0 0 1px rgb(207 243 91 / 0.35), 0 14px 30px -12px rgb(12 17 61 / 0.55);
 }
 
 @utility btn {
   @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold transition select-none active:scale-[0.97] disabled:pointer-events-none disabled:opacity-40;
 }
 
+/* Botón principal con textura de césped y la línea blanca de la pista. */
 @utility btn-neon {
-  @apply btn bg-neon text-noche hover:bg-neon-soft;
-  box-shadow: 0 10px 30px -10px rgb(127 227 2 / 0.6);
+  @apply btn text-noche;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  font-weight: 700;
+  background-color: #9fd43f;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 100' preserveAspectRatio='none'%3E%3Cpath d='M-10 70 C 120 10, 260 10, 410 62' stroke='white' stroke-opacity='.7' stroke-width='5' fill='none'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .18 0 0 0 0 .42 0 0 0 0 0 0 0 0 .9 -.25'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E"),
+    linear-gradient(180deg, #c3ec63 0%, #9fd43f 55%, #86bf2f 100%);
+  background-size: 100% 100%, 140px 140px, 100% 100%;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.45), inset 0 -2px 0 rgb(60 100 10 / 0.25), 0 10px 24px -12px rgb(110 170 30 / 0.8);
+  &:hover { filter: brightness(1.05) saturate(1.05); }
 }
 
 @utility btn-ghost {
-  @apply btn border border-white/10 bg-white/5 text-white hover:bg-white/10;
+  @apply btn border text-white;
+  border-color: color-mix(in oklab, var(--color-white) 12%, transparent);
+  background-color: #ffffff;
+  box-shadow: 0 1px 2px rgb(15 26 46 / 0.05);
+  &:hover { background-color: #f7f8fb; }
+  .tema-noche &,
+  .sobre-marca & {
+    background-color: rgb(255 255 255 / 0.06);
+    box-shadow: none;
+    &:hover { background-color: rgb(255 255 255 / 0.12); }
+  }
 }
 
 @utility chip {
-  @apply inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-white/80;
+  @apply inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium text-white/80;
+  border-color: color-mix(in oklab, var(--color-white) 10%, transparent);
+  background-color: color-mix(in oklab, var(--color-white) 4%, transparent);
 }
 
 @utility label {
@@ -76,12 +178,37 @@ body {
 }
 
 @utility input {
-  @apply w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-white/30 focus:border-neon/60 focus:bg-white/[0.07];
+  @apply w-full rounded-xl border px-4 py-3 text-white outline-none transition placeholder:text-white/35;
+  border-color: color-mix(in oklab, var(--color-white) 14%, transparent);
+  background-color: #ffffff;
+  &:focus { border-color: var(--color-marca-2); box-shadow: 0 0 0 3px rgb(43 59 214 / 0.12); }
+  .tema-noche &,
+  .sobre-marca & {
+    background-color: rgb(255 255 255 / 0.05);
+    &:focus { border-color: var(--color-neon); box-shadow: none; }
+  }
 }
 
 @utility tabular {
   font-variant-numeric: tabular-nums;
 }
+
+/* Franjas del día, como en las horas del sistema de reservas. */
+@utility franja-amanecer { background: linear-gradient(160deg, #f8c6dc 0%, #c9b3ee 100%); color: #3b2a5c; }
+@utility franja-manana { background: linear-gradient(180deg, #bfe3f6 0%, #f4ebc2 100%); color: #2c3a4a; }
+@utility franja-dia { background: linear-gradient(180deg, #8cc6f3 0%, #4f9de6 100%); color: #0f2a4a; }
+@utility franja-siesta { background: linear-gradient(180deg, #cfe6fb 0%, #a4cff3 100%); color: #183553; }
+@utility franja-tarde { background: linear-gradient(180deg, #f7b867 0%, #ea8a3a 100%); color: #ffffff; }
+@utility franja-atardecer { background: linear-gradient(160deg, #e6607e 0%, #9c42a0 100%); color: #ffffff; }
+@utility franja-noche { background: linear-gradient(180deg, #403c86 0%, #2a2560 70%, #4a3a52 100%); color: #ffffff; }
+@utility franja-madrugada { background: linear-gradient(180deg, #17204a 0%, #0b1030 100%); color: #ffffff; }
+
+/* Entrada suave de pantallas y tarjetas. */
+@keyframes subir {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.animar-subir { animation: subir 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
@@ -89,3 +216,6 @@ body {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* En noche, los acentos índigo pasan a lima para que se lean sobre el azul. */
+.tema-noche .text-marca { color: var(--tx-neon); }

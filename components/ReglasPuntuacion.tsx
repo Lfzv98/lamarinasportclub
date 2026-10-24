@@ -4,8 +4,9 @@ import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import { Segmented } from "@/components/ui/Segmented";
 import { Stepper } from "@/components/ui/Stepper";
+import { Switch } from "@/components/ui/Switch";
 import { vibrar } from "@/lib/feedback";
-import { descripcionPuntuacion, empateTieBreak, LIMITES, metaDe, modoDe } from "@/lib/scoring";
+import { descripcionPuntuacion, empateTieBreak, LIMITES, metaDe, modoDe, tieConDiferencia } from "@/lib/scoring";
 import type { ConfigPuntuacion, ModoConteo } from "@/types/americano";
 
 /**
@@ -71,9 +72,14 @@ export function ReglasPuntuacion({ valor, onChange }: { valor: ConfigPuntuacion;
             titulo="Tie-break si empatan"
             activo={!!valor.tieBreak}
             onToggle={(on) => set({ tieBreak: on ? 7 : null })}
-            ayuda={valor.tieBreak ? `Si quedan ${empateTieBreak(valor)}-${empateTieBreak(valor)}, el último game es un tie a ${valor.tieBreak} puntos (con 2 de diferencia).` : "Sin tie-break: si se acaba el tiempo empatados, queda empate."}
+            ayuda={
+              valor.tieBreak
+                ? `Si quedan ${empateTieBreak(valor)}-${empateTieBreak(valor)}, el último game es un tie a ${valor.tieBreak} puntos ${tieConDiferencia(valor) ? `con 2 de diferencia (ej. ${valor.tieBreak}-${valor.tieBreak - 2} o ${valor.tieBreak + 1}-${valor.tieBreak - 1})` : `sin diferencia de 2: gana el primero en llegar (ej. ${valor.tieBreak}-${valor.tieBreak - 1})`}.`
+                : "Sin tie-break: si se acaba el tiempo empatados, queda empate."
+            }
           >
             <Numero titulo="Tie a" valor={valor.tieBreak ?? 7} atajos={[5, 7, 10]} limites={LIMITES.tie} onChange={(v) => set({ tieBreak: v })} />
+            <DiferenciaDos valor={valor} set={set} />
           </Opcional>
         </>
       )}
@@ -106,9 +112,14 @@ export function ReglasPuntuacion({ valor, onChange }: { valor: ConfigPuntuacion;
               titulo="Super tie en el set decisivo"
               activo={!!valor.superTie}
               onToggle={(on) => set({ superTie: on ? 10 : null })}
-              ayuda={valor.superTie ? `Si van iguales en sets, el último se define con un super tie a ${valor.superTie} puntos.` : "El set decisivo se juega completo."}
+              ayuda={
+                valor.superTie
+                  ? `Si van iguales en sets, el último se define con un super tie a ${valor.superTie} puntos ${tieConDiferencia(valor) ? "con 2 de diferencia" : `sin diferencia de 2 (ej. ${valor.superTie}-${valor.superTie - 1})`}.`
+                  : "El set decisivo se juega completo."
+              }
             >
               <Numero titulo="Super tie a" valor={valor.superTie ?? 10} atajos={[7, 10, 15]} limites={LIMITES.tie} onChange={(v) => set({ superTie: v })} />
+              <DiferenciaDos valor={valor} set={set} />
             </Opcional>
           )}
         </>
@@ -212,7 +223,7 @@ function Opcional({
       >
         <span className="text-sm text-white/70">{titulo}</span>
         <span className={clsx("relative h-7 w-12 rounded-full transition", activo ? "bg-neon" : "bg-white/15")}>
-          <motion.span layout className={clsx("absolute top-1 size-5 rounded-full bg-white shadow", activo ? "right-1" : "left-1")} />
+          <motion.span layout className={clsx("absolute top-1 size-5 rounded-full bg-blanco shadow", activo ? "right-1" : "left-1")} />
         </span>
       </button>
       <AnimatePresence initial={false}>
@@ -223,6 +234,17 @@ function Opcional({
         )}
       </AnimatePresence>
       <p className="mt-1.5 text-xs text-white/45">{ayuda}</p>
+    </div>
+  );
+}
+
+/** Interruptor: el tie-break (o super tie) se gana por 2 de diferencia, o gana el primero en llegar. */
+function DiferenciaDos({ valor, set }: { valor: ConfigPuntuacion; set: (c: Partial<ConfigPuntuacion>) => void }) {
+  const on = tieConDiferencia(valor);
+  return (
+    <div className="mt-3 flex items-center justify-between gap-4">
+      <span className="text-sm text-white/70">Ganar por 2 de diferencia</span>
+      <Switch activo={on} onChange={(v) => set({ tieConDiferencia: v ? undefined : false })} etiqueta="Ganar el tie-break por 2 de diferencia" />
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { Crown, Minus, Plus, RotateCcw, Save, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AvatarPareja } from "@/components/Avatar";
 import { sonar, vibrar } from "@/lib/feedback";
-import { descripcionPuntuacion, empateTieBreak, finalesDeSet, ganador, indiceSuperTie, metaDe, modoDe, normalizarResultado, validarResultado, validarSet, validarTie } from "@/lib/scoring";
+import { descripcionPuntuacion, empateTieBreak, finalesDeSet, ganador, indiceSuperTie, metaDe, modoDe, normalizarResultado, tieConDiferencia, validarResultado, validarSet, validarTie } from "@/lib/scoring";
 import type { ConfigPuntuacion, Jugador, Partido, Resultado, SetScore } from "@/types/americano";
 
 interface Props {
@@ -50,8 +50,11 @@ export function ScoreModal({ partido, config, nombrePista, jugadores, onClose, o
   const empate = empateTieBreak(config);
   const enTie = empate !== null && Math.max(r.puntosA, r.puntosB) === empate + 1 && Math.min(r.puntosA, r.puntosB) === empate;
   const superTie = indiceSuperTie(config);
-  const maxSet = (i: number) => (i === superTie ? 99 : maxGames >= 5 ? maxGames + 1 : maxGames);
-  const setTerminado = (z: SetScore, i: number) => (i === superTie ? !validarTie(config.superTie!, z.a, z.b) : validarSet(maxGames, z.a, z.b));
+  const conDif = tieConDiferencia(config);
+  // Sin diferencia de 2, nadie pasa del número del tie.
+  const maxTie = (meta?: number | null) => (conDif ? 99 : meta ?? 99);
+  const maxSet = (i: number) => (i === superTie ? maxTie(config.superTie) : maxGames >= 5 ? maxGames + 1 : maxGames);
+  const setTerminado = (z: SetScore, i: number) => (i === superTie ? !validarTie(config.superTie!, z.a, z.b, conDif) : validarSet(maxGames, z.a, z.b));
   // Atajos de marcador final para games.
   const finalesGames: [number, number][] =
     modo === "TOTAL"
@@ -120,7 +123,7 @@ export function ScoreModal({ partido, config, nombrePista, jugadores, onClose, o
         <>
           <motion.div
             key="fondo"
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-marino-2/50 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -174,7 +177,7 @@ export function ScoreModal({ partido, config, nombrePista, jugadores, onClose, o
                         <AvatarPareja nombres={nombres(par.jugadorIds)} fotos={fotos(par.jugadorIds)} size={40} />
                       </div>
                       <p className="mt-2 line-clamp-2 min-h-10 text-sm font-semibold">{nombres(par.jugadorIds).join(" / ")}</p>
-                      <motion.p key={valor} initial={{ scale: 1.25, color: "#7FE302" }} animate={{ scale: 1, color: "#F2F3F0" }} className="my-3 font-display text-7xl font-bold tabular">
+                      <motion.p key={valor} initial={{ scale: 1.25, opacity: 0.5 }} animate={{ scale: 1, opacity: 1 }} className="my-3 font-display text-7xl font-bold tabular">
                         {valor}
                       </motion.p>
                       <div className="grid grid-cols-2 gap-2">
@@ -228,7 +231,7 @@ export function ScoreModal({ partido, config, nombrePista, jugadores, onClose, o
             {autoTotal && (
               <div className="mt-4 flex items-center justify-between text-sm">
                 <label className="flex cursor-pointer items-center gap-2 text-white/60">
-                  <input type="checkbox" checked={autoCompletar} onChange={(e) => setAutoCompletar(e.target.checked)} className="size-4 accent-[#7FE302]" />
+                  <input type="checkbox" checked={autoCompletar} onChange={(e) => setAutoCompletar(e.target.checked)} className="size-4 accent-[#2b3bd6]" />
                   Autocompletar hasta {total}
                 </label>
                 <span className={clsx("font-semibold tabular", r.puntosA + r.puntosB === total ? "text-neon" : "text-white/50")}>
@@ -256,11 +259,13 @@ export function ScoreModal({ partido, config, nombrePista, jugadores, onClose, o
               {enTie && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
                   <div className="glass mt-4 rounded-2xl p-3">
-                    <p className="mb-2 text-center text-[11px] font-bold uppercase tracking-widest text-white/40">Tie-break a {config.tieBreak} · opcional</p>
+                    <p className="mb-2 text-center text-[11px] font-bold uppercase tracking-widest text-white/40">Tie-break a {config.tieBreak}
+                      {conDif ? "" : " sin diferencia de 2"} · opcional
+                    </p>
                     <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                      <SetStepper valor={r.tieBreak?.a ?? 0} max={99} onChange={(a) => setR((x) => ({ ...x, tieBreak: { a, b: x.tieBreak?.b ?? 0 } }))} gana={false} />
+                      <SetStepper valor={r.tieBreak?.a ?? 0} max={maxTie(config.tieBreak)} onChange={(a) => setR((x) => ({ ...x, tieBreak: { a, b: x.tieBreak?.b ?? 0 } }))} gana={false} />
                       <span className="text-white/30">–</span>
-                      <SetStepper valor={r.tieBreak?.b ?? 0} max={99} onChange={(b) => setR((x) => ({ ...x, tieBreak: { a: x.tieBreak?.a ?? 0, b } }))} gana={false} />
+                      <SetStepper valor={r.tieBreak?.b ?? 0} max={maxTie(config.tieBreak)} onChange={(b) => setR((x) => ({ ...x, tieBreak: { a: x.tieBreak?.a ?? 0, b } }))} gana={false} />
                     </div>
                   </div>
                 </motion.div>

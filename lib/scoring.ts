@@ -4,7 +4,8 @@
  * Criterio de clasificación:
  *   - PUNTOS_TOTALES: suma de puntos a favor (Americano clásico).
  *   - GAMES / SETS:   3 por victoria, 1 por empate.
- *   Desempate: diferencia (+/-), luego puntos a favor, luego nombre.
+ *   Desempate: en dupla fija, primero el enfrentamiento directo entre las empatadas;
+ *   luego diferencia (+/-) y puntos a favor. Si siguen iguales, comparten posición.
  */
 import type {
   ConfigPuntuacion,
@@ -15,6 +16,7 @@ import type {
   ModoConteo,
   Partido,
   Resultado,
+  NotaDesempate,
   SetScore,
   TablaPosiciones,
 } from "@/types/americano";
@@ -71,11 +73,18 @@ export function indiceSuperTie(cfg: ConfigPuntuacion): number | null {
   return cfg.metodo === "SETS_CORTOS" && cfg.superTie && max > 1 ? max - 1 : null;
 }
 
-/** Un tie-break a `meta` puntos se gana llegando a meta con 2 de diferencia (ej. a 7: 7-5, 8-6). */
-export function validarTie(meta: number, a: number, b: number): string | null {
+/** El tie-break exige 2 de diferencia salvo que las reglas lo apaguen. */
+export const tieConDiferencia = (cfg: ConfigPuntuacion) => cfg.tieConDiferencia !== false;
+
+/**
+ * Un tie-break a `meta` puntos se gana llegando a meta con 2 de diferencia (ej. a 7: 7-5, 8-6).
+ * Sin diferencia de 2, gana el primero en llegar a meta (ej. 7-6).
+ */
+export function validarTie(meta: number, a: number, b: number, conDiferencia = true): string | null {
   const alto = Math.max(a, b);
   const bajo = Math.min(a, b);
   if (alto < meta) return `El tie-break se juega a ${meta} puntos.`;
+  if (!conDiferencia) return alto === meta && bajo < meta ? null : `El tie-break termina al llegar a ${meta} (ej. ${meta}-${meta - 1}).`;
   if (alto === meta ? bajo > meta - 2 : alto - bajo !== 2) return `El tie-break se gana por 2 de diferencia (ej. ${meta}-${meta - 2} o ${meta + 1}-${meta - 1}).`;
   return null;
 }
@@ -147,7 +156,7 @@ export function validarResultado(cfg: ConfigPuntuacion, r: Resultado): string | 
       if (!enteros(tb.a, tb.b)) return "Tie-break: valores inválidos.";
       if (x === null) return "Este partido no tiene tie-break.";
       if (!definidoEnTie) return `El tie-break solo se juega si quedan ${x}-${x}.`;
-      const m = validarTie(cfg.tieBreak!, tb.a, tb.b);
+      const m = validarTie(cfg.tieBreak!, tb.a, tb.b, tieConDiferencia(cfg));
       if (m) return m;
       if (tb.a > tb.b !== r.puntosA > r.puntosB) return "El tie-break lo debe ganar la pareja que gana el partido.";
     }
@@ -161,7 +170,7 @@ export function validarResultado(cfg: ConfigPuntuacion, r: Resultado): string | 
   for (const [i, s] of sets.entries()) {
     if (!enteros(s.a, s.b)) return `Set ${i + 1}: valores inválidos.`;
     if (i === st) {
-      const m = validarTie(cfg.superTie!, s.a, s.b);
+      const m = validarTie(cfg.superTie!, s.a, s.b, tieConDiferencia(cfg));
       if (m) return `Super tie: ${m.replace("El tie-break", "se")}`;
     } else if (!validarSet(n, s.a, s.b)) {
       return n <= 4
@@ -187,13 +196,13 @@ export function descripcionPuntuacion(cfg: ConfigPuntuacion): string {
   if (cfg.metodo === "GAMES_PUNTO_ORO") {
     const partes = [modoDe(cfg) === "TOTAL" ? `${n} games en total` : `A ${n} games`];
     const x = empateTieBreak(cfg);
-    if (x !== null) partes.push(`si quedan ${x}-${x}, tie a ${cfg.tieBreak}`);
+    if (x !== null) partes.push(`si quedan ${x}-${x}, tie a ${cfg.tieBreak}${tieConDiferencia(cfg) ? "" : " sin diferencia de 2"}`);
     partes.push(oro);
     return partes.join(" · ");
   }
   const max = cfg.setsMaximos ?? 3;
   const partes = [max === 1 ? `1 set a ${n} games` : `Mejor de ${max} sets a ${n} games`];
-  if (indiceSuperTie(cfg) !== null) partes.push(`${max === 3 ? "3er" : "último"} set: super tie a ${cfg.superTie}`);
+  if (indiceSuperTie(cfg) !== null) partes.push(`${max === 3 ? "3er" : "último"} set: super tie a ${cfg.superTie}${tieConDiferencia(cfg) ? "" : " sin diferencia de 2"}`);
   partes.push(oro);
   return partes.join(" · ");
 }
@@ -268,24 +277,86 @@ export function calcularTabla(evento: EventoAmericano): TablaPosiciones {
     diferencia: f.puntosAFavor - f.puntosEnContra,
     puntos: criterio === "PUNTOS_A_FAVOR" ? f.puntosAFavor : criterio === "SOLO_GANADOS" ? (ganados.get(f.entidadId) ?? 0) : f.pg * 3 + f.pe,
   }));
-  lista.sort(
-    (x, y) =>
-      y.puntos - x.puntos || y.diferencia - x.diferencia || y.puntosAFavor - x.puntosAFavor || x.nombre.localeCompare(y.nombre, "es"),
-  );
-  lista.forEach((f, i) => (f.posicion = i + 1));
 
-  return { eventoId: evento.id, tipo: porJugador ? "JUGADOR" : "PAREJA", filas: lista, generadaEn: new Date().toISOString() };
+  // Enfrentamiento directo (solo dupla fija): mini tabla con los partidos entre duplas empatadas en puntos.
+  const directo = new Map<string, { pts: number; dif: number; pj: number }>();
+  if (!porJugador) {
+    const grupos = new Map<number, Set<string>>();
+    for (const f of lista) grupos.set(f.puntos, (grupos.get(f.puntos) ?? new Set()).add(f.entidadId));
+    for (const ids of grupos.values()) {
+      if (ids.size < 2) continue;
+      for (const id of ids) directo.set(id, { pts: 0, dif: 0, pj: 0 });
+      for (const p of partidosJugados(evento)) {
+        if (!ids.has(p.parejaA.id) || !ids.has(p.parejaB.id)) continue;
+        const r = p.resultado!;
+        const g = ganador(cfg, r);
+        const a = directo.get(p.parejaA.id)!;
+        const b = directo.get(p.parejaB.id)!;
+        a.pj++;
+        b.pj++;
+        a.pts += g > 0 ? 3 : g === 0 ? 1 : 0;
+        b.pts += g < 0 ? 3 : g === 0 ? 1 : 0;
+        a.dif += r.puntosA - r.puntosB;
+        b.dif += r.puntosB - r.puntosA;
+      }
+    }
+  }
+  const d = (id: string) => directo.get(id) ?? { pts: 0, dif: 0, pj: 0 };
+  const llaves: ((x: FilaPosicion, y: FilaPosicion) => number)[] = [
+    (x, y) => y.puntos - x.puntos,
+    (x, y) => d(y.entidadId).pts - d(x.entidadId).pts,
+    (x, y) => d(y.entidadId).dif - d(x.entidadId).dif,
+    (x, y) => y.diferencia - x.diferencia,
+    (x, y) => y.puntosAFavor - x.puntosAFavor,
+  ];
+  const comparar = (x: FilaPosicion, y: FilaPosicion) => {
+    for (const k of llaves) {
+      const v = k(x, y);
+      if (v) return v;
+    }
+    return 0;
+  };
+  lista.sort((x, y) => comparar(x, y) || x.nombre.localeCompare(y.nombre, "es"));
+
+  // Posiciones: si dos filas son idénticas en todos los criterios, comparten puesto (1, 2, 2, 4).
+  const desempates: NotaDesempate[] = [];
+  const unidad = cfg.metodo === "PUNTOS_TOTALES" ? "puntos" : "games";
+  lista.forEach((f, i) => {
+    const previa = lista[i - 1];
+    const sinJugar = !previa || (previa.pj === 0 && f.pj === 0);
+    if (!sinJugar && comparar(previa, f) === 0) {
+      f.posicion = previa.posicion;
+      previa.empatado = f.empatado = true;
+    } else f.posicion = i + 1;
+    if (sinJugar || previa.puntos !== f.puntos) return;
+    const motivo =
+      comparar(previa, f) === 0
+        ? "empate total, comparten posición"
+        : d(previa.entidadId).pts !== d(f.entidadId).pts || d(previa.entidadId).dif !== d(f.entidadId).dif
+          ? `ganó el enfrentamiento directo${d(f.entidadId).pj ? ` (${d(previa.entidadId).dif > 0 ? "+" : ""}${d(previa.entidadId).dif} ${unidad})` : ""}`
+          : previa.diferencia !== f.diferencia
+            ? `mejor diferencia (${fmt(previa.diferencia)} vs ${fmt(f.diferencia)})`
+            : `más ${unidad} a favor (${previa.puntosAFavor} vs ${f.puntosAFavor})`;
+    const ultima = desempates[desempates.length - 1];
+    if (ultima?.empatados && comparar(previa, f) === 0 && ultima.empatados[ultima.empatados.length - 1] === previa.nombre) ultima.empatados.push(f.nombre);
+    else desempates.push({ arriba: previa.nombre, abajo: f.nombre, puntos: f.puntos, motivo, ...(comparar(previa, f) === 0 ? { empatados: [previa.nombre, f.nombre] } : {}) });
+  });
+
+  return { eventoId: evento.id, tipo: porJugador ? "JUGADOR" : "PAREJA", filas: lista, desempates, generadaEn: new Date().toISOString() };
 }
 
-export function explicacionRanking(cfg: ConfigPuntuacion): string {
+const fmt = (n: number) => (n > 0 ? `+${n}` : String(n));
+
+export function explicacionRanking(cfg: ConfigPuntuacion, dupla = false): string {
   const unidad = cfg.metodo === "PUNTOS_TOTALES" ? "puntos" : "games";
+  const desempate = `${dupla ? "enfrentamiento directo, luego " : ""}diferencia de ${unidad}, luego ${unidad} a favor. Si siguen iguales, comparten posición.`;
   switch (criterioDe(cfg)) {
     case "PUNTOS_A_FAVOR":
-      return `PTS = ${unidad} a favor en todos los partidos (gane o pierda). Desempate: diferencia, luego ${unidad} a favor.`;
+      return `PTS = ${unidad} a favor en todos los partidos (gane o pierda). Si empatan: ${desempate}`;
     case "SOLO_GANADOS":
-      return `PTS = ${unidad} sumados solo en los partidos ganados. Desempate: diferencia, luego ${unidad} a favor.`;
+      return `PTS = ${unidad} sumados solo en los partidos ganados. Si empatan: ${desempate}`;
     default:
-      return `PTS = 3 por victoria y 1 por empate. Desempate: diferencia de ${unidad}, luego ${unidad} a favor.`;
+      return `PTS = 3 por victoria y 1 por empate. Si empatan: ${desempate}`;
   }
 }
 

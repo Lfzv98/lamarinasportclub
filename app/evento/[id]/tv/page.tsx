@@ -7,7 +7,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Coffee, Maximize, Minimize, Trophy } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AvatarPareja } from "@/components/Avatar";
-import { Cronometro } from "@/components/Cronometro";
+import { Cronometro, MarcadorRonda } from "@/components/Cronometro";
+import { enEspera } from "@/components/EnEspera";
 import { Leaderboard } from "@/components/Leaderboard";
 import { Logo } from "@/components/Logo";
 import { PistaLabel } from "@/components/PistaLabel";
@@ -96,8 +97,8 @@ function TV({ evento }: { evento: EventoAmericano }) {
   const cursorOculto = useCursorOculto();
   const tabla = useMemo(() => calcularTabla(evento), [evento]);
   const ronda = evento.rondas.find((r) => r.numero === evento.rondaActual);
-  const reloj = useReloj(evento.estado !== "FINALIZADO" ? ronda : undefined, evento.duracionRondaMin);
-  const porId = useMemo(() => new Map(evento.jugadores.map((j) => [j.id, j])), [evento.jugadores]);
+  const conReloj = evento.cronometro !== false;
+  const reloj = useReloj(evento.estado !== "FINALIZADO" && conReloj ? ronda : undefined, evento.duracionRondaMin);
 
   // Paginación automática del ranking cuando hay muchos jugadores.
   const paginas = Math.max(1, Math.ceil(tabla.filas.length / FILAS_POR_PAGINA));
@@ -111,7 +112,7 @@ function TV({ evento }: { evento: EventoAmericano }) {
 
   const terminado = evento.estado === "FINALIZADO";
   const campeon = tabla.filas[0];
-  const descansan = ronda?.descansanIds.map((id) => (evento.modalidad === "DUPLA_FIJA" ? evento.parejas.find((p) => p.id === id)?.nombre : porId.get(id)?.nombre)) ?? [];
+  const espera = ronda ? enEspera(evento, ronda) : [];
 
   return (
     <Escenario oculto={cursorOculto}>
@@ -156,23 +157,37 @@ function TV({ evento }: { evento: EventoAmericano }) {
           <motion.section key="vivo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] gap-8">
             <div className="flex min-h-0 flex-col gap-6">
               <div className="glass flex items-center gap-8 rounded-[2rem] p-6">
-                <Cronometro restantes={reloj.restantes} progreso={reloj.progreso} corriendo={reloj.corriendo} size={200} />
+                {conReloj ? (
+                  <Cronometro restantes={reloj.restantes} progreso={reloj.progreso} corriendo={reloj.corriendo} size={200} />
+                ) : (
+                  ronda && <MarcadorRonda ronda={ronda} total={evento.totalRondas} size={200} />
+                )}
                 <div>
                   <p className="text-xl font-semibold uppercase tracking-[0.25em] text-white/40">Ronda</p>
                   <p className="font-display text-8xl font-bold leading-none">
                     {evento.rondaActual}
                     <span className="text-4xl text-white/30">/{evento.totalRondas}</span>
                   </p>
-                  {ronda && <p className="mt-2 text-xl text-white/50">Inicio {horaRonda(evento, ronda.numero)}</p>}
+                  {ronda && conReloj && <p className="mt-2 text-xl text-white/50">Inicio {horaRonda(evento, ronda.numero)}</p>}
                 </div>
               </div>
               <div className={clsx("grid min-h-0 flex-1 auto-rows-fr gap-4", (ronda?.partidos.length ?? 0) > 2 ? "grid-cols-2" : "grid-cols-1")}>
                 {ronda?.partidos.map((p) => <PistaTV key={p.id} partido={p} evento={evento} compacto={(ronda?.partidos.length ?? 0) > 4} />)}
               </div>
-              {descansan.length > 0 && (
-                <p className="flex items-center gap-3 text-xl text-white/50">
-                  <Coffee className="size-6" /> Descansan: <span className="font-semibold text-white/80">{descansan.join(" · ")}</span>
-                </p>
+              {espera.length > 0 && (
+                <div className="glass flex items-center gap-5 rounded-[2rem] border-amber-300/20 px-6 py-4">
+                  <p className="flex shrink-0 items-center gap-3 font-display text-2xl font-bold text-amber-200">
+                    <Coffee className="size-7" /> {evento.modalidad === "DUPLA_FIJA" ? "En espera" : "Descansan"}
+                  </p>
+                  <div className="flex min-w-0 flex-wrap gap-x-6 gap-y-2">
+                    {espera.map((e) => (
+                      <span key={e.id} className="flex items-center gap-2 text-xl">
+                        <span className="font-semibold text-white/90">{e.nombre}</span>
+                        {e.vuelve && <span className="text-base text-white/40">→ R{e.vuelve}</span>}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
             <div className="flex min-h-0 flex-col">
@@ -212,7 +227,7 @@ function Escenario({ oculto, children }: { oculto: boolean; children: React.Reac
     return () => window.removeEventListener("resize", ajustar);
   }, []);
   return (
-    <main className={clsx("fixed inset-0 flex items-center justify-center overflow-hidden", oculto && "cursor-none")}>
+    <main className={clsx("tema-noche pantalla fixed inset-0 flex items-center justify-center overflow-hidden", oculto && "cursor-none")}>
       <div
         className="flex shrink-0 flex-col gap-6 p-10"
         style={{ width: 1920, height: 1080, transform: `scale(${escala})`, transformOrigin: "center" }}

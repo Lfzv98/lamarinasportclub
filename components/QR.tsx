@@ -7,8 +7,8 @@ const TINTA = "#0B0F19";
 
 /**
  * Código QR de La Marina en SVG (se genera en el cliente, sin servicios externos).
- * Usa corrección de errores alta (H, hasta 30 %) para poder llevar el monograma
- * LM al centro, que tapa menos del 6 % del código. Los ojos van redondeados.
+ * Usa corrección de errores alta (H, hasta 30 %) para poder llevar la marca PR
+ * de PadelReserve al centro, que tapa menos del 6 % del código. Los ojos van redondeados.
  */
 export function QR({ texto, size = 96, className, logo = true }: { texto: string; size?: number | string; className?: string; logo?: boolean }) {
   const qr = useMemo(() => {
@@ -59,10 +59,33 @@ export function QR({ texto, size = 96, className, logo = true }: { texto: string
         {lado > 0 && (
           <>
             <rect x={ini + borde} y={ini + borde} width={lado} height={lado} rx={lado * 0.22} fill="#FFFFFF" />
-            <image href="/icons/isotipo-256.png" x={ini + borde + 0.6} y={ini + borde + 0.6} width={lado - 1.2} height={lado - 1.2} preserveAspectRatio="xMidYMid meet" />
+            <MarcaPR x={ini + borde + 0.6} y={ini + borde + 0.6} lado={lado - 1.2} />
           </>
         )}
       </g>
     </svg>
+  );
+}
+
+/** Marca de PadelReserve: "PR" en Space Grotesk, la R en verde, con el punto de la marca. */
+export function MarcaPR({ x = 0, y = 0, lado }: { x?: number; y?: number; lado: number }) {
+  const f = lado * 0.5;
+  return (
+    <g>
+      <rect x={x} y={y} width={lado} height={lado} rx={lado * 0.24} fill={TINTA} />
+      <text
+        x={x + lado * 0.47}
+        y={y + lado * 0.5 + f * 0.36}
+        textAnchor="middle"
+        fontFamily="var(--font-display), 'Space Grotesk', system-ui, sans-serif"
+        fontWeight={700}
+        fontSize={f}
+        letterSpacing={-f * 0.06}
+      >
+        <tspan fill="#FFFFFF">P</tspan>
+        <tspan fill="#7FE302">R</tspan>
+      </text>
+      <circle cx={x + lado * 0.83} cy={y + lado * 0.5 + f * 0.3} r={lado * 0.055} fill="#7FE302" />
+    </g>
   );
 }

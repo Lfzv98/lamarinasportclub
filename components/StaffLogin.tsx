@@ -71,7 +71,7 @@ export function StaffLogin() {
     <AnimatePresence>
       {abierto && (
         <>
-          <motion.div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-md" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setAbierto(false)} />
+          <motion.div className="fixed inset-0 z-[60] bg-marino-2/60 backdrop-blur-md" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setAbierto(false)} />
           <motion.div
             role="dialog"
             aria-modal

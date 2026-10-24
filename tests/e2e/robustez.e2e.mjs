@@ -120,18 +120,18 @@ ok(await pa.locator("text=aún no empieza").count() > 0, "no deja cargar marcado
 // 8) Borrador del setup sobrevive a cerrar la app
 const ps = await nuevo(A);
 await ps.goto(`${U}/setup`, { waitUntil: "networkidle" });
-await ps.click("text=Siguiente"); await ps.click("text=Siguiente"); await ps.click("text=Siguiente"); await ps.waitForTimeout(400);
-await ps.fill("input[placeholder^='Nombre']", "Uno Uno, Dos Dos, uno uno, Tres Tres"); await ps.keyboard.press("Enter"); await ps.waitForTimeout(500);
+await ps.click("text=Siguiente"); await ps.waitForTimeout(300); await ps.click("text=Siguiente"); await ps.waitForTimeout(400);
+await ps.fill("input[placeholder='Nombre de la jugadora']", "Uno Uno, Dos Dos, uno uno, Tres Tres"); await ps.keyboard.press("Enter"); await ps.waitForTimeout(500);
 const n1 = await ps.locator("button[aria-label^='Quitar a']").count();
 ok(n1 === 3, `nombres repetidos se omiten (${n1} de 4)`);
 await ps.close();
 const ps2 = await nuevo(A);
 await ps2.goto(`${U}/setup`, { waitUntil: "networkidle" }); await ps2.waitForTimeout(800);
 ok(await ps2.locator("text=Recuperamos").count() > 0, "al volver al setup avisa que recuperó el borrador");
-await ps2.click("text=Siguiente"); await ps2.click("text=Siguiente"); await ps2.click("text=Siguiente"); await ps2.waitForTimeout(400);
+await ps2.click("text=Siguiente"); await ps2.waitForTimeout(300); await ps2.click("text=Siguiente"); await ps2.waitForTimeout(400);
 ok(await ps2.locator("button[aria-label^='Quitar a']").count() === 3, "los jugadores del borrador siguen ahí");
 await ps2.click("text=Siguiente"); await ps2.waitForTimeout(300);
-ok(await ps2.locator("text=Faltan 1 jugador").count() > 0, "con 3 jugadores no deja avanzar y explica por qué");
+ok(await ps2.locator("text=al menos 2 mujeres y 2 hombres").count() > 0, "mixto con 3 mujeres y 0 hombres no deja avanzar y explica por qué");
 
 // 9) Eliminar evento desde A desaparece en B
 await pa.goto(`${U}/evento/${ev}`, { waitUntil: "networkidle" }); await pa.waitForTimeout(800);
