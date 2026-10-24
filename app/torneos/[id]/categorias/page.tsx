@@ -14,7 +14,7 @@ import { toast } from "@/components/ui/Toaster";
 import { AtletaFvpLinea, EstadoFvpChip, ExcepcionFvp, RevisarFvpHoja } from "@/components/torneo/Fvp";
 import { SorteoPopup } from "@/components/torneo/SorteoPopup";
 import { TorneoShell } from "@/components/torneo/TorneoShell";
-import { descripcionReglas, minutosEstimados, nombreCategoria, nombreCorto, validarDupla } from "@/lib/torneo/categorias";
+import { descripcionReglas, minutosEstimados, nombreCategoria, nombreCorto, tieBreakPorDefecto, validarDupla } from "@/lib/torneo/categorias";
 import { claveCedula, formatoCedula, pendientesFvp, verificarDupla } from "@/lib/ranking/fvp";
 import { useRankingFvp } from "@/lib/rankingFvpCliente";
 import { useAmericanos } from "@/lib/store";
@@ -467,8 +467,9 @@ function ReglasHoja({ torneo, cat, abierta, onClose }: { torneo: Torneo; cat: Ca
   const r = cat.reglas[fase];
   const set = (c: Partial<ReglasPartido>) => {
     const nueva = { ...r, ...c };
-    if (c.sets !== undefined || c.games !== undefined || c.superTie !== undefined) nueva.minutos = minutosEstimados(nueva);
-    if (c.games !== undefined) nueva.tieBreakEn = nueva.games === 6 ? 6 : nueva.games - 1;
+    if (c.sets !== undefined || c.games !== undefined || c.superTie !== undefined || c.tieDecisivo !== undefined || c.tercerSetLargo !== undefined) nueva.minutos = minutosEstimados(nueva);
+    // FIP: mini set a 4 con tie-break en 4-4; set a 6 con tie-break en 6-6; set largo a 9 con tie-break en 8-8.
+    if (c.games !== undefined) nueva.tieBreakEn = tieBreakPorDefecto(nueva.games);
     guardar(configurarCategoria(torneo, cat.categoria.id, { reglas: { [fase]: nueva } }));
   };
   return (
@@ -481,29 +482,49 @@ function ReglasHoja({ torneo, cat, abierta, onClose }: { torneo: Torneo; cat: Ca
         </div>
         <div>
           <p className="label">Games por set</p>
-          <Segmented opciones={[{ id: "4", label: "A 4" }, { id: "6", label: "A 6" }, { id: "9", label: "A 9 (largo)" }]} valor={String(r.games)} onChange={(v) => set({ games: Number(v) })} />
+          <Segmented opciones={[{ id: "4", label: "A 4 (mini set)" }, { id: "6", label: "A 6" }, { id: "9", label: "A 9 (largo)" }]} valor={String(r.games)} onChange={(v) => set({ games: Number(v) })} />
         </div>
+        {r.sets === 3 && (
+          <div>
+            <p className="label">Con un set por lado</p>
+            <Segmented
+              opciones={[
+                { id: "STB10", label: "Súper tie a 10" },
+                { id: "TB7", label: "Tie-break a 7" },
+                { id: "SET", label: "Tercer set" },
+              ]}
+              valor={!r.superTie ? "SET" : (r.tieDecisivo ?? 10) === 7 ? "TB7" : "STB10"}
+              onChange={(v) => set(v === "SET" ? { superTie: false } : { superTie: true, tieDecisivo: v === "TB7" ? 7 : 10, tercerSetLargo: false })}
+            />
+          </div>
+        )}
         <div className="glass divide-y divide-white/5 rounded-2xl">
           <label className="flex items-center justify-between gap-3 p-3 text-sm">
-            <span>Punto de oro en 40-40</span>
+            <span>
+              Punto de oro en 40-40
+              <span className="block text-xs text-white/45">{r.puntoDeOro ? "Resta quien elija la dupla que resta; en mixto, el del mismo sexo que el sacador." : "Con ventaja: se gana con 2 puntos seguidos."}</span>
+            </span>
             <Switch activo={r.puntoDeOro} onChange={(v) => set({ puntoDeOro: v })} etiqueta="Punto de oro" />
           </label>
-          {r.sets === 3 && (
+          <label className="flex items-center justify-between gap-3 p-3 text-sm">
+            <span>Tie-break en {r.tieBreakEn ?? tieBreakPorDefecto(r.games)}-{r.tieBreakEn ?? tieBreakPorDefecto(r.games)}</span>
+            <Switch activo={r.tieBreakEn !== null} onChange={(v) => set({ tieBreakEn: v ? tieBreakPorDefecto(r.games) : null })} etiqueta="Tie-break" />
+          </label>
+          {r.sets === 3 && !r.superTie && r.tieBreakEn !== null && (
             <label className="flex items-center justify-between gap-3 p-3 text-sm">
-              <span>Tercer set = súper tie-break a 10</span>
-              <Switch activo={r.superTie} onChange={(v) => set({ superTie: v })} etiqueta="Súper tie-break" />
+              <span>
+                Tercer set sin tie-break
+                <span className="block text-xs text-white/45">Con 6-6 se sigue hasta sacar 2 games de diferencia.</span>
+              </span>
+              <Switch activo={!!r.tercerSetLargo} onChange={(v) => set({ tercerSetLargo: v })} etiqueta="Tercer set sin tie-break" />
             </label>
           )}
-          <label className="flex items-center justify-between gap-3 p-3 text-sm">
-            <span>Tie-break en {r.tieBreakEn ?? r.games}-{r.tieBreakEn ?? r.games}</span>
-            <Switch activo={r.tieBreakEn !== null} onChange={(v) => set({ tieBreakEn: v ? (r.games === 6 ? 6 : r.games - 1) : null })} etiqueta="Tie-break" />
-          </label>
           <div className="flex items-center justify-between gap-3 p-3 text-sm">
             <span>Duración estimada</span>
             <Stepper valor={r.minutos} onChange={(v) => guardar(configurarCategoria(torneo, cat.categoria.id, { reglas: { [fase]: { ...r, minutos: v } } }))} min={30} max={180} paso={15} sufijo="min" />
           </div>
         </div>
-        <p className="text-xs text-white/45">{descripcionReglas(r)}. La duración se usa para armar los horarios; si ya estaban programados, reprograma desde Horarios.</p>
+        <p className="text-xs text-white/45">{descripcionReglas(r)}. Según el Reglamento de Juego FIP (rev. 2021). La duración se usa para armar los horarios; si ya estaban programados, reprograma desde Horarios.</p>
       </div>
     </Hoja>
   );

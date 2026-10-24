@@ -134,6 +134,7 @@ export function MatchCard({ torneo, p, onClick, compacto = false, sinHora = fals
         )}
         {r?.tipo === "WO" && <span className="ml-auto font-semibold text-amber-200">W.O.</span>}
         {r?.tipo === "RETIRO" && <span className="ml-auto font-semibold text-amber-200">Retiro</span>}
+        {r?.tipo === "DESCALIFICACION" && <span className="ml-auto font-semibold text-coral">Descalificación</span>}
       </div>
       <div className="space-y-1">
         <LineaDupla nombre={textoOrigen(torneo, p, "A")} sets={fin ? r?.sets : undefined} gana={ganaA} bye={p.origenA.tipo === "BYE"} />

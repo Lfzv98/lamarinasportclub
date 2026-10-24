@@ -352,14 +352,26 @@ export function atrasoMinutos(t: Torneo, ahora = new Date()): number {
 }
 
 /**
- * Momento (ms) desde el que se puede dar W.O. a un partido llamado: la tolerancia corre desde
- * el llamado, pero nunca antes de la hora programada (si se llama antes, nadie pierde por llegar a su hora).
+ * Momento (ms) desde el que se puede dar W.O. a un partido llamado (FIP Regla 2.1: 10 minutos
+ * después de la hora prevista). La hora prevista es la programada, pero si la pista se liberó
+ * más tarde cuenta como prevista 5 minutos después de que terminó el partido anterior (FIP Regla 2,
+ * Caso 1). Y si se lo llamó más tarde todavía, desde el llamado: nadie pierde por llegar a su hora.
  */
-export function limiteWO(t: Pick<Torneo, "toleranciaWO">, p: PartidoTorneo): number | null {
+export function limiteWO(t: Pick<Torneo, "toleranciaWO"> & Partial<Pick<Torneo, "categorias">>, p: PartidoTorneo): number | null {
   if (!p.llamadoEn) return null;
   const llamado = new Date(p.llamadoEn).getTime();
   const programado = p.programacion ? new Date(`${p.programacion.fecha}T${p.programacion.hora}:00`).getTime() : 0;
-  return Math.max(llamado, programado) + t.toleranciaWO * 60_000;
+  const pista = p.pistaReal ?? p.programacion?.pista;
+  let finAnterior = 0;
+  if (pista != null && t.categorias) {
+    for (const x of t.categorias.flatMap((c) => c.cuadro?.partidos ?? [])) {
+      if (x.id === p.id || !x.finEn || (x.pistaReal ?? x.programacion?.pista) !== pista) continue;
+      const fin = new Date(x.finEn).getTime();
+      if (fin <= llamado) finAnterior = Math.max(finAnterior, fin);
+    }
+  }
+  const prevista = Math.max(programado, finAnterior ? finAnterior + 5 * 60_000 : 0);
+  return Math.max(llamado, prevista) + t.toleranciaWO * 60_000;
 }
 
 /** Partidos llamados que ya superaron la tolerancia de W.O. */

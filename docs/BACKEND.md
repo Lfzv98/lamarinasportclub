@@ -122,6 +122,28 @@ Toda la lógica de juego (rotación, validación de marcadores, tabla) es TypeSc
 - **Clave:** el servidor nunca la envía a quien no es staff. La cookie `lm_torneos` guarda, por torneo, una huella de la clave vigente: si el staff la cambia, los accesos anteriores dejan de valer.
 - **Lógica pura reutilizable:** `lib/torneo/*` (sorteo, tablas, programación, imprevistos, marcador) no depende de React ni del servidor.
 
+## Ranking FVP: pasos pendientes para producción (Juan)
+
+Todo el código está listo; faltan solo estos pasos de configuración, que necesitan acceso a Vercel y Supabase:
+
+1. **Tabla en Supabase.** En el SQL Editor de PadelReserve corre solo este bloque (también está al final de `supabase/schema.sql`):
+   ```sql
+   create table if not exists public.ranking_fvp (
+     id             text primary key,
+     data           jsonb not null,
+     actualizado_en timestamptz not null default now()
+   );
+   alter table public.ranking_fvp enable row level security;
+   ```
+   Guarda una sola fila (`id = 'fvp'`) con la lista vigente (~6.300 atletas, ~1 MB de JSONB). Sin la tabla, `/api/ranking-fvp` y el guardado de torneos responden 502 en modo SUPABASE.
+2. **`CRON_SECRET` en Vercel** (Settings → Environment Variables, Production): una cadena aleatoria, por ejemplo `openssl rand -hex 32`. Vercel la manda sola en `Authorization: Bearer …` al cron de `vercel.json`. Sin ella, la ruta de sincronización queda abierta (con límite de una llamada cada 10 min). Haz Redeploy después de agregarla.
+3. **Revisar el cron.** Vercel → proyecto → Settings → Cron Jobs: debe aparecer `/api/ranking-fvp/sync` con `0 10 * * *` (10:00 UTC = 6:00 a. m. en Venezuela). En el plan Hobby se permite un cron diario; si se necesita más seguido, hace falta Pro.
+4. **Primera sincronización.** Entra como staff a `https://lamarinasportclub.vercel.app/torneos/ranking` y toca **Sincronizar ahora**. Debe mostrar unos 6.300 atletas repartidos por categoría. Prueba también desde terminal: `curl -H "Authorization: Bearer $CRON_SECRET" https://lamarinasportclub.vercel.app/api/ranking-fvp/sync` → `{"ok":true,"total":…}`. Esto no se pudo probar en desarrollo porque ese entorno no tenía salida a Google.
+5. **Si falla la descarga:** el mensaje aparece en rojo en esa pantalla. Causas probables: la FVP cambió el enlace o la hoja dejó de ser pública. Abre la hoja desde el Instagram de la FVP (@federacionpadelve, enlace "Lista de ASCENSOS y ACTUALIZACIÓN Ranking FVP"), copia el id (lo que va entre `/d/` y `/edit`) y el `gid` de la pestaña, y ponlos en `FVP_SHEET_ID` y `FVP_SHEET_GIDS` (varias pestañas separadas por coma). Mientras tanto el staff puede subir el CSV a mano (Archivo → Descargar → CSV) en la misma pantalla.
+6. **Verificar el bloqueo:** en un torneo de prueba, inscribe en 4ta a alguien que la lista tenga en 2da o 3ra: debe salir en rojo y no dejar inscribir sin excepción. Prueba de navegador completa (en una base de pruebas): `APP_URL=https://… STAFF_PIN=<pin> node tests/e2e/fvp.e2e.mjs`.
+
+Valores actuales por defecto: hoja `1lCDwPBYKAH_k2LrVq3l4MZbOaiSQx2mnek_zm96zpco`, pestaña `216230878`.
+
 ## Ranking FVP: categorías verificadas
 
 - **Fuente:** la hoja pública "Lista de ASCENSOS y ACTUALIZACIÓN Ranking FVP" que la FVP enlaza en su Instagram. Se lee como CSV (`/export?format=csv&gid=…`). `app.fvp.com.ve` no tiene API pública, por eso no se usa.

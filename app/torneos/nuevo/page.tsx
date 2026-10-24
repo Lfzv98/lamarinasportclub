@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/Switch";
 import { toast } from "@/components/ui/Toaster";
 import { fechaCorta } from "@/components/torneo/TorneoShell";
 import { vibrar } from "@/lib/feedback";
-import { horarioDelDia } from "@/lib/horarios";
+import { aMinutos, horarioDelDia } from "@/lib/horarios";
 import { useAmericanos } from "@/lib/store";
 import { catalogoCategorias, nombreCorto } from "@/lib/torneo/categorias";
 import { claveAleatoria, venceAlTerminar } from "@/lib/torneo/acceso";
@@ -42,6 +42,29 @@ function sumarDias(fecha: string, n: number): string {
   return iso(new Date(y, m - 1, d + n));
 }
 
+function diasEntre(desde: string, hasta: string): number {
+  const [a, b] = [desde, hasta].map((f) => {
+    const [y, m, d] = f.split("-").map(Number);
+    return Date.UTC(y, m - 1, d);
+  });
+  return Math.round((b - a) / 86_400_000);
+}
+
+const MAX_DIAS = 10;
+
+/**
+ * Horario por defecto de un día de torneo. Se usa el del club para ese día de la
+ * semana, salvo que esté cerrado o tenga una franja corta (menos de 8 h, p. ej. un
+ * domingo configurado solo de noche): ahí se toma la franja más amplia del club.
+ */
+function horarioTorneo(club: Parameters<typeof horarioDelDia>[0], fecha: string): { inicio: string; fin: string } {
+  const h = horarioDelDia(club, fecha);
+  const largo = (x: { apertura: string; cierre: string }) => aMinutos(x.cierre) - aMinutos(x.apertura);
+  if (h.abierto && largo(h) >= 8 * 60) return { inicio: h.apertura, fin: h.cierre };
+  const amplio = club.dias.filter((d) => d.abierto).sort((a, b) => largo(b) - largo(a))[0];
+  return amplio && largo(amplio) > 0 ? { inicio: amplio.apertura, fin: amplio.cierre } : { inicio: "08:00", fin: "22:00" };
+}
+
 function NuevoTorneo() {
   const router = useRouter();
   const club = useAmericanos((s) => s.club);
@@ -54,15 +77,16 @@ function NuevoTorneo() {
   const [pistas, setPistas] = useState<number[]>(pistasClub.map((p) => p.numero));
   const [categorias, setCategorias] = useState<CategoriaTorneo[]>([]);
   const [descanso, setDescanso] = useState(45);
-  const [tolerancia, setTolerancia] = useState(15);
+  const [tolerancia, setTolerancia] = useState(10);
   const [finalesUltimo, setFinalesUltimo] = useState(true);
   const catalogo = useMemo(catalogoCategorias, []);
 
   const dias: DiaTorneo[] = Array.from({ length: cantidad }, (_, i) => {
     const fecha = sumarDias(inicio, i);
-    const h = horarioDelDia(club, fecha);
-    return { fecha, inicio: horas[fecha]?.inicio ?? h.apertura, fin: horas[fecha]?.fin ?? h.cierre };
+    const h = horarioTorneo(club, fecha);
+    return { fecha, inicio: horas[fecha]?.inicio ?? h.inicio, fin: horas[fecha]?.fin ?? h.fin };
   });
+  const ultimo = sumarDias(inicio, cantidad - 1);
 
   const elegida = (c: CategoriaTorneo) => categorias.some((x) => x.id === c.id);
   const alternar = (c: CategoriaTorneo) => {
@@ -125,7 +149,25 @@ function NuevoTorneo() {
           </div>
           <div>
             <p className="mb-1 text-xs text-white/50">Cantidad de días</p>
-            <Stepper valor={cantidad} onChange={setCantidad} min={1} max={10} />
+            <Stepper valor={cantidad} onChange={setCantidad} min={1} max={MAX_DIAS} />
+          </div>
+          <div>
+            <p className="mb-1 text-xs text-white/50">Último día</p>
+            <input
+              type="date"
+              className="input !w-auto !py-2"
+              value={ultimo}
+              min={inicio}
+              max={sumarDias(inicio, MAX_DIAS - 1)}
+              onChange={(e) => {
+                if (!e.target.value) return;
+                const n = diasEntre(inicio, e.target.value) + 1;
+                if (n < 1) toast("El último día no puede ser antes del primero.", "error");
+                else if (n > MAX_DIAS) toast(`Un torneo puede durar hasta ${MAX_DIAS} días.`, "error");
+                else setCantidad(n);
+              }}
+              aria-label="Último día"
+            />
           </div>
         </div>
         <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -208,7 +250,7 @@ function NuevoTorneo() {
           <div className="flex flex-wrap items-center justify-between gap-3 p-4">
             <div>
               <p className="font-semibold">Tolerancia de W.O.</p>
-              <p className="text-xs text-white/50">Minutos desde el llamado a pista antes de proponer W.O.</p>
+              <p className="text-xs text-white/50">FIP: 10 min desde la hora prevista (o 5 min después de que termine el partido anterior en la pista).</p>
             </div>
             <Stepper valor={tolerancia} onChange={setTolerancia} min={5} max={30} paso={5} sufijo="min" />
           </div>
