@@ -206,10 +206,6 @@ body {
 @utility franja-noche { background: linear-gradient(180deg, #403c86 0%, #2a2560 70%, #4a3a52 100%); color: #ffffff; }
 @utility franja-madrugada { background: linear-gradient(180deg, #17204a 0%, #0b1030 100%); color: #ffffff; }
 
-/* Mapa de pistas: al pasar el dedo o el mouse, la pista sube un poco. */
-.mp-tapa { transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); }
-.mp-pista:hover .mp-tapa { transform: translateY(-0.9px); }
-
 /* Entrada suave de pantallas y tarjetas. */
 @keyframes subir {
   from { opacity: 0; transform: translateY(10px); }
