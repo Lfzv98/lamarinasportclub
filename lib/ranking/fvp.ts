@@ -15,7 +15,13 @@ import type { AtletaFvp } from "@/types/ranking";
 /** Hoja oficial de la FVP (enlace de su perfil de Instagram). */
 export const HOJA_FVP = { id: "1lCDwPBYKAH_k2LrVq3l4MZbOaiSQx2mnek_zm96zpco", gids: ["216230878"] };
 
-export const urlCsvHoja = (id: string, gid: string) => `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`;
+/**
+ * CSV de una pestaña. Se usa la API de visualización (gviz) y no `/export`: la FVP
+ * tiene desactivada la descarga y `/export` responde 400. `headers=0` evita que gviz
+ * junte las primeras filas en un solo título; a cambio deja vacíos los títulos de
+ * columnas numéricas (N°, ID EDO., PUNTUACIÓN), que se ubican por posición.
+ */
+export const urlCsvHoja = (id: string, gid: string) => `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&headers=0&gid=${gid}`;
 export const urlHoja = (id: string, gid?: string) => `https://docs.google.com/spreadsheets/d/${id}/edit${gid ? `#gid=${gid}` : ""}`;
 
 /** 1 = 1ra (la más alta) … 7 = 7ma. */
@@ -140,6 +146,10 @@ function columnas(fila: string[]): Columnas | null {
   const nombre = busca(/nombre|atleta|jugador/);
   const idEdo = busca(/^id\.?\s*edo/);
   const estado = busca(/^estados?$/);
+  const movimiento = busca(/movimiento/);
+  const puntos = busca(/puntu|puntos/);
+  // Formato de la hoja FVP: … ESTADO, PUNTUACIÓN, MOVIMIENTO. Sin título, se cuentan desde MOVIMIENTO.
+  const vacia = (i: number) => i >= 0 && t[i] === "";
   return {
     cedula,
     // La hoja trae el título del nombre mal escrito en alguna tabla: va justo después de la cédula.
@@ -147,9 +157,9 @@ function columnas(fila: string[]): Columnas | null {
     categoria,
     origen: busca(/origen/),
     genero: busca(/genero|sexo|rama/),
-    estado: estado >= 0 ? estado : idEdo >= 0 ? idEdo + 1 : -1,
-    puntos: busca(/puntu|puntos/),
-    movimiento: busca(/movimiento/),
+    estado: estado >= 0 ? estado : idEdo >= 0 ? idEdo + 1 : movimiento > 1 ? movimiento - 2 : -1,
+    puntos: puntos >= 0 ? puntos : vacia(movimiento - 1) ? movimiento - 1 : -1,
+    movimiento,
   };
 }
 

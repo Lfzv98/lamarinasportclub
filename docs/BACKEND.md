@@ -146,7 +146,7 @@ Valores actuales por defecto: hoja `1lCDwPBYKAH_k2LrVq3l4MZbOaiSQx2mnek_zm96zpco
 
 ## Ranking FVP: categorías verificadas
 
-- **Fuente:** la hoja pública "Lista de ASCENSOS y ACTUALIZACIÓN Ranking FVP" que la FVP enlaza en su Instagram. Se lee como CSV (`/export?format=csv&gid=…`). `app.fvp.com.ve` no tiene API pública, por eso no se usa.
+- **Fuente:** la hoja pública "Lista de ASCENSOS y ACTUALIZACIÓN Ranking FVP" que la FVP enlaza en su Instagram. Se lee como CSV con la API de visualización de Google (`/gviz/tq?tqx=out:csv&headers=0&gid=…`), porque la FVP tiene la descarga desactivada y `/export` responde 400. `app.fvp.com.ve` no tiene API pública, por eso no se usa.
 - **Cuándo:** Vercel Cron llama a `GET /api/ranking-fvp/sync` todos los días a las 10:00 UTC (6:00 a. m. en Venezuela), ver `vercel.json`. El staff también puede "Sincronizar ahora", subir el CSV o pegar las celdas en `/torneos/ranking`.
 - **A prueba de cambios de la FVP:** la hoja trae varias tablas apiladas con títulos a veces mal escritos; `leerListaFvp` busca las columnas por nombre en cada tabla y usa la cédula como llave. Si la hoja deja de ser pública, falla o trae menos de la mitad de atletas que la lista vigente, se conserva la anterior y se muestra el error.
 - **Regla:** en categorías por nivel (7ma a 1ra, M/F/Mixto) nadie se inscribe por debajo de su CATEGORÍA FINAL FVP; subir sí se puede. Master, Junior y libres no se chequean. Se apaga por torneo en Ajustes.

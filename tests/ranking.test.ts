@@ -144,3 +144,22 @@ test("servidor: sin lista cargada respeta lo que manda el staff", () => {
   const t = inscribirDupla(base, "M-3RA", j("a", "V-1234567"), j("b", null), { id: "d1" });
   assert.equal(revisarFvpServidor(base, t, null, { staff: "Moncho" }).cambios, 0);
 });
+
+test("lee el CSV que entrega gviz (headers=0): títulos numéricos vacíos y resumen arriba", () => {
+  const gviz = [
+    `"","","TOTAL ASCENSOS","","TOTAL DESCENSOS","","MANTIENEN CATEGORÍA","","DISTRIBUCIÓN RAMAS",""`,
+    `"","","4,218","","160","","1,946","","4,778 M / 1,546 F",""`,
+    `"","CÉDULA","Alexander pirela","CAT. ORIGEN","GÉNERO","","estados","","MOVIMIENTO","CATEGORÍA FINAL"`,
+    `"1","V-50000001","ANA GVIZ","2da","Femenino","2","Anzoátegui","382","Ascenso","1ra"`,
+    `"53","S/C","SIN CEDULA","1ra","Femenino","15","Distrito Capital / Miranda","180","Mantener","1ra"`,
+    `"","CÉDULA","NOMBRE DEL ATLETA","CAT. ORIGEN","GÉNERO","","Zulia","","MOVIMIENTO","CATEGORÍA FINAL"`,
+    `"1","V-50000002","LUIS GVIZ","3ra","Masculino","23","Zulia","1.200","Ascenso","2da"`,
+  ].join("\n");
+  const { atletas } = leerListaFvp(gviz);
+  assert.equal(atletas.length, 2);
+  const luis = atletas.find((a) => a.clave === "50000002")!;
+  assert.equal(luis.categoria, "2DA");
+  assert.equal(luis.puntos, 1200);
+  assert.equal(luis.estado, "Zulia");
+  assert.equal(luis.nombre, "LUIS GVIZ");
+});
