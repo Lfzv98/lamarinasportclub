@@ -1,22 +1,20 @@
 "use client";
 
 import clsx from "clsx";
-import { use, useCallback, useEffect, useMemo, useState } from "react";
-import { Eye, EyeOff, Flag, MessageCircle, Pause, Play, Share2, Shuffle, Trash2, UserCheck, RefreshCw } from "lucide-react";
-import { Avatar } from "@/components/Avatar";
+import Link from "next/link";
+import { use, useMemo, useState } from "react";
+import { Flag, Settings, Shuffle, UserCheck } from "lucide-react";
 import { StaffGate } from "@/components/StaffGate";
 import { TorneoShell } from "@/components/torneo/TorneoShell";
 import { toast } from "@/components/ui/Toaster";
 import { vibrar } from "@/lib/feedback";
-import { pinAleatorio, venceAlTerminar } from "@/lib/torneo/acceso";
+import { PlantelLista, usePlantel, type ArbitroStaff } from "@/components/ArbitrosClub";
 import { franjasDia, partidosDeTurno, repartirTurnos } from "@/lib/torneo/arbitros";
 import { nombrePista } from "@/lib/torneo/imprevistos";
 import { useTorneos } from "@/lib/torneosStore";
 import type { ArbitroRegistrado, Torneo, TurnoArbitro } from "@/types/torneo";
 
 const pl = (n: number, s: string) => `${n} ${s}${n === 1 ? "" : "s"}`;
-
-type ArbitroStaff = ArbitroRegistrado & { partidos: number; puntos: number };
 
 /** Árbitros del torneo (solo staff): quiénes se registraron, qué anotó cada uno y sus turnos. */
 export default function ArbitrosTorneoPage({ params }: { params: Promise<{ id: string }> }) {
@@ -32,80 +30,17 @@ export default function ArbitrosTorneoPage({ params }: { params: Promise<{ id: s
 
 function Arbitros({ torneo }: { torneo: Torneo }) {
   const actualizar = useTorneos((s) => s.actualizar);
-  const [lista, setLista] = useState<ArbitroStaff[] | null>(null);
-  const [verPin, setVerPin] = useState(false);
-
-  const cargar = useCallback(async () => {
-    try {
-      const r = await fetch(`/api/arbitros?torneoId=${encodeURIComponent(torneo.id)}`, { cache: "no-store" });
-      if (r.ok) setLista(((await r.json()) as { arbitros: ArbitroStaff[] }).arbitros);
-    } catch {
-      setLista((l) => l ?? []);
-    }
-  }, [torneo.id]);
-  useEffect(() => {
-    cargar();
-    const i = setInterval(cargar, 15_000);
-    return () => clearInterval(i);
-  }, [cargar]);
-
-  const arb = torneo.arbitros?.pin ? torneo.arbitros : null;
-  const turnos = arb?.turnos ?? [];
+  const { lista, cargar } = usePlantel(torneo.id);
+  const turnos = torneo.arbitros?.turnos ?? [];
   const activos = (lista ?? []).filter((a) => a.activo);
   const nombre = (id: string) => {
     const a = lista?.find((x) => x.id === id);
     return a ? `${a.nombre} ${a.apellido}` : "Árbitro";
   };
   const guardarTurnos = (ts: TurnoArbitro[], msg?: string) => {
-    actualizar(torneo.id, (t) => ({ ...t, arbitros: { ...t.arbitros!, turnos: ts } }));
+    actualizar(torneo.id, (t) => ({ ...t, arbitros: { ...(t.arbitros ?? {}), turnos: ts } }));
     vibrar(10);
     if (msg) toast(msg);
-  };
-
-  async function cambiarActivo(a: ArbitroStaff) {
-    const r = await fetch("/api/arbitros", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ torneoId: torneo.id, id: a.id, activo: !a.activo }) });
-    if (!r.ok) return toast("No se pudo cambiar. Revisa la conexión.", "error");
-    toast(a.activo ? `${a.nombre} queda en pausa: no puede anotar` : `${a.nombre} puede anotar otra vez`);
-    cargar();
-  }
-  async function borrar(a: ArbitroStaff) {
-    if (!confirm(`¿Borrar a ${a.nombre} ${a.apellido}? Sus partidos anotados conservan su nombre y se quitan sus turnos.`)) return;
-    const r = await fetch(`/api/arbitros?${new URLSearchParams({ torneoId: torneo.id, id: a.id })}`, { method: "DELETE" });
-    if (!r.ok) return toast("No se pudo borrar.", "error");
-    guardarTurnos(turnos.filter((x) => x.arbitroId !== a.id));
-    cargar();
-  }
-
-  if (!arb)
-    return (
-      <div className="glass mt-4 rounded-[2rem] p-8 text-center">
-        <Flag className="mx-auto size-10 text-lima" />
-        <h2 className="mt-3 font-display text-2xl font-bold">Activa a los árbitros</h2>
-        <p className="mx-auto mt-1 max-w-md text-sm text-white/55">Se crea un PIN para este torneo. Cada árbitro se registra una vez con ese PIN y luego entra con su nombre y su código personal.</p>
-        <button
-          className="btn-neon mt-5"
-          onClick={() => {
-            actualizar(torneo.id, (t) => ({ ...t, arbitros: { pin: pinAleatorio(), vence: venceAlTerminar(t.dias), turnos: [] } }));
-            setVerPin(true);
-            toast("PIN de árbitros creado");
-          }}
-        >
-          <Flag className="size-4" /> Crear PIN de árbitros
-        </button>
-      </div>
-    );
-
-  const compartir = async () => {
-    const texto = `Árbitros de ${torneo.nombre}\n1. Entra en ${location.origin}/arbitro\n2. Toca "Soy nuevo" y regístrate con el PIN ${arb.pin}\n3. Crea tu código de 4 números: con él entras siempre.`;
-    try {
-      if (navigator.share) await navigator.share({ title: `Árbitros · ${torneo.nombre}`, text: texto });
-      else {
-        await navigator.clipboard.writeText(texto);
-        toast("Instrucciones copiadas", "info");
-      }
-    } catch {
-      /* canceló */
-    }
   };
 
   return (
@@ -115,81 +50,23 @@ function Arbitros({ torneo }: { torneo: Torneo }) {
           <Flag className="size-6" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-display text-xl font-bold">Árbitros</p>
-          <p className="text-sm text-white/55">Se registran en Inicio → Árbitros con este PIN. Después entran con su nombre y su código.</p>
+          <p className="font-display text-xl font-bold">Árbitros del torneo</p>
+          <p className="text-sm text-white/55">Los árbitros son del club: se registran una vez y sirven para todos los torneos. Aquí repartes sus turnos y ves lo que anotó cada uno en este torneo.</p>
         </div>
-        <button className="rounded-xl bg-white/5 px-4 py-2 font-display text-2xl font-bold tracking-[0.3em]" onClick={() => setVerPin((v) => !v)} title={verPin ? "Ocultar" : "Ver"}>
-          {verPin ? arb.pin : "•".repeat(arb.pin.length)}
-        </button>
-        <button className="btn-ghost !p-2.5" onClick={() => setVerPin((v) => !v)} aria-label={verPin ? "Ocultar PIN" : "Ver PIN"}>
-          {verPin ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-        </button>
-        <button
-          className="btn-ghost !p-2.5"
-          onClick={() => {
-            if (!confirm("¿Cambiar el PIN? Los árbitros ya registrados siguen entrando con su nombre y su código; los nuevos usarán el PIN nuevo.")) return;
-            actualizar(torneo.id, (t) => ({ ...t, arbitros: { ...(t.arbitros ?? { turnos: [] }), pin: pinAleatorio(), vence: venceAlTerminar(t.dias) } }));
-            setVerPin(true);
-            toast("PIN de árbitros nuevo");
-          }}
-          aria-label="Cambiar PIN"
-          title="Cambiar PIN"
-        >
-          <RefreshCw className="size-4" />
-        </button>
-        <button className="btn-neon !py-2.5" onClick={compartir}>
-          <Share2 className="size-4" /> Enviar a los árbitros
-        </button>
+        <Link href="/club#arbitros" className="btn-ghost !py-2.5">
+          <Settings className="size-4" /> PIN y plantel en Ajustes
+        </Link>
       </section>
 
       <section>
-        <h2 className="label">Registrados {lista ? `· ${lista.length}` : ""}</h2>
-        {lista === null ? (
-          <div className="flex justify-center py-8">
-            <div className="size-8 animate-spin rounded-full border-2 border-white/10 border-t-neon" />
-          </div>
-        ) : !lista.length ? (
-          <p className="glass rounded-2xl p-5 text-sm text-white/55">Nadie se registró todavía. Envíales el PIN con el botón de arriba.</p>
-        ) : (
-          <ul className="space-y-2">
-            {lista.map((a) => {
-              const suyos = turnos.filter((x) => x.arbitroId === a.id);
-              const tel = (a.telefono ?? "").replace(/\D/g, "");
-              return (
-                <li key={a.id} className={clsx("glass flex flex-wrap items-center gap-3 rounded-2xl p-4", !a.activo && "opacity-60")}>
-                  <Avatar nombre={`${a.nombre} ${a.apellido}`} size={44} />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold">
-                      {a.nombre} {a.apellido} {!a.activo && <span className="chip ml-1 !text-amber-200">En pausa</span>}
-                    </p>
-                    <p className="text-xs text-white/50">
-                      {pl(suyos.length, "turno")} · {pl(a.partidos, "partido")} {a.partidos === 1 ? "anotado" : "anotados"} · {pl(a.puntos, "punto")} · {a.telefono}
-                    </p>
-                  </div>
-                  {tel && (
-                    <a className="btn-ghost !p-2.5" href={`https://wa.me/${tel.length === 11 && tel.startsWith("0") ? `58${tel.slice(1)}` : tel}`} target="_blank" rel="noreferrer" aria-label="WhatsApp">
-                      <MessageCircle className="size-4" />
-                    </a>
-                  )}
-                  <button className="btn-ghost !px-3 !py-2 text-xs" onClick={() => cambiarActivo(a)}>
-                    {a.activo ? (
-                      <>
-                        <Pause className="size-3.5" /> Pausar
-                      </>
-                    ) : (
-                      <>
-                        <Play className="size-3.5" /> Reactivar
-                      </>
-                    )}
-                  </button>
-                  <button className="btn-ghost !p-2.5 hover:!text-coral" onClick={() => borrar(a)} aria-label="Borrar árbitro">
-                    <Trash2 className="size-4" />
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+        <h2 className="label">Plantel del club {lista ? `· ${lista.length}` : ""}</h2>
+        <PlantelLista
+          lista={lista}
+          onCambio={cargar}
+          turnos={turnos}
+          onBorrado={(id) => guardarTurnos(turnos.filter((x) => x.arbitroId !== id))}
+          vacio="Todavía no hay árbitros registrados. Crea el PIN en Ajustes → Árbitros del club y envíaselo."
+        />
       </section>
 
       <Turnos torneo={torneo} turnos={turnos} activos={activos} nombre={nombre} guardar={guardarTurnos} />

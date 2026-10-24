@@ -14,7 +14,7 @@ export const GET = manejar(async (req: Request, ctx: { params: Promise<{ eventoI
   const c = decodeURIComponent(clave);
   const tipo = c.startsWith("d-") ? "dupla" : c.startsWith("j-") ? "jugador" : null;
   const ev = tipo ? await eventoDeFoto(eventoId) : null;
-  if (!ev || ("torneo" in ev && !puedeVer(ev.torneo, visorDe(req)))) throw new ErrorApi(404, "Sin foto.");
+  if (!ev || ("torneo" in ev && !puedeVer(ev.torneo, (await visorDe(req))))) throw new ErrorApi(404, "Sin foto.");
   const x = await getTorneosRepository().obtenerExtra(idFoto(eventoId, tipo!, c.slice(2)));
   const m = (x?.data as { img?: string } | undefined)?.img?.match(/^data:(image\/[a-z]+);base64,(.+)$/);
   if (!m) throw new ErrorApi(404, "Sin foto.");

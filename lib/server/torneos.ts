@@ -1,22 +1,20 @@
 import "server-only";
 import type { Torneo } from "@/types/torneo";
 import { arbitroDe, huellaClave, leerAccesos, sesionDe, type SesionArbitro } from "./auth";
+import { sesionValida } from "./arbitros";
 
 /** Lo que cada quien puede ver de un torneo. */
 export type Visor = { staff: boolean; accesos: Record<string, number>; arbitro?: SesionArbitro | null };
 
-export function visorDe(req: Request): Visor {
-  return { staff: !!sesionDe(req), accesos: leerAccesos(req), arbitro: arbitroDe(req) };
+/** Quién mira. La sesión de árbitro solo cuenta si sigue valiendo en el plantel del club. */
+export async function visorDe(req: Request): Promise<Visor> {
+  const s = arbitroDe(req);
+  return { staff: !!sesionDe(req), accesos: leerAccesos(req), arbitro: s && (await sesionValida(s)) ? s : null };
 }
 
-/**
- * ¿La sesión de árbitro vale para ver este torneo? (mismo PIN vigente y sin vencer).
- * Para escribir, además, `arbitroValido` (lib/server/arbitros) revisa su registro.
- */
+/** Un árbitro del club (sesión ya validada en `visorDe`) ve y anota cualquier torneo vigente. */
 export function esArbitroDe(t: Torneo, a?: SesionArbitro | null): boolean {
-  if (!a || !a.arbitroId || a.torneoId !== t.id || !t.arbitros?.pin || t.eliminado) return false;
-  if (!(new Date(t.arbitros.vence).getTime() > Date.now())) return false;
-  return a.huella === huellaClave(t.arbitros.pin);
+  return !!a?.arbitroId && !t.eliminado;
 }
 
 /** Clave del acceso en la cookie: torneo + huella de la clave vigente. */
@@ -35,12 +33,11 @@ export function puedeVer(t: Torneo, v: Visor): boolean {
 export function paraVisor(t: Torneo, v: Visor): Torneo {
   if (v.staff) return t;
   const acceso = t.acceso?.clave ? { clave: "", vence: t.acceso.vence } : null;
-  const arbitros = t.arbitros?.pin ? { pin: "", vence: t.arbitros.vence, turnos: t.arbitros.turnos } : null;
-  if (puedeVer(t, v)) return { ...t, acceso, arbitros, historial: [] };
+  if (puedeVer(t, v)) return { ...t, acceso, historial: [] };
   return {
     ...t,
     acceso,
-    arbitros: arbitros && { pin: "", vence: arbitros.vence },
+    arbitros: null,
     bloqueado: true,
     jugadores: [],
     historial: [],

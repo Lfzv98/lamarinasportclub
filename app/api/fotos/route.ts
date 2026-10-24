@@ -16,7 +16,7 @@ export const GET = manejar(async (req: Request) => {
   if (!torneoId) throw new ErrorApi(400, "Falta torneoId.");
   const t = await getTorneosRepository().obtener(torneoId);
   if (!t || t.eliminado) throw new ErrorApi(404, "Torneo no encontrado.");
-  if (!puedeVer(t, visorDe(req))) return NextResponse.json({ fotos: {} });
+  if (!puedeVer(t, (await visorDe(req)))) return NextResponse.json({ fotos: {} });
   const lista = await getTorneosRepository().listarExtras(t.id, "foto");
   return NextResponse.json({ fotos: Object.fromEntries(lista.map((x) => { const id = x.id.split(":").slice(2).join(":"); return [id, urlFoto(t.id, "dupla", id, x.actualizadoEn)]; })) });
 });
@@ -37,7 +37,7 @@ export const POST = manejar(async (req: Request) => {
   if ("torneo" in ev) {
     const t = ev.torneo;
     if (!por && tipo === "dupla") {
-      const a = await arbitroValido(t, visorDe(req).arbitro);
+      const a = await arbitroValido(t, (await visorDe(req)).arbitro);
       if (a) por = `Árbitro ${nombreArbitro(a)}`;
     }
     const existe = tipo === "dupla" ? t.categorias.some((c) => c.duplas.some((d) => d.id === b.id)) : t.jugadores.some((j) => j.id === b.id);
@@ -68,7 +68,7 @@ export const DELETE = manejar(async (req: Request) => {
   if (!eventoId || !id || (tipo !== "dupla" && tipo !== "jugador")) throw new ErrorApi(400, "Faltan eventoId, tipo e id.");
   const ev = await eventoDeFoto(eventoId);
   if (!ev) throw new ErrorApi(404, "Evento no encontrado.");
-  const ok = !!sesionDe(req) || ("torneo" in ev && tipo === "dupla" && !!(await arbitroValido(ev.torneo, visorDe(req).arbitro)));
+  const ok = !!sesionDe(req) || ("torneo" in ev && tipo === "dupla" && !!(await arbitroValido(ev.torneo, (await visorDe(req)).arbitro)));
   if (!ok) throw new ErrorApi(401, "Sin permiso.");
   await getTorneosRepository().borrarExtra(idFoto(eventoId, tipo, id));
   return NextResponse.json({ ok: true });

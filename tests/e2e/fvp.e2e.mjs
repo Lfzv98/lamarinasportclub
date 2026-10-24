@@ -31,8 +31,9 @@ ok(corta.status() === 422, "una lista mucho más corta no reemplaza a la vigente
 
 // Torneo de prueba con 4ta masculina abierta (copia del demo, sin inscritos).
 {
+  await ctx.request.post(`${U}/api/demo`, { data: { accion: "cargar" } });
   const { torneos } = await (await ctx.request.get(`${U}/api/torneos`)).json();
-  const t = structuredClone(torneos.find((x) => x.id === "t-open-2026"));
+  const t = structuredClone(torneos.filter((x) => x.id.endsWith("t-open-2026") && !x.eliminado).sort((a, b) => a.id.localeCompare(b.id)).at(-1));
   const c = t.categorias.find((x) => x.categoria.id === "M-4TA");
   Object.assign(t, { id: "t-fvp-e2e", nombre: "Copa FVP (prueba)", jugadores: [], historial: [], categorias: [{ ...c, duplas: [], cuadro: null }], actualizadoEn: new Date().toISOString() });
   const res = await ctx.request.post(`${U}/api/torneos`, { data: { torneo: t } });

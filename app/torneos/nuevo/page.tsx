@@ -16,7 +16,7 @@ import { vibrar } from "@/lib/feedback";
 import { aMinutos, horarioDelDia } from "@/lib/horarios";
 import { useAmericanos } from "@/lib/store";
 import { catalogoCategorias, nombreCorto } from "@/lib/torneo/categorias";
-import { claveAleatoria, pinAleatorio, venceAlTerminar } from "@/lib/torneo/acceso";
+import { claveAleatoria, venceAlTerminar } from "@/lib/torneo/acceso";
 import { crearTorneo } from "@/lib/torneo/torneo";
 import { useTorneos } from "@/lib/torneosStore";
 import type { CategoriaTorneo, DiaTorneo } from "@/types/torneo";
@@ -117,7 +117,7 @@ function NuevoTorneo() {
       toleranciaWO: tolerancia,
       finalesUltimoDia: finalesUltimo,
     });
-    guardar({ ...t, acceso: { clave: claveAleatoria(), vence: venceAlTerminar(t.dias) }, arbitros: { pin: pinAleatorio(), vence: venceAlTerminar(t.dias) } });
+    guardar({ ...t, acceso: { clave: claveAleatoria(), vence: venceAlTerminar(t.dias) }, arbitros: { turnos: [] } });
     toast("Torneo creado. Ahora inscribe las duplas.");
     router.push(`/torneos/${t.id}/categorias`);
   }
@@ -137,7 +137,7 @@ function NuevoTorneo() {
 
       <section className="mt-8">
         <label className="label" htmlFor="nombre">Nombre</label>
-        <input id="nombre" className="input text-lg" placeholder="Ej. Copa La Marina 2026" value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={120} />
+        <input id="nombre" className="input text-lg" placeholder="Nombre del torneo" value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={120} />
       </section>
 
       <section className="mt-8">

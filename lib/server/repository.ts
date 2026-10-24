@@ -1,8 +1,9 @@
 /**
  * Capa de persistencia de los endpoints /api/americanos.
  *
- * - MODO DEMO (sin variables de entorno): memoria del servidor, sembrada con
- *   data/mockData.json. En Vercel cada instancia serverless tiene su propia
+ * - MODO DEMO (sin variables de entorno): memoria del servidor, vacía al empezar
+ *   (los datos de prueba se cargan desde Ajustes, ver lib/server/demo.ts). En Vercel
+ *   cada instancia serverless tiene su propia
  *   memoria, así que es solo para demostraciones; el navegador además guarda
  *   todo en localStorage.
  * - MODO SUPABASE: se activa al definir NEXT_PUBLIC_SUPABASE_URL y
@@ -11,7 +12,6 @@
  *   `americanos_eventos` vía PostgREST, que funciona sin dependencias extra.
  */
 import "server-only";
-import mock from "@/data/mockData.json";
 import { CLUB_POR_DEFECTO } from "@/lib/horarios";
 import type { ConfigClub, EventoAmericano } from "@/types/americano";
 import type { RankingFvp } from "@/types/ranking";
@@ -35,7 +35,7 @@ const memoria = globalThis as unknown as { __americanosDemo?: Map<string, Evento
 
 function almacenDemo(): Map<string, EventoAmericano> {
   if (!memoria.__americanosDemo) {
-    memoria.__americanosDemo = new Map((mock.eventos as unknown as EventoAmericano[]).map((e) => [e.id, structuredClone(e)]));
+    memoria.__americanosDemo = new Map();
   }
   return memoria.__americanosDemo;
 }
@@ -153,16 +153,15 @@ const memoriaT = globalThis as unknown as { __torneosDemo?: Map<string, Torneo>;
 
 function torneosDemo(): Map<string, Torneo> {
   if (!memoriaT.__torneosDemo) {
-    const semilla = ((mock as unknown as { torneos?: Torneo[] }).torneos ?? []).map((t) => [t.id, structuredClone(t)] as const);
-    memoriaT.__torneosDemo = new Map(semilla);
+    memoriaT.__torneosDemo = new Map();
   }
   return memoriaT.__torneosDemo;
 }
 const marcadoresDemo = () =>
-  (memoriaT.__marcadoresDemo ??= new Map(((mock as unknown as { marcadores?: MarcadorVivo[] }).marcadores ?? []).map((m) => [m.id, structuredClone(m)] as const)));
+  (memoriaT.__marcadoresDemo ??= new Map<string, MarcadorVivo>());
 
 const extrasDemo = () =>
-  (memoriaT.__extrasDemo ??= new Map(((mock as unknown as { extras?: ExtraTorneo[] }).extras ?? []).map((x) => [x.id, structuredClone(x)] as const)));
+  (memoriaT.__extrasDemo ??= new Map<string, ExtraTorneo>());
 
 const demoTorneos: TorneosRepository = {
   modo: "DEMO",

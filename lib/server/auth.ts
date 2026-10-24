@@ -182,39 +182,38 @@ export function claveCorrecta(recibida: string, esperada: string): boolean {
 /* ---------- árbitros (anotadores) ---------- */
 
 /**
- * Sesión de árbitro: rol aparte del staff, por torneo. Entra con el PIN de árbitros que el staff
- * crea en Ajustes → Claves de torneos. Cada árbitro se registra una vez con su nombre y un código
- * personal; la cookie guarda el torneo, quién es y huellas del PIN y de su código: si el staff cambia
- * el PIN, o el árbitro cambia su código o queda desactivado, la sesión deja de valer.
+ * Sesión de árbitro: rol aparte del staff, del club. Cada árbitro se registra una vez con el PIN
+ * de árbitros que el staff crea en Ajustes, su nombre y un código personal; la cookie guarda quién es
+ * y huellas del PIN y de su código: si el staff cambia el PIN, lo pausa, o el árbitro cambia su
+ * código, la sesión deja de valer.
  */
 export const COOKIE_ARBITRO = "lm_arbitro";
 const DURACION_ARBITRO_S = 16 * 3600;
 
 export interface SesionArbitro {
-  torneoId: string;
-  /** Árbitro registrado. */
+  /** Árbitro del plantel del club. */
   arbitroId: string;
   nombre: string;
-  /** Huella del PIN de árbitros del torneo. */
+  /** Huella del PIN de árbitros del club. */
   huella: string;
   /** Huella de su código personal. */
   hc: string;
   exp: number;
 }
 
-/** Código personal del árbitro, guardado solo como HMAC ligado al torneo y al árbitro. */
-export function hashCodigo(torneoId: string, arbitroId: string, codigo: string): string {
-  return firmar(`r:${torneoId}:${arbitroId}:${codigo.trim()}`);
+/** Código personal del árbitro, guardado solo como HMAC ligado al ámbito (el club) y al árbitro. */
+export function hashCodigo(ambito: string, arbitroId: string, codigo: string): string {
+  return firmar(`r:${ambito}:${arbitroId}:${codigo.trim()}`);
 }
 
-export function codigoCorrecto(torneoId: string, arbitroId: string, codigo: string, hash: string): boolean {
-  const a = Buffer.from(hashCodigo(torneoId, arbitroId, codigo));
+export function codigoCorrecto(ambito: string, arbitroId: string, codigo: string, hash: string): boolean {
+  const a = Buffer.from(hashCodigo(ambito, arbitroId, codigo));
   const b = Buffer.from(hash);
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export function crearTokenArbitro(s: Omit<SesionArbitro, "exp">, venceMs: number): { token: string; maxAge: number } {
-  const exp = Math.min(Math.floor(Date.now() / 1000) + DURACION_ARBITRO_S, Math.floor(venceMs / 1000));
+export function crearTokenArbitro(s: Omit<SesionArbitro, "exp">): { token: string; maxAge: number } {
+  const exp = Math.floor(Date.now() / 1000) + DURACION_ARBITRO_S;
   const datos = b64(JSON.stringify({ ...s, exp }));
   return { token: `${datos}.${firmar(`a:${datos}`)}`, maxAge: Math.max(60, exp - Math.floor(Date.now() / 1000)) };
 }

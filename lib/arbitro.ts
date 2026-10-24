@@ -1,14 +1,14 @@
 "use client";
 
 /**
- * Sesión de árbitro (anotador) en este dispositivo: rol aparte del staff, por torneo.
+ * Sesión de árbitro (anotador) en este dispositivo: rol aparte del staff, del plantel del club
+ * (sirve para todos los torneos).
  * La cookie la pone el servidor (POST /api/arbitro); aquí solo se refleja quién es.
  */
 import { create } from "zustand";
 
 export interface Arbitro {
-  torneoId: string;
-  /** Árbitro registrado. */
+  /** Árbitro del plantel del club. */
   id: string;
   nombre: string;
 }
@@ -21,7 +21,6 @@ export interface ArbitroLista {
 }
 
 export interface DatosRegistro {
-  torneoId: string;
   pin: string;
   nombre: string;
   apellido: string;
@@ -33,7 +32,7 @@ interface EstadoArbitro {
   /** undefined = todavía no se sabe. */
   arbitro: Arbitro | null | undefined;
   cargar: () => Promise<void>;
-  entrar: (torneoId: string, arbitroId: string, codigo: string) => Promise<string | null>;
+  entrar: (arbitroId: string, codigo: string) => Promise<string | null>;
   registrar: (d: DatosRegistro) => Promise<string | null>;
   salir: () => Promise<void>;
 }
@@ -49,8 +48,8 @@ export const useArbitroStore = create<EstadoArbitro>()((set) => ({
       set((s) => ({ arbitro: s.arbitro ?? null }));
     }
   },
-  async entrar(torneoId, arbitroId, codigo) {
-    return enviar(set, "/api/arbitro", { torneoId, arbitroId, codigo });
+  async entrar(arbitroId, codigo) {
+    return enviar(set, "/api/arbitro", { arbitroId, codigo });
   },
   async registrar(datos) {
     return enviar(set, "/api/arbitro/registro", datos);
@@ -76,13 +75,13 @@ async function enviar(set: (p: Partial<EstadoArbitro>) => void, url: string, bod
   }
 }
 
-/** Árbitros registrados en un torneo (para elegir "¿quién eres?"). */
-export async function listarArbitros(torneoId: string): Promise<ArbitroLista[]> {
+/** Plantel del club para elegir "¿quién eres?". `abierto` = el staff ya creó el PIN de árbitros. */
+export async function listarArbitros(): Promise<{ abierto: boolean; arbitros: ArbitroLista[] } | null> {
   try {
-    const r = await fetch(`/api/arbitros?torneoId=${encodeURIComponent(torneoId)}`, { cache: "no-store" });
-    return r.ok ? ((await r.json()) as { arbitros: ArbitroLista[] }).arbitros : [];
+    const r = await fetch("/api/arbitros", { cache: "no-store" });
+    return r.ok ? ((await r.json()) as { abierto: boolean; arbitros: ArbitroLista[] }) : null;
   } catch {
-    return [];
+    return null;
   }
 }
 
@@ -97,5 +96,5 @@ export function useArbitro(): Arbitro | null | undefined {
   return arbitro;
 }
 
-/** ¿Es árbitro de este torneo? */
-export const esArbitroDe = (a: Arbitro | null | undefined, torneoId: string) => !!a && a.torneoId === torneoId;
+/** ¿Puede anotar este torneo? Los árbitros del club anotan en cualquier torneo. */
+export const esArbitroDe = (a: Arbitro | null | undefined, _torneoId?: string) => !!a;

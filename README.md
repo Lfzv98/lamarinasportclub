@@ -9,7 +9,7 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 | Ruta | Qué hace |
 | --- | --- |
 | `/` | Inicio: tres entradas, **Americanos**, **Torneos** y **Árbitros** |
-| `/arbitro` | Panel del árbitro (tablet): se registra una vez (nombre, teléfono, PIN del torneo y un código propio de 4 dígitos), luego entra tocando su nombre y su código. Ve su turno y su pista, llama, empieza, anota y toma las fotos de las duplas |
+| `/arbitro` | Panel del árbitro (tablet): se registra una sola vez en el club (nombre, teléfono, PIN de árbitros y un código propio de 4 dígitos) y sirve para todos los torneos, luego entra tocando su nombre y su código. Ve su turno y su pista, llama, empieza, anota y toma las fotos de las duplas |
 | `/americanos` | Eventos activos e historial, acceso rápido a Modo TV |
 | `/setup` | Asistente de 5 pasos: categoría, formato y puntuación, pistas y horario, jugadores, resumen con sorteo |
 | `/evento/:id` | Cuadro vivo: rondas con hora, cronómetro con alarma, pistas activas, carga de score |
@@ -23,7 +23,7 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 | `/torneos/:id/programacion` | Horarios por día y pista, "¿Cuándo juego?", Programar / Desde ahora / Imprevistos |
 | `/torneos/:id/partido/:partido` | Partido para los atletas (con la clave): comparativa de estadísticas, tabla por jugador y punto a punto |
 | `/torneos/:id/anotar/:partido` | Anotador del árbitro o del staff: asistente previo (fotos, sorteo con la pelota según FIP, lado, quién saca), un toque por punto, detalle opcional sin barra de tiempo, saque solo y aviso de cambio de lado con cronómetro FIP (directo tras el 1-0, 1:30 en impares, 2:00 entre sets) que también sale en la TV de la pista |
-| `/torneos/:id/arbitros` | Árbitros (staff): PIN, registrados con lo que anotó cada uno, pausar o borrar, y turnos por día, franja y pista con reparto automático |
+| `/torneos/:id/arbitros` | Árbitros (staff): el plantel del club con lo que anotó cada uno en ese torneo, pausar o borrar, y turnos por día, franja y pista con reparto automático |
 | `/torneos/:id/pista/:n` | Pantalla de la esquina de cada pista (1920×1080) para el público: marcador, datos por dupla y relato sin métricas individuales |
 | `/torneos/:id/tv` | Modo TV del torneo: todas las pistas, próximos, resultados y patrocinadores |
 | `/torneos/:id/estadisticas` | Rankings y ficha por jugador; resumen para el club (staff) |
@@ -47,7 +47,7 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 - **Reglamento FIP (rev. 2021):** puntuación con ventaja o punto de oro (en mixto resta el del mismo sexo), mini set a 4 con tie-break 4-4, tie-break decisivo a 10 o a 7, tercer set sin tie-break; cambios de lado en games impares y cada 6 puntos del tie-break; cada dupla elige quién saca al empezar cada set; descansos de 20 s, 90 s y 120 s (sin descanso tras el primer game); W.O. a los 10 min de la hora prevista (o 5 min después de que terminó el partido anterior en la pista); peloteo de 0, 3 o 5 min al reanudar una suspensión; atención médica de 3 min una vez por jugador y accidente de hasta 15 min; tabla de penalizaciones (advertencia, pérdida de punto, descalificación) acumulada por dupla. El orden de desempate en grupos no lo fija el reglamento de juego: se configura por torneo.
 - **Categorías verificadas con el ranking FVP:** la app lee cada día la lista oficial de la Federación Venezolana de Pádel y cruza a cada jugador por cédula. Nadie se inscribe por debajo de su categoría; lo dudoso queda "por verificar" y frena el sorteo hasta que el staff lo revise o autorice una excepción con motivo. Lista, búsqueda y carga manual en `/torneos/ranking`.
 - **Clave de participantes:** una por torneo, vence al terminar el último día; el staff la ve y cambia en Ajustes. Cambiarla deja fuera a quien entró con la anterior.
-- **Árbitros:** rol aparte del staff. Cada torneo tiene un PIN de árbitros (solo el staff lo ve, en Ajustes → Claves) que únicamente permite llamar, empezar y anotar partidos de ese torneo; no abre cuadros, horarios ni ajustes. Vence con el torneo y cambiarlo cierra las sesiones abiertas. Cada árbitro se registra con nombre, apellido, teléfono y un código propio (guardado solo como HMAC), así cada punto queda firmado con su nombre y no hay "yo no fui". El staff asigna turnos por pista y franja (o los reparte solo) y ve cuántos partidos y puntos anotó cada uno.
+- **Árbitros:** rol aparte del staff. El club tiene un solo PIN de árbitros, que el staff crea y cambia en Ajustes (página protegida con el PIN del staff). Sirve para que cada árbitro se registre una vez en el plantel del club; después entra con su nombre y su código en todos los torneos y únicamente puede llamar, empezar y anotar partidos: no abre cuadros, horarios ni ajustes. Cambiar el PIN cierra las sesiones abiertas. Cada árbitro se registra con nombre, apellido, teléfono y un código propio (guardado solo como HMAC), así cada punto queda firmado con su nombre y no hay "yo no fui". El staff asigna turnos por pista y franja (o los reparte solo) y ve cuántos partidos y puntos anotó cada uno.
 - **Fotos de duplas y jugadores:** el árbitro (o el staff) fotografía a cada dupla en la pista; la foto sale junto a sus nombres en el anotador, la TV de la pista y la página del partido. En Americanos ("Jugadores y fotos") y en Inscritos de Torneos el staff puede fotografiar a cada jugador; su cara sale en cuadros, ranking y TV. Se comprimen en el dispositivo (≤400 KB).
 - **Tres públicos:** la tablet del árbitro anota; las pantallas de TV muestran marcador y relato público; las estadísticas de cada atleta solo se ven con la clave del torneo.
 
@@ -81,7 +81,7 @@ npm run typecheck
 npm run build
 ```
 
-Sin variables de entorno corre en **modo DEMO** con `data/mockData.json` (americanos: `node --experimental-strip-types scripts/generar-mock.ts`; torneo de ejemplo en pleno juego: `node --experimental-strip-types scripts/generar-torneo-demo.ts`, clave `MARINA`). Para conectar Supabase ver [docs/BACKEND.md](docs/BACKEND.md).
+Sin variables de entorno corre en **modo DEMO**, en memoria y **vacía**. Para enseñarla, el staff toca **Ajustes → Datos de prueba → Cargar datos de prueba**: crea 3 americanos, un torneo de hoy en pleno juego (clave `MARINA`) y 6 árbitros de ejemplo (código `1234`, PIN de árbitros `2468` si no había uno); **Borrar datos de prueba** los quita sin tocar lo real. Los datos salen de `data/mockData.json` (americanos: `node --experimental-strip-types scripts/generar-mock.ts`; torneo: `node --experimental-strip-types scripts/generar-torneo-demo.ts`). Las pruebas de navegador los cargan solas. Para conectar Supabase ver [docs/BACKEND.md](docs/BACKEND.md).
 
 ## Despliegue en Vercel
 

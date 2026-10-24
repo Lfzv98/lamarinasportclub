@@ -316,11 +316,11 @@ export interface Torneo {
    */
   acceso?: { clave: string; vence: string } | null;
   /**
-   * PIN de árbitros (anotadores): rol aparte del staff que solo puede llamar a pista, empezar,
-   * anotar punto a punto, dar un W.O. vencido y cerrar su partido. Caduca en `vence`.
-   * Solo el staff recibe el PIN; al resto la API le llega vacío.
+   * Árbitros del torneo: qué pista y franja le toca a cada árbitro del plantel del club.
+   * El PIN y el registro de árbitros son del club (Ajustes → Árbitros), no de cada torneo;
+   * `pin` y `vence` quedan solo por compatibilidad con torneos viejos y se ignoran.
    */
-  arbitros?: { pin: string; vence: string; turnos?: TurnoArbitro[] } | null;
+  arbitros?: { turnos?: TurnoArbitro[]; pin?: string; vence?: string } | null;
   /** Solo en respuestas de la API: sin clave válida se recibe un resumen sin datos. */
   bloqueado?: boolean;
   creadoEn: string;
