@@ -166,6 +166,11 @@ export interface PartidoTorneo {
   finEn?: string | null;
   /** Pista en la que se está jugando (puede diferir de la programada). */
   pistaReal?: number | null;
+  /**
+   * Partido interrumpido (lluvia, pista mojada, luz…): vuelve a quedar por programar y,
+   * al reanudarse, sigue con el mismo marcador.
+   */
+  suspendido?: { en: string; motivo: string; marcador?: string } | null;
   actualizadoEn?: string;
 }
 
@@ -205,7 +210,37 @@ export interface BloqueHorario {
   /** Pista bloqueada; sin pista = aplica a todas (o a la dupla). */
   pista?: number | null;
   motivo?: string;
+  /** Suspensiones por clima: se agrupan para poder reanudarlas juntas. */
+  suspensionId?: string;
 }
+
+/** Club donde se juega parte del torneo (sede principal o de apoyo). */
+export interface SedeTorneo {
+  id: string;
+  nombre: string;
+  direccion?: string;
+  /** Minutos para ir desde la sede principal: se suman al descanso si un jugador cambia de sede. */
+  trasladoMin: number;
+  /** Horario disponible en esa sede por día; sin horario = el del torneo. */
+  horarios?: DiaTorneo[];
+  /** Sede de apoyo agregada por un imprevisto (no estaba en el plan). */
+  provisional?: boolean;
+}
+
+/** Marca que apoya el torneo: sale en el Modo TV, en las pantallas de pista y en la app. */
+export interface Patrocinador {
+  id: string;
+  nombre: string;
+  /** Logo como data URL (PNG/JPG/SVG reducido). */
+  logo?: string | null;
+  /** Pista que presenta ("Pista 1 presentada por…"). */
+  pista?: number | null;
+  /** Principal: más grande y siempre visible. */
+  principal?: boolean;
+}
+
+/** Pista del torneo: del club o de una sede de apoyo. */
+export type CanchaTorneo = PistaClub & { sedeId?: string };
 
 export interface DiaTorneo {
   fecha: string;
@@ -227,8 +262,11 @@ export interface Torneo {
   clubId: string;
   nombre: string;
   dias: DiaTorneo[];
-  /** Pistas del club que usa el torneo, en orden de prioridad (finales en la primera). */
-  canchas: PistaClub[];
+  /** Pistas que usa el torneo, en orden de prioridad (finales en la primera). */
+  canchas: CanchaTorneo[];
+  /** Sedes. Sin sedes = todo en el club organizador. Las pistas sin `sedeId` son de la sede principal. */
+  sedes?: SedeTorneo[];
+  patrocinadores?: Patrocinador[];
   /** Descanso mínimo entre partidos de un mismo jugador. */
   descansoMin: number;
   /** Minutos de tolerancia antes de proponer W.O. */
@@ -241,6 +279,14 @@ export interface Torneo {
   categorias: CategoriaEnTorneo[];
   estado: EstadoTorneo;
   historial?: RegistroCambio[];
+  /**
+   * Clave de participantes: da acceso a cuadros, horarios, marcadores y estadísticas
+   * durante el torneo y caduca en `vence`. Sin clave, el torneo es público.
+   * Solo el staff recibe la clave; al resto la API le llega vacía.
+   */
+  acceso?: { clave: string; vence: string } | null;
+  /** Solo en respuestas de la API: sin clave válida se recibe un resumen sin datos. */
+  bloqueado?: boolean;
   creadoEn: string;
   actualizadoEn: string;
   eliminado?: boolean;

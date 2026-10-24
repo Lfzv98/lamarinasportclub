@@ -21,6 +21,8 @@ const DIA = 1440;
 interface Intervalo {
   ini: number;
   fin: number;
+  /** Sede donde se juega (para sumar el traslado al descanso). */
+  sede?: string;
 }
 
 const choca = (lista: Intervalo[], ini: number, fin: number) => lista.some((x) => ini < x.fin && x.ini < fin);
@@ -47,7 +49,13 @@ export function programarTorneo(t: Torneo, opts: OpcionesProgramacion = {}): Res
   const dias = [...t.dias].sort((a, b) => a.fecha.localeCompare(b.fecha));
   const idxDia = new Map(dias.map((d, i) => [d.fecha, i]));
   const ventanas: Intervalo[] = dias.map((d, i) => ({ ini: i * DIA + aMinutos(d.inicio), fin: i * DIA + aMinutos(d.fin) }));
-  const canchas = t.canchas.filter((c) => c.activa);
+  // Pistas de la sede principal primero: ahí caen las finales y lo que más se ve.
+  const canchas = t.canchas.filter((c) => c.activa).sort((a, b) => Number(!!a.sedeId) - Number(!!b.sedeId));
+  const sedes = new Map((t.sedes ?? []).map((s) => [s.id, s]));
+  const sedeDe = new Map(canchas.map((c) => [c.numero, c.sedeId ?? ""]));
+  const trasladoA = (sede: string) => sedes.get(sede)?.trasladoMin ?? 0;
+  /** Descanso necesario entre dos partidos de un jugador según dónde se juega cada uno. */
+  const descansoEntre = (a: string, b: string) => t.descansoMin + (a === b ? 0 : trasladoA(a) + trasladoA(b));
   const abs = (fecha: string, hora: string) => (idxDia.get(fecha) ?? -1) * DIA + aMinutos(hora);
   const desde = opts.desde ? aAbsoluto(opts.desde, idxDia) : -Infinity;
 
@@ -62,6 +70,17 @@ export function programarTorneo(t: Torneo, opts: OpcionesProgramacion = {}): Res
     const iv = { ini: abs(b.fecha, b.inicio), fin: abs(b.fecha, b.fin) };
     if (iv.ini < 0) continue;
     for (const c of canchas) if (!b.pista || b.pista === c.numero) ocupPista.get(c.numero)!.push(iv);
+  }
+  // Sedes de apoyo con su propio horario: fuera de él, sus pistas no están.
+  for (const c of canchas) {
+    const horarios = c.sedeId ? sedes.get(c.sedeId)?.horarios : undefined;
+    if (!horarios) continue;
+    dias.forEach((d, i) => {
+      const h = horarios.find((x) => x.fecha === d.fecha);
+      const lista = ocupPista.get(c.numero)!;
+      if (!h) lista.push({ ini: i * DIA, fin: (i + 1) * DIA });
+      else lista.push({ ini: i * DIA, fin: i * DIA + aMinutos(h.inicio) }, { ini: i * DIA + aMinutos(h.fin), fin: (i + 1) * DIA });
+    });
   }
 
   const cats = t.categorias.filter((c) => c.cuadro && (c.cuadro.publicado || opts.incluirBorradores));
@@ -87,10 +106,11 @@ export function programarTorneo(t: Torneo, opts: OpcionesProgramacion = {}): Res
       if (p.bye) continue;
       const prog = p.programacion;
       const ini = prog ? abs(prog.fecha, prog.hora) : -1;
-      const fijo = p.estado !== "PENDIENTE" || prog?.fijo || (prog && ini >= 0 && ini < desde);
+      // Lo pendiente se puede mover (también lo atrasado o suspendido); lo fijado a mano no, salvo que se haya suspendido.
+      const fijo = p.estado !== "PENDIENTE" || (prog?.fijo && !p.suspendido);
       if (fijo && prog && ini >= 0) {
         const fin = p.finEn && p.estado === "FINALIZADO" ? Math.max(ini + 30, aAbsoluto(p.finEn, idxDia)) : ini + duracion(p);
-        const iv = { ini, fin };
+        const iv = { ini, fin, sede: sedeDe.get(p.pistaReal ?? prog.pista) ?? "" };
         ocupPista.get(p.pistaReal ?? prog.pista)?.push(iv);
         ocupar([...jugadoresDe(c.categoria.id, p.duplaA), ...jugadoresDe(c.categoria.id, p.duplaB)], iv);
         finDe.set(p.id, fin);
@@ -165,8 +185,14 @@ export function programarTorneo(t: Torneo, opts: OpcionesProgramacion = {}): Res
       for (; ini + dur <= v.fin; ini += PASO) {
         const fin = ini + dur;
         if (choca(indisp, ini, fin)) continue;
-        if (jug.some((j) => choca((ocupJugador.get(j) ?? []).map((x) => ({ ini: x.ini - t.descansoMin, fin: x.fin + t.descansoMin })), ini, fin))) continue;
-        const pista = ordenPistas.find((n) => !choca(ocupPista.get(n)!, ini, fin));
+        const pista = ordenPistas.find((n) => {
+          if (choca(ocupPista.get(n)!, ini, fin)) return false;
+          const sede = sedeDe.get(n) ?? "";
+          return !jug.some((j) => (ocupJugador.get(j) ?? []).some((x) => {
+            const r = descansoEntre(x.sede ?? "", sede);
+            return ini < x.fin + r && x.ini - r < fin;
+          }));
+        });
         if (pista !== undefined) {
           elegido = { ini, pista };
           break;
@@ -179,7 +205,7 @@ export function programarTorneo(t: Torneo, opts: OpcionesProgramacion = {}): Res
       finDe.set(p.id, Infinity);
       continue;
     }
-    const iv = { ini: elegido.ini, fin: elegido.ini + dur };
+    const iv = { ini: elegido.ini, fin: elegido.ini + dur, sede: sedeDe.get(elegido.pista) ?? "" };
     ocupPista.get(elegido.pista)!.push(iv);
     ocupar(jug, iv);
     finDe.set(p.id, iv.fin);
@@ -221,6 +247,13 @@ export function programarTorneo(t: Torneo, opts: OpcionesProgramacion = {}): Res
   };
 }
 
+/** Fecha y hora locales (del dispositivo, como el resto de la programación) de un instante. */
+export function fechaHoraLocal(ms: number): { fecha: string; hora: string } {
+  const d = new Date(ms);
+  const dos = (n: number) => String(n).padStart(2, "0");
+  return { fecha: `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`, hora: `${dos(d.getHours())}:${dos(d.getMinutes())}` };
+}
+
 /** ISO → minutos absolutos según los días del torneo (hora local del dispositivo). */
 function aAbsoluto(iso: string, idxDia: Map<string, number>): number {
   const d = new Date(iso);
@@ -241,6 +274,10 @@ export interface EstadoPista {
   enJuego: PartidoTorneo | null;
   llamado: PartidoTorneo | null;
   siguiente: PartidoTorneo | null;
+  /** Sede de apoyo (vacío = club organizador). */
+  sede: string | null;
+  /** Pista suspendida ahora (lluvia, mantenimiento…): motivo. */
+  suspendida: string | null;
 }
 
 /** ¿Los 4 jugadores están libres ahora (no juegan ni están llamados en otra pista)? */
@@ -266,7 +303,9 @@ const claveProg = (p: PartidoTorneo) => (p.programacion ? `${p.programacion.fech
  * antes de hora, se le asigna el próximo partido listo cuyos jugadores estén libres
  * (de cualquier categoría): así se recupera tiempo en vez de esperar.
  */
-export function estadoPistas(t: Torneo): EstadoPista[] {
+export function estadoPistas(t: Torneo, ahora = Date.now()): EstadoPista[] {
+  const { fecha, hora } = fechaHoraLocal(ahora);
+  const bloqueoAhora = (n: number) => t.bloqueos.find((b) => b.fecha === fecha && b.inicio <= hora && hora < b.fin && (!b.pista || b.pista === n));
   const partidos = t.categorias.filter((c) => c.cuadro?.publicado).flatMap((c) => c.cuadro!.partidos);
   const ocupados = new Set<string>();
   for (const p of partidos) {
@@ -282,11 +321,15 @@ export function estadoPistas(t: Torneo): EstadoPista[] {
       const pistaDe = (p: PartidoTorneo) => p.pistaReal ?? p.programacion?.pista;
       const enJuego = partidos.find((p) => p.estado === "EN_JUEGO" && pistaDe(p) === c.numero) ?? null;
       const llamado = partidos.find((p) => p.estado === "LLAMADO" && pistaDe(p) === c.numero) ?? null;
-      // Primero el programado para esta pista; si sus jugadores no están libres, el siguiente listo.
-      const candidatos = [...listos.filter((p) => p.programacion?.pista === c.numero), ...listos];
+      const sede = c.sedeId ? (t.sedes?.find((s) => s.id === c.sedeId) ?? null) : null;
+      const bloqueo = bloqueoAhora(c.numero);
+      // Primero el programado para esta pista; si sus jugadores no están libres, el siguiente listo
+      // de la misma sede (nadie cambia de club sin tiempo de traslado). Una pista suspendida no recibe partidos.
+      const mismaSede = (p: PartidoTorneo) => (t.canchas.find((x) => x.numero === p.programacion?.pista)?.sedeId ?? "") === (c.sedeId ?? "");
+      const candidatos = bloqueo ? [] : [...listos.filter((p) => p.programacion?.pista === c.numero), ...listos.filter(mismaSede)];
       const siguiente = candidatos.find((p) => !asignados.has(p.id) && libres(t, p, ocupados)) ?? null;
       if (siguiente) asignados.add(siguiente.id);
-      return { numero: c.numero, nombre: c.nombre, enJuego, llamado, siguiente };
+      return { numero: c.numero, nombre: c.nombre, enJuego, llamado, siguiente, sede: sede?.nombre ?? null, suspendida: bloqueo ? (bloqueo.motivo ?? "Suspendida") : null };
     });
 }
 
@@ -308,10 +351,21 @@ export function atrasoMinutos(t: Torneo, ahora = new Date()): number {
   return Math.max(0, atraso);
 }
 
+/**
+ * Momento (ms) desde el que se puede dar W.O. a un partido llamado: la tolerancia corre desde
+ * el llamado, pero nunca antes de la hora programada (si se llama antes, nadie pierde por llegar a su hora).
+ */
+export function limiteWO(t: Pick<Torneo, "toleranciaWO">, p: PartidoTorneo): number | null {
+  if (!p.llamadoEn) return null;
+  const llamado = new Date(p.llamadoEn).getTime();
+  const programado = p.programacion ? new Date(`${p.programacion.fecha}T${p.programacion.hora}:00`).getTime() : 0;
+  return Math.max(llamado, programado) + t.toleranciaWO * 60_000;
+}
+
 /** Partidos llamados que ya superaron la tolerancia de W.O. */
 export function vencidosWO(t: Torneo, ahora = Date.now()): PartidoTorneo[] {
   return t.categorias
     .flatMap((c) => c.cuadro?.partidos ?? [])
-    .filter((p) => p.estado === "LLAMADO" && p.llamadoEn && ahora - new Date(p.llamadoEn).getTime() > t.toleranciaWO * 60_000);
+    .filter((p) => p.estado === "LLAMADO" && (limiteWO(t, p) ?? Infinity) < ahora);
 }
 

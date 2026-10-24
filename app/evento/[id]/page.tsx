@@ -233,7 +233,7 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
                 if (evento.estado !== "BORRADOR" && prompt('Escribe ELIMINAR para confirmar') !== "ELIMINAR") return;
                 act(eliminarEvento);
                 toast("Evento eliminado", "info");
-                router.push("/");
+                router.push("/americanos");
               }}
             >
               <Trash2 className="size-3.5" />

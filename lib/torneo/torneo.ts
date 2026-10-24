@@ -36,7 +36,7 @@ export function despues(previa?: string | null): string {
   return new Date(new Date(previa).getTime() + 1).toISOString();
 }
 
-function tocar(t: Torneo, texto?: string, por?: string): Torneo {
+export function tocar(t: Torneo, texto?: string, por?: string): Torneo {
   const en = despues(t.actualizadoEn);
   const historial = texto ? [...(t.historial ?? []), { en, por, texto }].slice(-300) : t.historial;
   return { ...t, actualizadoEn: en, historial };
@@ -485,6 +485,7 @@ export function iniciarPartido(t: Torneo, partidoId: string, pista?: number): To
   const out = actualizarPartido(t, partidoId, (x) => ({
     ...x,
     estado: "EN_JUEGO",
+    suspendido: null,
     inicioEn: x.inicioEn ?? new Date().toISOString(),
     pistaReal: pista ?? x.pistaReal ?? x.programacion?.pista ?? null,
   }));
@@ -502,7 +503,7 @@ export function moverPartido(t: Torneo, partidoId: string, prog: { fecha: string
 
 export function configurarTorneo(
   t: Torneo,
-  cambios: Partial<Pick<Torneo, "nombre" | "dias" | "canchas" | "descansoMin" | "toleranciaWO" | "finalesUltimoDia" | "bloqueos" | "criterios">>,
+  cambios: Partial<Pick<Torneo, "nombre" | "dias" | "canchas" | "descansoMin" | "toleranciaWO" | "finalesUltimoDia" | "bloqueos" | "criterios" | "sedes" | "patrocinadores">>,
 ): Torneo {
   const out = { ...t, ...cambios };
   return cambios.criterios ? recalcularTodo(tocar(out, "Criterios de desempate actualizados.")) : tocar(out);

@@ -12,6 +12,8 @@ La app funciona sola en **modo DEMO** (datos de `data/mockData.json`, guardados 
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key (solo servidor) |
 | `SUPABASE_AMERICANOS_TABLE` | Opcional, por defecto `americanos_eventos` |
 | `SUPABASE_CLUB_TABLE` | Opcional, por defecto `club_config` |
+| `SUPABASE_TORNEOS_TABLE` | Opcional, por defecto `torneos` |
+| `SUPABASE_MARCADORES_TABLE` | Opcional, por defecto `torneos_marcadores` |
 | `STAFF_PIN` | PIN del staff (4 a 8 dígitos). En DEMO, si falta, es `1234`. Con Supabase, si falta, el PIN queda desactivado |
 | `STAFF_SECRET` | Secreto (≥16 caracteres) para firmar la sesión de staff. **Obligatorio en producción** |
 | `STAFF_EMAILS` | Opcional: correos con permiso de staff, separados por coma |
@@ -65,6 +67,12 @@ Puntos de enganche útiles:
 | POST | `/api/staff/login` | `{ pin }` o `{ email, password }` → `{ staff }` + cookie |
 | GET | `/api/staff/me` | `{ staff \| null, metodos: { pin, pinLargo, padelreserve } }` |
 | POST | `/api/staff/logout` | borra la cookie |
+| GET | `/api/torneos` | `{ modo, torneos }`. Staff: todo. Participante con clave: todo menos la clave. Sin clave: resumen con `bloqueado: true` |
+| POST | `/api/torneos` | `{ torneo }` (staff) → valida, fusiona por partido y guarda |
+| GET | `/api/torneos/acceso` | `{ accesos: { [torneoId]: venceISO } }` de este dispositivo |
+| POST | `/api/torneos/acceso` | `{ torneoId, clave }` → cookie `lm_torneos` hasta que vence la clave. `401` clave incorrecta, `410` vencida, `429` demasiados intentos |
+| GET | `/api/marcadores?torneoId=` | marcadores punto a punto del torneo (si el visitante puede verlo) |
+| POST | `/api/marcadores` | `{ marcador }` (staff) → gana el más reciente por `actualizadoEn` |
 
 ### Errores (siempre JSON)
 
@@ -101,6 +109,14 @@ La validación (`lib/validacion.ts`) revisa formato de ids, fechas y horas, rang
 
 
 Toda la lógica de juego (rotación, validación de marcadores, tabla) es TypeScript puro en `lib/` y se puede reutilizar en el backend o en una Edge Function.
+
+## Torneos: datos y reglas
+
+- Tablas `torneos` y `torneos_marcadores` (JSONB, en `supabase/schema.sql`). Implementa `TorneosRepository` en `lib/server/repository.ts` si prefieres tablas normalizadas.
+- Un torneo guarda categorías, duplas, cuadros (grupos y llaves), programación, bloqueos (incluidas suspensiones por lluvia), sedes, patrocinadores, historial y la clave de participantes. El marcador punto a punto vive aparte por partido para no reenviar el torneo en cada punto.
+- **Fusión:** la configuración sale de la versión más reciente y cada partido conserva su versión más reciente (`fusionarTorneos`).
+- **Clave:** el servidor nunca la envía a quien no es staff. La cookie `lm_torneos` guarda, por torneo, una huella de la clave vigente: si el staff la cambia, los accesos anteriores dejan de valer.
+- **Lógica pura reutilizable:** `lib/torneo/*` (sorteo, tablas, programación, imprevistos, marcador) no depende de React ni del servidor.
 
 ## 5. Tiempo real
 

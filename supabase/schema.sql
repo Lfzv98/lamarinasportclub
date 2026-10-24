@@ -18,3 +18,25 @@ create table if not exists public.club_config (
 -- Los endpoints usan la service role key desde el servidor; no se expone al navegador.
 alter table public.americanos_eventos enable row level security;
 alter table public.club_config enable row level security;
+
+-- Torneos (types/torneo.ts). Mismo patrón JSONB que americanos_eventos.
+create table if not exists public.torneos (
+  id             text primary key,
+  club_id        text not null default 'la-marina',
+  data           jsonb not null,            -- Torneo completo
+  estado         text not null default 'INSCRIPCION',
+  actualizado_en timestamptz not null default now()
+);
+create index if not exists torneos_club_idx on public.torneos (club_id, actualizado_en desc);
+
+-- Marcador punto a punto de cada partido (MarcadorVivo). id = id del partido.
+create table if not exists public.torneos_marcadores (
+  id             text primary key,
+  torneo_id      text not null references public.torneos (id) on delete cascade,
+  data           jsonb not null,
+  actualizado_en timestamptz not null default now()
+);
+create index if not exists torneos_marcadores_torneo_idx on public.torneos_marcadores (torneo_id);
+
+alter table public.torneos enable row level security;
+alter table public.torneos_marcadores enable row level security;
