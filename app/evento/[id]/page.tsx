@@ -119,12 +119,12 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
               }}
               className={clsx(
                 "relative flex shrink-0 items-center gap-1.5 rounded-xl border px-3.5 py-2 text-sm font-semibold transition",
-                r.numero === vista ? "border-neon bg-neon text-noche" : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10",
+                r.numero === vista ? "seleccion sobre-marca text-white" : "glass border-transparent text-white/70 hover:border-white/20",
               )}
             >
               {completa && <Check className="size-3.5" strokeWidth={3} />}
               R{r.numero}
-              {conReloj && <span className={clsx("text-[11px] font-medium", r.numero === vista ? "text-noche/70" : "text-white/40")}>{horaRonda(evento, r.numero)}</span>}
+              {conReloj && <span className={clsx("text-[11px] font-medium", r.numero === vista ? "text-lima" : "text-white/40")}>{horaRonda(evento, r.numero)}</span>}
               {actual && r.numero !== vista && <span className="absolute -right-1 -top-1 size-2.5 animate-pulse rounded-full bg-neon" />}
             </button>
           );
@@ -399,7 +399,7 @@ function PistaCard({
       <Lado lado="A" />
       <div className="relative my-1 flex items-center justify-center">
         <span className="absolute inset-x-3 h-px bg-white/10" />
-        <span className="relative rounded-full border border-white/10 bg-noche-2 px-2.5 py-0.5 text-[10px] font-black tracking-widest text-white/40">VS</span>
+        <span className="relative rounded-full border border-white/10 bg-fondo px-2.5 py-0.5 text-[10px] font-black tracking-widest text-white/40">VS</span>
       </div>
       <Lado lado="B" />
       {!soloLectura && (

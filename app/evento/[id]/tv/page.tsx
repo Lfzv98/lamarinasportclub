@@ -227,7 +227,7 @@ function Escenario({ oculto, children }: { oculto: boolean; children: React.Reac
     return () => window.removeEventListener("resize", ajustar);
   }, []);
   return (
-    <main className={clsx("fixed inset-0 flex items-center justify-center overflow-hidden", oculto && "cursor-none")}>
+    <main className={clsx("tema-noche pantalla fixed inset-0 flex items-center justify-center overflow-hidden", oculto && "cursor-none")}>
       <div
         className="flex shrink-0 flex-col gap-6 p-10"
         style={{ width: 1920, height: 1080, transform: `scale(${escala})`, transformOrigin: "center" }}

@@ -18,7 +18,7 @@ export function Switch({ activo, onChange, etiqueta }: { activo: boolean; onChan
       }}
       className={clsx("relative h-7 w-12 shrink-0 rounded-full transition", activo ? "bg-neon" : "bg-white/15")}
     >
-      <motion.span layout className={clsx("absolute top-1 size-5 rounded-full bg-white shadow", activo ? "right-1" : "left-1")} />
+      <motion.span layout className={clsx("absolute top-1 size-5 rounded-full bg-blanco shadow", activo ? "right-1" : "left-1")} />
     </button>
   );
 }

@@ -37,7 +37,7 @@ export function Hoja({
       {abierta && (
         <>
           <motion.div
-            className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[70] bg-marino-2/50 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

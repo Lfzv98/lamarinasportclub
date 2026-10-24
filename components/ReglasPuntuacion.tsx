@@ -223,7 +223,7 @@ function Opcional({
       >
         <span className="text-sm text-white/70">{titulo}</span>
         <span className={clsx("relative h-7 w-12 rounded-full transition", activo ? "bg-neon" : "bg-white/15")}>
-          <motion.span layout className={clsx("absolute top-1 size-5 rounded-full bg-white shadow", activo ? "right-1" : "left-1")} />
+          <motion.span layout className={clsx("absolute top-1 size-5 rounded-full bg-blanco shadow", activo ? "right-1" : "left-1")} />
         </span>
       </button>
       <AnimatePresence initial={false}>

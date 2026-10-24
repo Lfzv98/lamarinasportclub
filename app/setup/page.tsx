@@ -63,6 +63,7 @@ import { partidosPorUnidad, planRondas } from "@/lib/rotation";
 import { configPorDefecto, CRITERIOS, criterioDe, descripcionPuntuacion } from "@/lib/scoring";
 import { ReglasPuntuacion } from "@/components/ReglasPuntuacion";
 import { SelectorHorario } from "@/components/SelectorHorario";
+import { MapaPistas } from "@/components/MapaPistas";
 import { aMinutos, DIAS, diaSemana, horaFinPrevista, horarioDelDia, nombrePista, rondasQueCaben, validarFranja } from "@/lib/horarios";
 import { MAX_RONDAS } from "@/lib/validacion";
 import { useAmericanos } from "@/lib/store";
@@ -540,47 +541,12 @@ function Setup() {
                     </button>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
-                  {pistasActivas.map((c) => {
-                    const on = seleccion.includes(c.numero);
-                    return (
-                      <motion.button
-                        key={c.numero}
-                        type="button"
-                        whileTap={{ scale: 0.94 }}
-                        onClick={() => {
-                          vibrar(10);
-                          setSeleccion((s) => (on ? (s.length > 1 ? s.filter((n) => n !== c.numero) : s) : [...s, c.numero]));
-                        }}
-                        aria-pressed={on}
-                        className={clsx(
-                          "relative aspect-[3/4] overflow-hidden rounded-2xl border-2 transition",
-                          on ? "border-neon bg-neon/10" : "border-white/10 bg-white/[0.03]",
-                        )}
-                        aria-label={`${c.nombre} ${c.techada ? "techada" : "al aire libre"}`}
-                      >
-                        <MiniPista activa={on} />
-                        <span
-                          className={clsx(
-                            "absolute right-2 top-2 flex size-6 items-center justify-center rounded-full",
-                            c.techada ? "bg-cielo/15 text-cielo" : "bg-amber-400/15 text-amber-300",
-                          )}
-                          title={c.techada ? "Techada" : "Al aire libre"}
-                        >
-                          {c.techada ? <Warehouse className="size-3.5" /> : <Sun className="size-3.5" />}
-                        </span>
-                        <span className={clsx("absolute bottom-2 left-0 right-0 text-center font-display text-sm font-bold", on ? "text-neon" : "text-white/40")}>
-                          {c.nombre}
-                        </span>
-                      </motion.button>
-                    );
-                  })}
-                </div>
-                <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/40">
-                  <span className="flex items-center gap-1"><Warehouse className="size-3 text-cielo" /> Techada</span>
-                  <span className="flex items-center gap-1"><Sun className="size-3 text-amber-300" /> Al aire libre</span>
-                  <span>· Las techadas reciben primero los partidos.</span>
-                </p>
+                <MapaPistas
+                  pistas={pistasActivas}
+                  seleccion={seleccion}
+                  onToggle={(n) => setSeleccion((s) => (s.includes(n) ? (s.length > 1 ? s.filter((x) => x !== n) : s) : [...s, n]))}
+                />
+                <p className="mt-2 text-xs text-white/40">Las techadas reciben primero los partidos.</p>
                 {porRonda < pistas && (
                   <p className="mt-2 text-xs text-amber-200/80">
                     Con {unidades} {unidadPl} solo se llenan {porRonda} pista(s) por ronda; {pistas - porRonda === 1 ? "la otra queda libre" : `${pistas - porRonda} quedan libres`}.
@@ -791,7 +757,7 @@ function Setup() {
         </AnimatePresence>
       </div>
 
-      <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-white/5 bg-noche/80 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur-xl">
+      <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-white/5 bg-fondo/85 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur-xl">
         <div className="mx-auto flex max-w-3xl gap-3 px-4 sm:px-6">
           {paso > 0 && (
             <button className="btn-ghost" onClick={() => ir(paso - 1)}>
@@ -888,12 +854,12 @@ function Opcion({ activo, onClick, children, className }: { activo: boolean; onC
       aria-pressed={activo}
       className={clsx(
         "relative rounded-2xl border-2 p-4 text-left transition",
-        activo ? "border-neon bg-neon/10 shadow-[0_0_30px_-10px_rgba(127,227,2,0.6)]" : "border-white/10 bg-white/[0.03] hover:border-white/25",
+        activo ? "seleccion sobre-marca" : "glass border-transparent hover:border-white/20",
         className,
       )}
     >
       {activo && (
-        <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute right-2 top-2 flex size-5 items-center justify-center rounded-full bg-neon text-noche">
+        <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute right-2 top-2 flex size-5 items-center justify-center rounded-full bg-lima text-noche shadow-[0_0_12px_rgba(207,243,91,0.6)]">
           <Check className="size-3" strokeWidth={3} />
         </motion.span>
       )}
@@ -917,19 +883,6 @@ function SlotChip({ activo, enRango, onClick, children }: { activo: boolean; enR
     >
       {children}
     </button>
-  );
-}
-
-function MiniPista({ activa }: { activa: boolean }) {
-  const c = activa ? "#7FE302" : "rgba(255,255,255,0.18)";
-  return (
-    <svg viewBox="0 0 60 80" className="absolute inset-3 bottom-8 h-[calc(100%-2.75rem)] w-[calc(100%-1.5rem)]" preserveAspectRatio="none">
-      <rect x="1" y="1" width="58" height="78" rx="3" fill="none" stroke={c} strokeWidth="1.5" />
-      <line x1="1" y1="40" x2="59" y2="40" stroke={c} strokeWidth="2.5" />
-      <line x1="1" y1="16" x2="59" y2="16" stroke={c} strokeWidth="1" />
-      <line x1="1" y1="64" x2="59" y2="64" stroke={c} strokeWidth="1" />
-      <line x1="30" y1="16" x2="30" y2="64" stroke={c} strokeWidth="1" />
-    </svg>
   );
 }
 

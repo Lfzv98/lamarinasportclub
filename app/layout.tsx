@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0B0F19",
+  themeColor: "#0F058C",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -32,7 +32,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${inter.variable} ${display.variable}`}>
+    <html lang="es" className={`tema-noche ${inter.variable} ${display.variable}`}>
       <body className="font-sans antialiased">
         <Providers>{children}</Providers>
       </body>

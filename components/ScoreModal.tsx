@@ -123,7 +123,7 @@ export function ScoreModal({ partido, config, nombrePista, jugadores, onClose, o
         <>
           <motion.div
             key="fondo"
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-marino-2/50 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -177,7 +177,7 @@ export function ScoreModal({ partido, config, nombrePista, jugadores, onClose, o
                         <AvatarPareja nombres={nombres(par.jugadorIds)} fotos={fotos(par.jugadorIds)} size={40} />
                       </div>
                       <p className="mt-2 line-clamp-2 min-h-10 text-sm font-semibold">{nombres(par.jugadorIds).join(" / ")}</p>
-                      <motion.p key={valor} initial={{ scale: 1.25, color: "#7FE302" }} animate={{ scale: 1, color: "#F2F3F0" }} className="my-3 font-display text-7xl font-bold tabular">
+                      <motion.p key={valor} initial={{ scale: 1.25, opacity: 0.5 }} animate={{ scale: 1, opacity: 1 }} className="my-3 font-display text-7xl font-bold tabular">
                         {valor}
                       </motion.p>
                       <div className="grid grid-cols-2 gap-2">
@@ -231,7 +231,7 @@ export function ScoreModal({ partido, config, nombrePista, jugadores, onClose, o
             {autoTotal && (
               <div className="mt-4 flex items-center justify-between text-sm">
                 <label className="flex cursor-pointer items-center gap-2 text-white/60">
-                  <input type="checkbox" checked={autoCompletar} onChange={(e) => setAutoCompletar(e.target.checked)} className="size-4 accent-[#7FE302]" />
+                  <input type="checkbox" checked={autoCompletar} onChange={(e) => setAutoCompletar(e.target.checked)} className="size-4 accent-[#2b3bd6]" />
                   Autocompletar hasta {total}
                 </label>
                 <span className={clsx("font-semibold tabular", r.puntosA + r.puntosB === total ? "text-neon" : "text-white/50")}>

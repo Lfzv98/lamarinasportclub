@@ -31,7 +31,7 @@ export function QRPopup({ evento, abierto, onClose }: { evento: EventoAmericano;
     <AnimatePresence>
       {abierto && url && (
         <motion.div
-          className="fixed inset-0 z-[80] flex cursor-pointer flex-col items-center justify-center gap-5 bg-noche/95 p-6 backdrop-blur-xl"
+          className="fixed inset-0 z-[80] flex cursor-pointer flex-col items-center justify-center gap-5 tema-noche bg-fondo/95 p-6 backdrop-blur-xl"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

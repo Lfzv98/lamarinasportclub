@@ -81,7 +81,7 @@ function Club() {
               }}
               className={clsx("relative h-7 w-12 shrink-0 rounded-full transition", c.activa ? "bg-neon" : "bg-white/15")}
             >
-              <motion.span layout className={clsx("absolute top-1 size-5 rounded-full bg-white shadow", c.activa ? "right-1" : "left-1")} />
+              <motion.span layout className={clsx("absolute top-1 size-5 rounded-full bg-blanco shadow", c.activa ? "right-1" : "left-1")} />
             </button>
             {borrador.pistas.length > 1 && c.numero === Math.max(...borrador.pistas.map((x) => x.numero)) && (
               <button className="rounded-lg p-2 text-white/40 hover:text-coral" onClick={() => setBorrador((b) => ({ ...b, pistas: b.pistas.filter((x) => x.numero !== c.numero) }))} aria-label="Quitar pista">
@@ -122,7 +122,7 @@ function Club() {
                 className={clsx("relative h-7 w-12 shrink-0 rounded-full transition", h.abierto ? "bg-neon" : "bg-white/15")}
                 aria-label={`${DIAS[d]} abierto`}
               >
-                <motion.span layout className={clsx("absolute top-1 size-5 rounded-full bg-white shadow", h.abierto ? "right-1" : "left-1")} />
+                <motion.span layout className={clsx("absolute top-1 size-5 rounded-full bg-blanco shadow", h.abierto ? "right-1" : "left-1")} />
               </button>
               <span className="w-24 font-semibold">{DIAS[d]}</span>
               {h.abierto ? (
@@ -173,7 +173,7 @@ function Club() {
         </label>
       </div>
 
-      <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-white/5 bg-noche/80 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur-xl">
+      <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-white/5 bg-fondo/85 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur-xl">
         <div className="mx-auto max-w-2xl px-4 sm:px-6">
           <button
             className="btn-neon w-full text-base"

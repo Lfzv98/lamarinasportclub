@@ -29,12 +29,12 @@ export function Avatar({ nombre, fotoUrl, size = 40, className }: { nombre: stri
   const style = { width: size, height: size, fontSize: size * 0.38 };
   if (fotoUrl)
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={fotoUrl} alt={nombre} style={style} className={clsx("shrink-0 rounded-full object-cover ring-2 ring-noche", className)} />;
+    return <img src={fotoUrl} alt={nombre} style={style} className={clsx("shrink-0 rounded-full object-cover ring-2 ring-fondo", className)} />;
   return (
     <span
       style={style}
       className={clsx(
-        "inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br font-bold text-noche ring-2 ring-noche",
+        "inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br font-bold text-noche ring-2 ring-fondo",
         GRADIENTES[hash(nombre) % GRADIENTES.length],
         className,
       )}

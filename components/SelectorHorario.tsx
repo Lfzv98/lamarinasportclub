@@ -140,6 +140,18 @@ export function SelectorHorario({
   );
 }
 
+/** Color de la hora según el momento del día, como en el sistema de reservas. */
+function franja(h: number) {
+  if (h < 7) return "franja-amanecer";
+  if (h < 10) return "franja-manana";
+  if (h < 13) return "franja-dia";
+  if (h < 16) return "franja-siesta";
+  if (h < 18) return "franja-tarde";
+  if (h < 20) return "franja-atardecer";
+  if (h < 21) return "franja-noche";
+  return "franja-madrugada";
+}
+
 function duracionTexto(min: number) {
   const h = Math.floor(min / 60);
   const m = min % 60;
@@ -204,10 +216,10 @@ function Calendario({ club, valor, onChange }: { club: ConfigClub; valor: string
             key={a.label}
             type="button"
             onClick={() => onChange(a.f)}
-            className={clsx("flex-1 rounded-xl px-2 py-2 text-xs font-semibold transition", a.f === valor ? "bg-neon text-noche" : "bg-white/5 text-white/70 hover:bg-white/10")}
+            className={clsx("flex-1 rounded-xl px-2 py-2 text-xs font-semibold transition", a.f === valor ? "seleccion sobre-marca text-white" : "bg-white/5 text-white/70 hover:bg-white/10")}
           >
             {a.label}
-            <span className={clsx("block text-[10px] font-medium", a.f === valor ? "text-noche/70" : "text-white/40")}>{fechaCorta(a.f)}</span>
+            <span className={clsx("block text-[10px] font-medium", a.f === valor ? "text-lima" : "text-white/40")}>{fechaCorta(a.f)}</span>
           </button>
         ))}
       </div>
@@ -248,13 +260,13 @@ function Calendario({ club, valor, onChange }: { club: ConfigClub; valor: string
               aria-label={`${DIAS[diaSemana(f)]} ${d} de ${MESES[mes.m]}${cerrado ? " (club cerrado)" : ""}`}
               aria-pressed={activo}
               className={clsx(
-                "relative flex aspect-square items-center justify-center rounded-xl text-sm font-semibold tabular transition",
-                activo ? "bg-neon text-noche shadow-[0_0_20px_-4px_rgba(127,227,2,0.7)]" : pasado || cerrado ? "text-white/15" : "text-white/85 hover:bg-white/10",
+                "relative flex aspect-square items-center justify-center text-sm font-semibold tabular transition",
+                activo ? "seleccion sobre-marca rounded-full text-lima" : pasado || cerrado ? "rounded-xl text-white/15" : "rounded-xl text-white/85 hover:bg-white/10",
                 cerrado && !pasado && "line-through",
               )}
             >
               {d}
-              {f === hoy && !activo && <span className="absolute bottom-1 size-1 rounded-full bg-neon" />}
+              {f === hoy && !activo && <span className="absolute bottom-1 size-1 rounded-full bg-marca-2" />}
             </button>
           );
         })}
@@ -325,7 +337,7 @@ function Reloj({
                 }}
                 className={clsx(
                   "rounded-xl py-2 text-xs font-semibold transition",
-                  m === min ? "bg-neon text-noche" : ok ? "bg-white/5 text-white/70 hover:bg-white/10" : "bg-white/[0.02] text-white/20",
+                  m === min ? "seleccion sobre-marca text-lima" : ok ? "bg-white/5 text-white/70 hover:bg-white/10" : "bg-white/[0.02] text-white/20",
                 )}
               >
                 {duracionTexto(d)}
@@ -347,10 +359,11 @@ function Reloj({
               onClick={() => elegirHora(h)}
               aria-pressed={h === hora}
               className={clsx(
-                "rounded-xl py-2.5 text-sm font-semibold tabular transition",
-                h === hora ? "bg-neon text-noche" : algunoValido ? "bg-white/5 text-white/80 hover:bg-white/10" : "text-white/15",
+                "relative overflow-hidden rounded-xl py-2.5 text-sm font-bold tabular shadow-sm transition active:scale-95",
+                !algunoValido ? "bg-white/5 text-white/25 line-through" : h === hora ? "seleccion sobre-marca text-lima ring-2 ring-lima" : `${franja(h)} hover:brightness-105`,
               )}
             >
+              {algunoValido && <span className={clsx("absolute right-1 top-1 size-1.5 rounded-full", h >= 19 || h < 6 ? "bg-blanco/90" : "bg-amber-300 shadow-[0_0_6px_#fcd34d]")} />}
               {pad(h)}
             </button>
           );
@@ -374,7 +387,7 @@ function Reloj({
               aria-pressed={x === minuto}
               className={clsx(
                 "rounded-xl py-2.5 text-sm font-semibold tabular transition",
-                x === minuto ? "bg-neon text-noche" : ok ? "bg-white/5 text-white/80 hover:bg-white/10" : "text-white/15",
+                x === minuto ? "seleccion sobre-marca text-lima" : ok ? "bg-white/5 text-white/80 hover:bg-white/10" : "text-white/15",
               )}
             >
               :{pad(x)}

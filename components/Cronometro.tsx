@@ -22,11 +22,11 @@ export function Cronometro({
   const c = 2 * Math.PI * r;
   const excedido = restantes < 0;
   const ultimoMinuto = !excedido && restantes <= 60;
-  const color = excedido ? "#FF5C7A" : ultimoMinuto ? "#FFB020" : "#7FE302";
+  const color = excedido ? "var(--color-coral)" : ultimoMinuto ? "#F59E0B" : "var(--color-neon)";
   return (
     <div className={clsx("relative", className)} style={{ width: size, height: size }}>
       <svg viewBox="0 0 100 100" className="size-full -rotate-90">
-        <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="5" />
+        <circle cx="50" cy="50" r={r} fill="none" stroke="color-mix(in oklab, var(--color-white) 9%, transparent)" strokeWidth="5" />
         <motion.circle
           cx="50"
           cy="50"
@@ -38,13 +38,13 @@ export function Cronometro({
           strokeDasharray={c}
           animate={{ strokeDashoffset: c * (excedido ? 0 : progreso) }}
           transition={{ duration: 0.3, ease: "linear" }}
-          style={{ filter: `drop-shadow(0 0 6px ${color}88)` }}
+          style={{ filter: "drop-shadow(0 0 5px rgb(141 220 47 / 0.45))" }}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <motion.span
           className="font-display font-bold tabular leading-none"
-          style={{ fontSize: size * 0.22, color: excedido ? "#FF5C7A" : "#fff" }}
+          style={{ fontSize: size * 0.22, color: excedido ? "var(--tx-coral)" : "var(--color-white)" }}
           animate={ultimoMinuto && corriendo ? { scale: [1, 1.06, 1] } : { scale: 1 }}
           transition={{ repeat: ultimoMinuto && corriendo ? Infinity : 0, duration: 1 }}
         >
@@ -70,18 +70,18 @@ export function MarcadorRonda({ ronda, total, size = 168, className }: { ronda: 
   return (
     <div className={clsx("relative", className)} style={{ width: size, height: size }} aria-label={`Ronda ${ronda.numero} de ${total}: ${estado}`}>
       <svg viewBox="0 0 100 100" className="size-full -rotate-90">
-        <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="5" />
+        <circle cx="50" cy="50" r={r} fill="none" stroke="color-mix(in oklab, var(--color-white) 9%, transparent)" strokeWidth="5" />
         <motion.circle
           cx="50"
           cy="50"
           r={r}
           fill="none"
-          stroke="#7FE302"
+          stroke="var(--color-neon)"
           strokeWidth="5"
           strokeLinecap="round"
           strokeDasharray={c}
           animate={{ strokeDashoffset: c * (1 - progreso) }}
-          style={{ filter: "drop-shadow(0 0 6px #7FE30288)" }}
+          style={{ filter: "drop-shadow(0 0 5px rgb(141 220 47 / 0.45))" }}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
