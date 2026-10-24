@@ -5,7 +5,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { categoriaLabel, cumpleSuma, ejemplosSuma, formatoLabel, formatosPara, nivelParaSuma, sumaPareja } from "../lib/categories.ts";
+import { categoriaLabel, cumpleSuma, nivelesPara, ejemplosSuma, formatoLabel, formatosPara, nivelParaSuma, sumaPareja } from "../lib/categories.ts";
 import { cargarResultado, crearEvento } from "../lib/evento.ts";
 import { generarRondasDuplaFija, generarRondasIndividual, metricasRotacion, planRondas } from "../lib/rotation.ts";
 import { calcularTabla, explicacionRanking } from "../lib/scoring.ts";
@@ -36,6 +36,19 @@ test("categorías: 2da, suma y nombre propio", () => {
   assert.ok(!cumpleSuma({ suma: 9 }, "3RA", "5TA")); // suma 8: más fuerte
   assert.match(ejemplosSuma(9), /5ta \+ 4ta/);
   assert.equal(nivelParaSuma(9), "5TA");
+});
+
+test("Femenino no tiene 2da: ni en la categoría ni en las jugadoras", () => {
+  assert.ok(!nivelesPara("FEMENINO").includes("2DA"));
+  assert.ok(nivelesPara("MASCULINO").includes("2DA") && nivelesPara("MIXTO").includes("2DA"));
+  const js = Array.from({ length: 4 }, (_, i) => ({ ...jug(`f${i}`, "F"), nivel: "3RA" as Nivel }));
+  const e = crearEvento({
+    nombre: "F", categoria: { rama: "FEMENINO", nivel: "3RA" }, modalidad: "INDIVIDUAL_ROTATIVO",
+    puntuacion: { metodo: "PUNTOS_TOTALES", puntosPorPartido: 24 }, pistas: 1, duracionRondaMin: 15, totalRondas: 3, jugadores: js, semilla: 1,
+  });
+  assert.deepEqual(validarEvento(e), []);
+  assert.ok(validarEvento({ ...e, categoria: { rama: "FEMENINO", nivel: "2DA" } }).some((m) => /2da/.test(m)));
+  assert.ok(validarEvento({ ...e, jugadores: e.jugadores.map((j, i) => (i ? j : { ...j, nivel: "2DA" })) }).some((m) => /2da/.test(m)));
 });
 
 test("formatos: ya no existe 'Mixto' como formato, se elige en la categoría", () => {

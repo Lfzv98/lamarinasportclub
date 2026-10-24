@@ -8,6 +8,11 @@ export const RAMAS: { id: Rama; label: string }[] = [
 
 export const NIVELES: Nivel[] = ["7MA", "6TA", "5TA", "4TA", "3RA", "2DA", "OPEN"];
 
+/** Niveles de cada rama: en Femenino no existe 2da (de 3ra se pasa a Open). */
+export function nivelesPara(rama: Rama): Nivel[] {
+  return rama === "FEMENINO" ? NIVELES.filter((n) => n !== "2DA") : NIVELES;
+}
+
 const NIVEL_LABEL: Record<Nivel, string> = {
   "7MA": "7ma",
   "6TA": "6ta",

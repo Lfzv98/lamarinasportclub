@@ -33,6 +33,7 @@ export function validarEvento(x: unknown): string[] {
   if (typeof e.horaFin !== "string" || !HORA.test(e.horaFin)) err("horaFin debe ser HH:MM.");
   if (!e.categoria || !RAMAS.includes(e.categoria.rama) || !NIVELES.includes(e.categoria.nivel)) err("categoria inválida.");
   else {
+    if (e.categoria.rama === "FEMENINO" && e.categoria.nivel === "2DA") err("En Femenino no existe la categoría 2da.");
     if (e.categoria.suma != null && !esEntero(e.categoria.suma, LIMITES_SUMA.min, LIMITES_SUMA.max)) err(`categoria.suma debe estar entre ${LIMITES_SUMA.min} y ${LIMITES_SUMA.max}.`);
     if (e.categoria.nombre != null && e.categoria.nombre !== "" && !esTexto(e.categoria.nombre, 60)) err("categoria.nombre: máximo 60 caracteres.");
   }
@@ -74,6 +75,7 @@ export function validarEvento(x: unknown): string[] {
     ids.add(j.id);
     if (j.genero !== "M" && j.genero !== "F") err(`Género inválido para ${j.nombre}.`);
     if (j.nivel != null && !NIVELES.includes(j.nivel)) err(`Nivel inválido para ${j.nombre}.`);
+    else if (j.genero === "F" && j.nivel === "2DA") err(`${j.nombre}: en Femenino no existe la categoría 2da.`);
   }
   for (const p of e.parejas) {
     if (!p || !Array.isArray(p.jugadorIds) || p.jugadorIds.length !== 2 || !p.jugadorIds.every((id) => ids.has(id)))

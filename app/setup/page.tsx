@@ -51,6 +51,7 @@ import {
   nivelLabel,
   nivelParaSuma,
   NIVELES,
+  nivelesPara,
   NUMERO_NIVEL,
   RAMAS,
   sumaPareja,
@@ -248,6 +249,11 @@ function Setup() {
 
   function cambiarRama(r: Rama) {
     setRama(r);
+    if (r === "FEMENINO") {
+      // En Femenino no hay 2da: el nivel pasa a 3ra.
+      if (nivel === "2DA") setNivel("3RA");
+      setJugadores((js) => js.map((j) => (j.nivel === "2DA" ? { ...j, nivel: "3RA" } : j)));
+    }
     const g: Genero | null = r === "FEMENINO" ? "F" : r === "MASCULINO" ? "M" : null;
     if (g) setJugadores((js) => js.map((j) => ({ ...j, genero: g })));
   }
@@ -374,8 +380,8 @@ function Setup() {
                   ) : (
                     <motion.div key="nivel" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                       <span className="label mt-6">Nivel</span>
-                      <div className="grid grid-cols-4 gap-2.5 sm:grid-cols-7">
-                        {NIVELES.map((n) => (
+                      <div className={clsx("grid grid-cols-4 gap-2.5", rama === "FEMENINO" ? "sm:grid-cols-6" : "sm:grid-cols-7")}>
+                        {nivelesPara(rama).map((n) => (
                           <Opcion key={n} activo={nivel === n} onClick={() => setNivel(n)} className="!px-1 py-4 text-center">
                             <span className={clsx("font-display font-bold", n === "OPEN" && rama === "MIXTO" ? "text-sm" : "text-xl")}>{nivelLabel(n, rama)}</span>
                           </Opcion>
@@ -972,7 +978,8 @@ function nombresNuevos(texto: string, jugadores: Jugador[]): string[] {
 }
 
 /** Selector compacto de categoría por jugador (para categorías por suma). */
-function NivelSelect({ valor, onChange, label }: { valor?: Nivel; onChange: (n: Nivel) => void; label: string }) {
+/** Selector compacto de categoría por jugador. Las mujeres no tienen 2da. */
+function NivelSelect({ valor, onChange, label, femenino = false }: { valor?: Nivel; onChange: (n: Nivel) => void; label: string; femenino?: boolean }) {
   return (
     <select
       value={valor ?? "5TA"}
@@ -983,7 +990,7 @@ function NivelSelect({ valor, onChange, label }: { valor?: Nivel; onChange: (n: 
       aria-label={label}
       className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-1.5 py-1.5 text-xs font-semibold text-white outline-none [color-scheme:dark] focus:border-neon/50"
     >
-      {NIVELES.map((n) => (
+      {nivelesPara(femenino ? "FEMENINO" : "MASCULINO").map((n) => (
         <option key={n} value={n}>
           {nivelLabel(n)}
         </option>
@@ -1042,7 +1049,7 @@ function EditorJugadores({
         </div>
       )}
       <div className="flex gap-2">
-        {conNivel && <NivelSelect valor={nivelNuevo} onChange={setNivelNuevo} label="Categoría del jugador" />}
+        {conNivel && <NivelSelect valor={nivelNuevo} onChange={setNivelNuevo} label="Categoría del jugador" femenino={mujer} />}
         <input
           ref={input}
           className="input"
@@ -1076,7 +1083,7 @@ function EditorJugadores({
                 {j.nombre} {j.apellido}
               </span>
               {conNivel && (
-                <NivelSelect valor={j.nivel} label={`Categoría de ${j.nombre}`} onChange={(n) => setJugadores((js) => js.map((x) => (x.id === j.id ? { ...x, nivel: n } : x)))} />
+                <NivelSelect valor={j.nivel} femenino={j.genero === "F"} label={`Categoría de ${j.nombre}`} onChange={(n) => setJugadores((js) => js.map((x) => (x.id === j.id ? { ...x, nivel: n } : x)))} />
               )}
               <button
                 className="rounded-lg p-2 text-white/40 hover:bg-coral/10 hover:text-coral"
@@ -1169,7 +1176,7 @@ function EditorParejas({
     <div>
       <div className="glass flex flex-col gap-2 rounded-2xl p-3 sm:flex-row">
         <div className="flex flex-1 gap-2">
-          {conSuma && <NivelSelect valor={nivelA} onChange={setNivelA} label="Categoría del jugador 1" />}
+          {conSuma && <NivelSelect valor={nivelA} onChange={setNivelA} label="Categoría del jugador 1" femenino={generoFijo === "F"} />}
           <input
             ref={refA}
             className="input"
@@ -1181,7 +1188,7 @@ function EditorParejas({
           />
         </div>
         <div className="flex flex-1 gap-2">
-          {conSuma && <NivelSelect valor={nivelB} onChange={setNivelB} label="Categoría del jugador 2" />}
+          {conSuma && <NivelSelect valor={nivelB} onChange={setNivelB} label="Categoría del jugador 2" femenino={(generoFijo ?? "F") === "F"} />}
           <input
             className="input"
             placeholder={mixta ? "Mujer" : "Jugador 2"}
@@ -1230,10 +1237,10 @@ function EditorParejas({
                 {conSuma && x && y && (
                   <div className="mt-2 flex items-center gap-2 pl-8 text-xs text-white/50">
                     <span className="truncate">{x.nombre}</span>
-                    <NivelSelect valor={x.nivel} onChange={(n) => cambiarNivel(x.id, n)} label={`Categoría de ${x.nombre}`} />
+                    <NivelSelect valor={x.nivel} femenino={x.genero === "F"} onChange={(n) => cambiarNivel(x.id, n)} label={`Categoría de ${x.nombre}`} />
                     <span>+</span>
                     <span className="truncate">{y.nombre}</span>
-                    <NivelSelect valor={y.nivel} onChange={(n) => cambiarNivel(y.id, n)} label={`Categoría de ${y.nombre}`} />
+                    <NivelSelect valor={y.nivel} femenino={y.genero === "F"} onChange={(n) => cambiarNivel(y.id, n)} label={`Categoría de ${y.nombre}`} />
                   </div>
                 )}
                 {conSuma && !ok && <p className="mt-1 pl-8 text-[11px] text-coral">Suma {s}: menos de {categoria.suma}, esta dupla es más fuerte que la categoría.</p>}

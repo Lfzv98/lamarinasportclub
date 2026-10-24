@@ -21,7 +21,7 @@ El club tiene 4 pistas techadas (1 a 4) y 1 sin techo (5); la app ya viene confi
 
 | Área | Qué hace |
 | --- | --- |
-| Categorías | Femenino, Masculino y Mixto. **Por nivel** (7ma, 6ta, 5ta, 4ta, 3ra, 2da y Open) o **por Suma** (las categorías de la pareja suman N, ej. Suma 9 = 4ta + 5ta). Nombre propio opcional (ej. "Copa Aniversario") |
+| Categorías | Femenino, Masculino y Mixto. **Por nivel** (7ma, 6ta, 5ta, 4ta, 3ra, 2da y Open; en Femenino no hay 2da porque no existe en Lechería) o **por Suma** (las categorías de la pareja suman N, ej. Suma 9 = 4ta + 5ta). Nombre propio opcional (ej. "Copa Aniversario") |
 | Formatos | **Individual**: cambias de pareja cada ronda. **Dupla fija**: duplas inscritas, todas contra todas. En la categoría Mixto, Individual arma siempre un hombre + una mujer al azar sin repetir pareja, y las duplas fijas son hombre + mujer |
 | Puntuación | 100% personalizable: puntos (24 en total, a 13 o cualquier número), games (5 en total, a 6, etc.) con tie-break opcional si empatan, o sets (1, mejor de 3 o de 5, a 4 o 6 games) con super tie opcional. Punto de oro o ventaja |
 | Criterio del ranking | Todos los puntos (cada jugador suma los puntos de su pareja, gane o pierda), Solo rondas ganadas, o Por victorias (3 por ganar, 1 por empate) |
@@ -58,7 +58,7 @@ Tras 5 PIN incorrectos seguidos, ese dispositivo espera 10 minutos.
 
 En el inicio, toca **Nuevo Americano**. El asistente tiene 5 pasos y guarda el borrador si se cierra la app. La flecha de arriba (y el "atrás" del celular) vuelve al paso anterior, no al inicio.
 
-1. **Categoría:** Femenino, Masculino o Mixto. Luego **Por nivel** (7ma a Open, incluida 2da) o **Suma** (elige N; Open cuenta 1, 2da 2… 7ma 7, y una pareja no puede sumar menos de N). Nombre propio opcional.
+1. **Categoría:** Femenino, Masculino o Mixto. Luego **Por nivel** (7ma a Open; 2da solo en Masculino y Mixto) o **Suma** (elige N; Open cuenta 1, 2da 2… 7ma 7, y una pareja no puede sumar menos de N). Nombre propio opcional.
 2. **Formato:** Individual o Dupla fija (en Mixto: Individual mixto o Dupla fija mixta); las reglas del partido (ver "Reglas de puntuación") y el criterio del ranking.
 3. **Jugadores:** en Mixto individual hay una casilla para **Mujeres** y otra para **Hombres**, cada una con su contador. En Dupla fija se inscribe cada dupla (en mixta: hombre + mujer). En Suma, a cada jugador se le elige su categoría y la app marca en rojo la dupla que suma menos de lo permitido. Avisa cuántos quedan en espera por ronda.
 4. **Pistas y rondas:** cuáles pistas se usan; las **rondas salen en automático** según los inscritos y las pistas (se pueden cambiar con + y −, y "volver a automático"). **Cronómetro por ronda** encendido (con su duración) o apagado. Fecha y horario: si las rondas no caben, ofrece "Ajustar a N rondas". Si llueve, **¿Llueve?** deja solo las techadas.
@@ -183,7 +183,7 @@ cd lamarinasportclub
 npm install
 cp .env.example .env.local   # vacío = modo DEMO
 npm run dev                  # http://localhost:3000, PIN 1234
-npm test                     # 52 tests de lógica
+npm test                     # 53 tests de lógica
 ```
 
 ### 2. Crear las tablas en Supabase
@@ -271,7 +271,7 @@ Errores, siempre en JSON: `400` JSON mal formado, `401` sin sesión, `403` usuar
 
 ## Pruebas y solución de problemas
 
-Antes de entregar pasaron 52 tests de lógica (`npm test`), 49 pruebas en navegador real con Playwright (`tests/e2e/robustez.e2e.mjs` y `tests/e2e/moncho.e2e.mjs`), `tsc --noEmit` sin errores y el build de Next.js.
+Antes de entregar pasaron 53 tests de lógica (`npm test`), 49 pruebas en navegador real con Playwright (`tests/e2e/robustez.e2e.mjs` y `tests/e2e/moncho.e2e.mjs`), `tsc --noEmit` sin errores y el build de Next.js.
 
 | Prueba | Qué cubre |
 | --- | --- |
