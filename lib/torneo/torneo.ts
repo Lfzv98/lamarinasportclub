@@ -338,13 +338,14 @@ export function inscribirDupla(
   categoriaId: string,
   a: JugadorTorneo,
   b: JugadorTorneo,
-  extra: { puntos?: number; cabezaSerie?: number | null; id?: string } = {},
+  extra: { puntos?: number; cabezaSerie?: number | null; id?: string; fvp?: Dupla["fvp"] } = {},
 ): Torneo {
   const d: Dupla = {
     id: extra.id ?? nuevoId("d-"),
     jugadorIds: [a.id, b.id],
     puntos: extra.puntos,
     cabezaSerie: extra.cabezaSerie ?? null,
+    ...(extra.fvp ? { fvp: extra.fvp } : {}),
     estado: "ACTIVA",
     inscritaEn: new Date().toISOString(),
   };
@@ -352,7 +353,7 @@ export function inscribirDupla(
   return tocar(conCategoria(conJugadores, categoriaId, (c) => ({ ...c, duplas: [...c.duplas, d] })));
 }
 
-export function editarDupla(t: Torneo, categoriaId: string, duplaId: string, cambios: Partial<Pick<Dupla, "puntos" | "cabezaSerie" | "jugadorIds" | "noDisponible">>): Torneo {
+export function editarDupla(t: Torneo, categoriaId: string, duplaId: string, cambios: Partial<Pick<Dupla, "puntos" | "cabezaSerie" | "jugadorIds" | "noDisponible" | "fvp">>): Torneo {
   return tocar(conCategoria(t, categoriaId, (c) => ({ ...c, duplas: c.duplas.map((d) => (d.id === duplaId ? { ...d, ...cambios } : d)) })));
 }
 
@@ -503,7 +504,7 @@ export function moverPartido(t: Torneo, partidoId: string, prog: { fecha: string
 
 export function configurarTorneo(
   t: Torneo,
-  cambios: Partial<Pick<Torneo, "nombre" | "dias" | "canchas" | "descansoMin" | "toleranciaWO" | "finalesUltimoDia" | "bloqueos" | "criterios" | "sedes" | "patrocinadores">>,
+  cambios: Partial<Pick<Torneo, "nombre" | "dias" | "canchas" | "descansoMin" | "toleranciaWO" | "finalesUltimoDia" | "bloqueos" | "criterios" | "sedes" | "patrocinadores" | "validarFvp">>,
 ): Torneo {
   const out = { ...t, ...cambios };
   return cambios.criterios ? recalcularTodo(tocar(out, "Criterios de desempate actualizados.")) : tocar(out);

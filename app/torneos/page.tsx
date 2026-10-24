@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, CalendarDays, ChevronRight, KeyRound, Layers, Plus, Users } from "lucide-react";
+import { ArrowLeft, CalendarDays, ChevronRight, KeyRound, Layers, ListChecks, Plus, Users } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { StaffChip } from "@/components/StaffGate";
 import { EstadoTorneoBadge, rangoFechas } from "@/components/torneo/TorneoShell";
@@ -45,9 +45,16 @@ export default function TorneosPage() {
         <p className="relative mt-4 max-w-lg text-white/60">
           Inscribe duplas por categoría y el sistema arma grupos, llaves, byes, desempates y horarios en los días del torneo. El staff anota punto a punto y las pantallas de pista se actualizan solas.
         </p>
-        <Link href="/torneos/nuevo" onClick={soloStaff} className="btn-neon animate-pulse-neon relative mt-8 text-base">
-          <Plus className="size-5" /> Nuevo torneo
-        </Link>
+        <div className="relative mt-8 flex flex-wrap gap-3">
+          <Link href="/torneos/nuevo" onClick={soloStaff} className="btn-neon animate-pulse-neon text-base">
+            <Plus className="size-5" /> Nuevo torneo
+          </Link>
+          {esStaff && (
+            <Link href="/torneos/ranking" className="btn-ghost text-base">
+              <ListChecks className="size-5" /> Ranking FVP
+            </Link>
+          )}
+        </div>
       </section>
 
       <section className="mt-10">

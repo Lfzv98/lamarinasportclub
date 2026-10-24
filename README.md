@@ -41,6 +41,7 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 - **Programación sin choques:** pistas, descanso mínimo (también entre categorías), dependencias de la llave, finales el último día en la pista principal, franjas bloqueadas y disponibilidad de cada dupla.
 - **Imprevistos:** suspender pistas por lluvia (el partido en juego guarda su marcador y se reanuda), reanudar, sumar una sede de apoyo con su horario y tiempo de traslado, agregar un día. Todo reprograma solo.
 - **Anotador punto a punto:** punto de oro, tie-break y súper tie-break, orden de saque, faltas, aces, winners y errores por jugador y golpe; estadísticas por jugador al instante.
+- **Categorías verificadas con el ranking FVP:** la app lee cada día la lista oficial de la Federación Venezolana de Pádel y cruza a cada jugador por cédula. Nadie se inscribe por debajo de su categoría; lo dudoso queda "por verificar" y frena el sorteo hasta que el staff lo revise o autorice una excepción con motivo. Lista, búsqueda y carga manual en `/torneos/ranking`.
 - **Clave de participantes:** una por torneo, vence al terminar el último día; el staff la ve y cambia en Ajustes. Cambiarla deja fuera a quien entró con la anterior.
 
 ## Permisos

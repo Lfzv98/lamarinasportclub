@@ -39,12 +39,34 @@ export interface JugadorTorneo {
   fotoUrl?: string | null;
   /** id del usuario en PadelReserve, si existe. */
   usuarioId?: string | null;
+  /** Cédula ("V-12345678"). Cruza al jugador con el ranking FVP. */
+  cedula?: string | null;
   /** Lado en el que juega (opcional, solo informativo). */
   lado?: "DRIVE" | "REVES";
 }
 
 export type EstadoDupla = "ACTIVA" | "RETIRADA" | "DESCALIFICADA";
 
+/**
+ * Chequeo de la dupla contra el ranking FVP (solo categorías por nivel).
+ * - VERIFICADA: los dos están en la lista y ninguno juega por debajo de su categoría.
+ * - POR_VERIFICAR: alguno sin cédula o no aparece en la lista; el staff lo revisa.
+ * - BLOQUEADA: alguno juega por debajo de su categoría FVP.
+ * - EXCEPCION: el staff la autorizó igual (queda quién, cuándo y por qué).
+ */
+export type EstadoFvp = "VERIFICADA" | "POR_VERIFICAR" | "BLOQUEADA" | "EXCEPCION";
+
+export interface VerificacionFvp {
+  estado: EstadoFvp;
+  /** Categoría FVP de cada jugador, en el orden de `jugadorIds` (null = no aparece). */
+  categorias: [NivelTorneo | null, NivelTorneo | null];
+  /** Motivo del bloqueo o de la excepción. */
+  nota?: string;
+  en: string;
+  por?: string;
+  /** Fecha de la lista FVP con la que se verificó. */
+  lista?: string | null;
+}
 export interface Dupla {
   id: string;
   jugadorIds: [string, string];
@@ -55,6 +77,8 @@ export interface Dupla {
   estado: EstadoDupla;
   /** Franjas en que la dupla NO puede jugar (la programación las respeta). */
   noDisponible?: BloqueHorario[];
+  /** Resultado del chequeo contra el ranking FVP. */
+  fvp?: VerificacionFvp | null;
   inscritaEn: string;
 }
 
@@ -275,6 +299,8 @@ export interface Torneo {
   finalesUltimoDia: boolean;
   bloqueos: BloqueHorario[];
   criterios: CriterioDesempate[];
+  /** Validar las categorías por nivel con el ranking FVP (por defecto sí). */
+  validarFvp?: boolean;
   jugadores: JugadorTorneo[];
   categorias: CategoriaEnTorneo[];
   estado: EstadoTorneo;

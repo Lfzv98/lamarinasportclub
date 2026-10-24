@@ -18,6 +18,9 @@ La app funciona sola en **modo DEMO** (datos de `data/mockData.json`, guardados 
 | `STAFF_SECRET` | Secreto (≥16 caracteres) para firmar la sesión de staff. **Obligatorio en producción** |
 | `STAFF_EMAILS` | Opcional: correos con permiso de staff, separados por coma |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Opcional: se usa para el login con usuario de PadelReserve (si falta, usa la service role) |
+| `SUPABASE_RANKING_TABLE` | Opcional, por defecto `ranking_fvp` |
+| `CRON_SECRET` | Recomendado: Vercel lo manda a la sincronización diaria del ranking FVP. Sin él, `/api/ranking-fvp/sync` acepta una llamada cada 10 min |
+| `FVP_SHEET_ID` / `FVP_SHEET_GIDS` | Opcional: otra hoja o pestañas (separadas por coma) si la FVP cambia el enlace |
 
 Con las dos primeras definidas, `getRepository()` cambia de DEMO a SUPABASE automáticamente y el badge de la app pasa de "Demo" a "En línea".
 
@@ -105,6 +108,7 @@ La validación (`lib/validacion.ts`) revisa formato de ids, fechas y horas, rang
 - [ ] Definir `NEXT_PUBLIC_SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` en Vercel.
 - [ ] Definir `STAFF_SECRET` (cadena larga aleatoria) y un `STAFF_PIN` distinto de 1234, o dar rol `staff` a los usuarios del club.
 - [ ] Verificar: el badge de la app dice "En línea" y `GET /api/americanos` responde `"modo": "SUPABASE"`.
+- [ ] Definir `CRON_SECRET` y revisar en Vercel → Cron Jobs que la sincronización del ranking FVP corre cada día.
 - [ ] Correr `npm test` (lógica) y `node tests/e2e/robustez.e2e.mjs` contra el deploy (`APP_URL=https://…`) con una base de pruebas.
 
 
@@ -117,6 +121,17 @@ Toda la lógica de juego (rotación, validación de marcadores, tabla) es TypeSc
 - **Fusión:** la configuración sale de la versión más reciente y cada partido conserva su versión más reciente (`fusionarTorneos`).
 - **Clave:** el servidor nunca la envía a quien no es staff. La cookie `lm_torneos` guarda, por torneo, una huella de la clave vigente: si el staff la cambia, los accesos anteriores dejan de valer.
 - **Lógica pura reutilizable:** `lib/torneo/*` (sorteo, tablas, programación, imprevistos, marcador) no depende de React ni del servidor.
+
+## Ranking FVP: categorías verificadas
+
+- **Fuente:** la hoja pública "Lista de ASCENSOS y ACTUALIZACIÓN Ranking FVP" que la FVP enlaza en su Instagram. Se lee como CSV (`/export?format=csv&gid=…`). `app.fvp.com.ve` no tiene API pública, por eso no se usa.
+- **Cuándo:** Vercel Cron llama a `GET /api/ranking-fvp/sync` todos los días a las 10:00 UTC (6:00 a. m. en Venezuela), ver `vercel.json`. El staff también puede "Sincronizar ahora", subir el CSV o pegar las celdas en `/torneos/ranking`.
+- **A prueba de cambios de la FVP:** la hoja trae varias tablas apiladas con títulos a veces mal escritos; `leerListaFvp` busca las columnas por nombre en cada tabla y usa la cédula como llave. Si la hoja deja de ser pública, falla o trae menos de la mitad de atletas que la lista vigente, se conserva la anterior y se muestra el error.
+- **Regla:** en categorías por nivel (7ma a 1ra, M/F/Mixto) nadie se inscribe por debajo de su CATEGORÍA FINAL FVP; subir sí se puede. Master, Junior y libres no se chequean. Se apaga por torneo en Ajustes.
+- **Estados por dupla (`Dupla.fvp`):** `VERIFICADA`, `POR_VERIFICAR` (sin cédula o no aparece; frena el sorteo hasta que el staff la revise), `BLOQUEADA` y `EXCEPCION` (el staff la autoriza con motivo; queda firmada con su nombre y en el historial).
+- **El servidor manda:** al guardar un torneo, `POST /api/torneos` vuelve a chequear las duplas nuevas o cambiadas con la lista vigente (`revisarFvpServidor`), así un cliente no puede marcarse "verificada". Las duplas ya inscritas no se tocan si la lista cambia después.
+- **Endpoints (solo staff):** `GET /api/ranking-fvp` (resumen), `?cedulas=V-1,V-2` (búsqueda), `?q=texto`; `POST /api/ranking-fvp` con `{ accion: "sincronizar" }` o `{ texto, archivo, forzar? }`.
+- **Tabla:** `ranking_fvp` (una fila JSONB, en `supabase/schema.sql`).
 
 ## 5. Tiempo real
 

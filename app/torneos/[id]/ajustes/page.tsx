@@ -1,6 +1,7 @@
 "use client";
 
 import clsx from "clsx";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useRef, useState } from "react";
 import { motion } from "framer-motion";
@@ -59,6 +60,7 @@ function Ajustes({ torneo }: { torneo: Torneo }) {
     canchas: torneo.canchas.map((c) => ({ ...c })),
     criterios: torneo.criterios.map((c) => ({ ...c })),
     patrocinadores: (torneo.patrocinadores ?? []).map((p) => ({ ...p })),
+    validarFvp: torneo.validarFvp !== false,
   }));
   const archivo = useRef<HTMLInputElement>(null);
   const [nuevoSponsor, setNuevoSponsor] = useState("");
@@ -196,6 +198,20 @@ function Ajustes({ torneo }: { torneo: Torneo }) {
         ))}
       </ul>
       <p className="mt-2 text-xs text-white/45">Primero cuentan los partidos ganados. Si sigue el empate después de todos los criterios, se sortea y queda registrado.</p>
+
+      <p className="label mt-8">Ranking FVP</p>
+      <div className="glass rounded-2xl p-4">
+        <label className="flex items-center justify-between gap-3 text-sm">
+          <span>
+            Validar categorías con el ranking FVP
+            <span className="mt-0.5 block text-xs text-white/45">Nadie se inscribe por debajo de su categoría FVP; los casos dudosos los revisa el staff.</span>
+          </span>
+          <Interruptor valor={b.validarFvp} onChange={(v) => setB((x) => ({ ...x, validarFvp: v }))} etiqueta="Validar con ranking FVP" />
+        </label>
+        <Link href="/torneos/ranking" className="mt-3 inline-block text-xs font-semibold text-neon hover:underline">
+          Ver la lista FVP cargada →
+        </Link>
+      </div>
 
       <p className="label mt-8">Patrocinadores</p>
       <ul className="space-y-2">
