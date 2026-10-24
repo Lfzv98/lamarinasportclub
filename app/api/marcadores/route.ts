@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { exigirStaff } from "@/lib/server/auth";
+import { sesionDe } from "@/lib/server/auth";
 import { ErrorApi, leerJson, manejar } from "@/lib/server/http";
 import { getTorneosRepository } from "@/lib/server/repository";
-import { puedeVer, visorDe } from "@/lib/server/torneos";
+import { esArbitroDe, puedeVer, visorDe } from "@/lib/server/torneos";
 import { validarMarcador } from "@/lib/torneo/validacion";
 import type { ApiMarcadoresRespuesta, MarcadorVivo } from "@/types/torneo";
 
@@ -26,15 +26,27 @@ export const GET = manejar(async (req: Request) => {
   return NextResponse.json<ApiMarcadoresRespuesta>({ modo: repo.modo, marcadores });
 });
 
-/** POST /api/marcadores body: { marcador } → gana la versión más reciente (staff). */
+/**
+ * POST /api/marcadores body: { marcador } → gana la versión más reciente.
+ * Lo suben el staff y los árbitros del torneo del marcador (el árbitro queda como anotador).
+ */
 export const POST = manejar(async (req: Request) => {
-  exigirStaff(req);
   const body = (await leerJson(req)) as { marcador?: unknown } | null;
   const errores = validarMarcador(body?.marcador);
   if (errores.length) throw new ErrorApi(422, "Marcador inválido.", errores);
-  const entrante = body!.marcador as MarcadorVivo;
+  let entrante = body!.marcador as MarcadorVivo;
   const repo = getTorneosRepository();
   const existente = await repo.obtenerMarcador(entrante.id);
+  if (!sesionDe(req)) {
+    const t = await repo.obtener(entrante.torneoId);
+    const a = visorDe(req).arbitro;
+    if (!t || !esArbitroDe(t, a)) throw new ErrorApi(401, "Solo el staff o los árbitros de este torneo pueden anotar.");
+    // Solo partidos de su torneo.
+    if (!t.categorias.some((c) => c.cuadro?.partidos.some((p) => p.id === entrante.id))) throw new ErrorApi(403, "Ese partido no es de tu torneo.");
+    if (existente?.finalizado) throw new ErrorApi(403, "Ese partido ya se cerró. Para corregirlo, avisa al staff.");
+    entrante = { ...entrante, anotador: a!.nombre };
+  }
+  if (existente && existente.torneoId !== entrante.torneoId) throw new ErrorApi(409, "Ese marcador es de otro torneo.");
   const final = existente && existente.actualizadoEn > entrante.actualizadoEn ? existente : entrante;
   await repo.guardarMarcador(final);
   return NextResponse.json({ modo: repo.modo, marcador: final });

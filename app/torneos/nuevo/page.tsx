@@ -16,7 +16,7 @@ import { vibrar } from "@/lib/feedback";
 import { aMinutos, horarioDelDia } from "@/lib/horarios";
 import { useAmericanos } from "@/lib/store";
 import { catalogoCategorias, nombreCorto } from "@/lib/torneo/categorias";
-import { claveAleatoria, venceAlTerminar } from "@/lib/torneo/acceso";
+import { claveAleatoria, pinAleatorio, venceAlTerminar } from "@/lib/torneo/acceso";
 import { crearTorneo } from "@/lib/torneo/torneo";
 import { useTorneos } from "@/lib/torneosStore";
 import type { CategoriaTorneo, DiaTorneo } from "@/types/torneo";
@@ -117,7 +117,7 @@ function NuevoTorneo() {
       toleranciaWO: tolerancia,
       finalesUltimoDia: finalesUltimo,
     });
-    guardar({ ...t, acceso: { clave: claveAleatoria(), vence: venceAlTerminar(t.dias) } });
+    guardar({ ...t, acceso: { clave: claveAleatoria(), vence: venceAlTerminar(t.dias) }, arbitros: { pin: pinAleatorio(), vence: venceAlTerminar(t.dias) } });
     toast("Torneo creado. Ahora inscribe las duplas.");
     router.push(`/torneos/${t.id}/categorias`);
   }

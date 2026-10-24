@@ -178,3 +178,44 @@ export function claveCorrecta(recibida: string, esperada: string): boolean {
   const b = Buffer.from(esperada.trim().toUpperCase());
   return a.length === b.length && timingSafeEqual(a, b);
 }
+
+/* ---------- árbitros (anotadores) ---------- */
+
+/**
+ * Sesión de árbitro: rol aparte del staff, por torneo. Entra con el PIN de árbitros que el staff
+ * crea en Ajustes → Claves de torneos. La cookie guarda el torneo, el nombre del árbitro y una
+ * huella del PIN: si el staff lo cambia o lo quita, la sesión deja de valer.
+ */
+export const COOKIE_ARBITRO = "lm_arbitro";
+const DURACION_ARBITRO_S = 16 * 3600;
+
+export interface SesionArbitro {
+  torneoId: string;
+  nombre: string;
+  huella: string;
+  exp: number;
+}
+
+export function crearTokenArbitro(s: Omit<SesionArbitro, "exp">, venceMs: number): { token: string; maxAge: number } {
+  const exp = Math.min(Math.floor(Date.now() / 1000) + DURACION_ARBITRO_S, Math.floor(venceMs / 1000));
+  const datos = b64(JSON.stringify({ ...s, exp }));
+  return { token: `${datos}.${firmar(`a:${datos}`)}`, maxAge: Math.max(60, exp - Math.floor(Date.now() / 1000)) };
+}
+
+export function arbitroDe(req: Request): SesionArbitro | null {
+  const c = req.headers.get("cookie") ?? "";
+  const m = c.split(/;\s*/).find((x) => x.startsWith(`${COOKIE_ARBITRO}=`));
+  const token = m ? decodeURIComponent(m.slice(COOKIE_ARBITRO.length + 1)) : null;
+  if (!token) return null;
+  const [datos, firma] = token.split(".");
+  if (!datos || !firma) return null;
+  const esperada = Buffer.from(firmar(`a:${datos}`));
+  const recibida = Buffer.from(firma);
+  if (esperada.length !== recibida.length || !timingSafeEqual(esperada, recibida)) return null;
+  try {
+    const s = JSON.parse(Buffer.from(datos, "base64url").toString()) as SesionArbitro;
+    return s.exp > Date.now() / 1000 ? s : null;
+  } catch {
+    return null;
+  }
+}

@@ -2,7 +2,7 @@
 
 import clsx from "clsx";
 import Link from "next/link";
-import { CalendarClock, Flag, MapPin, Minus, Plus, Radio, Trash2, Trophy } from "lucide-react";
+import { BarChart3, CalendarClock, Flag, MapPin, Minus, Plus, Radio, Trash2, Trophy } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Hoja } from "@/components/ui/Hoja";
 import { toast } from "@/components/ui/Toaster";
@@ -188,6 +188,11 @@ export function ResultadoHoja({ torneo, partidoId, onClose }: { torneo: Torneo; 
             <Link href={`/torneos/${torneo.id}/anotar/${encodeURIComponent(p.id)}`} className="btn-neon w-full text-base">
               <Radio className="size-5" /> Anotar punto a punto
             </Link>
+            {p.estado !== "PENDIENTE" && (
+              <Link href={`/torneos/${torneo.id}/partido/${encodeURIComponent(p.id)}`} className="btn-ghost w-full">
+                <BarChart3 className="size-4" /> Ver partido y estadísticas
+              </Link>
+            )}
             <button
               className="btn-ghost w-full"
               disabled={!!error}
@@ -206,7 +211,14 @@ export function ResultadoHoja({ torneo, partidoId, onClose }: { torneo: Torneo; 
       {!listo ? (
         <p className="rounded-2xl bg-white/5 p-4 text-sm text-white/60">{p.bye ? "Pase directo (bye): no se juega." : "Todavía no se conocen las dos duplas de este partido."}</p>
       ) : !esStaff ? (
-        <MatchCard torneo={torneo} p={p} />
+        <>
+          <MatchCard torneo={torneo} p={p} />
+          {p.estado !== "PENDIENTE" && (
+            <Link href={`/torneos/${torneo.id}/partido/${encodeURIComponent(p.id)}`} className="btn-neon mt-4 w-full text-base">
+              <BarChart3 className="size-5" /> Ver partido y estadísticas
+            </Link>
+          )}
+        </>
       ) : (
         <>
           <div className="space-y-3">

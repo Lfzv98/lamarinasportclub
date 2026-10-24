@@ -72,7 +72,11 @@ Puntos de enganche útiles:
 | GET | `/api/torneos/acceso` | `{ accesos: { [torneoId]: venceISO } }` de este dispositivo |
 | POST | `/api/torneos/acceso` | `{ torneoId, clave }` → cookie `lm_torneos` hasta que vence la clave. `401` clave incorrecta, `410` vencida, `429` demasiados intentos |
 | GET | `/api/marcadores?torneoId=` | marcadores punto a punto del torneo (si el visitante puede verlo) |
-| POST | `/api/marcadores` | `{ marcador }` (staff) → gana el más reciente por `actualizadoEn` |
+| POST | `/api/marcadores` | `{ marcador }` (staff o árbitro del torneo) → gana el más reciente por `actualizadoEn`. Un árbitro no puede reabrir un marcador finalizado ni tocar otro torneo (`409`) |
+| GET | `/api/arbitro` | `{ arbitro: { torneoId, nombre } \| null }` |
+| POST | `/api/arbitro` | `{ torneoId, pin, nombre }` → cookie `lm_arbitro`. `401` PIN incorrecto, `403` el torneo no tiene PIN, `410` vencido, `429` demasiados intentos |
+| DELETE | `/api/arbitro` | cierra la sesión de árbitro |
+| POST | `/api/torneos/:id/partidos/:pid` | `{ accion: "llamar" \| "iniciar" \| "resultado" \| "wo", … }` (staff o árbitro) → aplica la acción sobre la versión guardada y devuelve `{ torneo }` |
 
 ### Errores (siempre JSON)
 
@@ -116,6 +120,7 @@ Toda la lógica de juego (rotación, validación de marcadores, tabla) es TypeSc
 - Un torneo guarda categorías, duplas, cuadros (grupos y llaves), programación, bloqueos (incluidas suspensiones por lluvia), sedes, patrocinadores, historial y la clave de participantes. El marcador punto a punto vive aparte por partido para no reenviar el torneo en cada punto.
 - **Fusión:** la configuración sale de la versión más reciente y cada partido conserva su versión más reciente (`fusionarTorneos`).
 - **Clave:** el servidor nunca la envía a quien no es staff. La cookie `lm_torneos` guarda, por torneo, una huella de la clave vigente: si el staff la cambia, los accesos anteriores dejan de valer.
+- **Árbitros:** cookie `lm_arbitro` firmada (HMAC) con torneo, nombre y huella del PIN; dura hasta 16 h o hasta que vence el PIN. Solo puede usar `/api/torneos/:id/partidos/:pid` y `/api/marcadores` de su torneo: nunca sube el torneo entero, así no pisa cambios del staff. Un W.O. solo se acepta pasado el límite FIP; un resultado ya finalizado solo lo corrige el staff. El PIN nunca sale del servidor salvo para el staff.
 - **Lógica pura reutilizable:** `lib/torneo/*` (sorteo, tablas, programación, imprevistos, marcador) no depende de React ni del servidor.
 
 ## 5. Tiempo real

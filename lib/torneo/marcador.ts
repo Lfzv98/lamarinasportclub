@@ -253,7 +253,7 @@ export function anotarPunto(m: MarcadorVivo, gana: Lado, detalle: Partial<Pick<P
 }
 
 /** Completa el detalle del último punto (toques 2 y 3 del anotador). */
-export function detallarUltimo(m: MarcadorVivo, detalle: Partial<Pick<PuntoRegistrado, "fin" | "jugadorId" | "golpe">>): MarcadorVivo {
+export function detallarUltimo(m: MarcadorVivo, detalle: Partial<Pick<PuntoRegistrado, "fin" | "jugadorId" | "golpe" | "zona">>): MarcadorVivo {
   if (!m.puntos.length) return m;
   const puntos = [...m.puntos];
   puntos[puntos.length - 1] = { ...puntos[puntos.length - 1], ...detalle };
@@ -433,9 +433,21 @@ export function relatoPunto(p: PuntoJugado, nombreJugador: (id: string) => strin
   else if (p.fin === "SANCION") base = `Sanción${quien ? ` a ${quien}` : ""}: punto para ${nombreLado(p.gana)}`;
   else if (p.fin) {
     const golpe = p.golpe && p.golpe !== "SAQUE" ? ` de ${NOMBRE_GOLPE[p.golpe]}` : "";
-    base = `${quien ? `${quien}, ` : ""}${NOMBRE_FIN[p.fin].toLowerCase()}${golpe}. ${base}`;
+    const zona = p.fin.startsWith("ERROR") && p.zona ? (p.zona === "RED" ? " a la red" : " afuera") : "";
+    base = `${quien ? `${quien}, ` : ""}${NOMBRE_FIN[p.fin].toLowerCase()}${golpe}${zona}. ${base}`;
   }
   base = base.charAt(0).toUpperCase() + base.slice(1);
+  if (p.oro) base += " · punto de oro";
+  if (p.breakPoint && p.gana !== p.equipoSaca) base += " · break";
+  return base;
+}
+
+/**
+ * Relato para el público (televisores y pantallas de pista): quién ganó el punto y si fue
+ * de oro o break, sin atribuir winners ni errores a cada atleta (eso lo ven solo los participantes).
+ */
+export function relatoPublico(p: PuntoJugado, nombreLado: (l: Lado) => string): string {
+  let base = p.fin === "SANCION" ? `Punto por sanción para ${nombreLado(p.gana)}` : `Punto para ${nombreLado(p.gana)}`;
   if (p.oro) base += " · punto de oro";
   if (p.breakPoint && p.gana !== p.equipoSaca) base += " · break";
   return base;

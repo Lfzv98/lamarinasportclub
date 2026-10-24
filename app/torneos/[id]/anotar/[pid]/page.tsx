@@ -7,7 +7,7 @@ import { use, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowLeftRight, Check, CircleSlash, Flag, HeartPulse, MoreHorizontal, ShieldAlert, Timer, Undo2, Zap } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
-import { StaffGate } from "@/components/StaffGate";
+import { AnotadorGate, useVolverAnotador } from "@/components/torneo/Arbitraje";
 import { Hoja } from "@/components/ui/Hoja";
 import { toast } from "@/components/ui/Toaster";
 import { TorneoShellMinimo } from "@/components/torneo/minimo";
@@ -42,7 +42,8 @@ import {
 } from "@/lib/torneo/marcador";
 import { resultadoRetiro, textoSets } from "@/lib/torneo/tabla";
 import { nombrePista } from "@/lib/torneo/imprevistos";
-import { cargarResultado, categoria, dupla, iniciarPartido, nombreDupla, partido, reglasDe } from "@/lib/torneo/torneo";
+import { categoria, dupla, nombreDupla, partido, reglasDe } from "@/lib/torneo/torneo";
+import { useArbitro } from "@/lib/arbitro";
 import { useAmericanos } from "@/lib/store";
 import { useMarcador, useTorneos } from "@/lib/torneosStore";
 import type { FinPunto, Golpe, JugadorTorneo, MarcadorVivo, PartidoTorneo, Torneo } from "@/types/torneo";
@@ -50,9 +51,9 @@ import type { FinPunto, Golpe, JugadorTorneo, MarcadorVivo, PartidoTorneo, Torne
 export default function AnotarPage({ params }: { params: Promise<{ id: string; pid: string }> }) {
   const { id, pid } = use(params);
   return (
-    <StaffGate>
+    <AnotadorGate torneoId={id}>
       <TorneoShellMinimo id={id}>{(t) => <Anotador torneo={t} partidoId={decodeURIComponent(pid)} />}</TorneoShellMinimo>
-    </StaffGate>
+    </AnotadorGate>
   );
 }
 
@@ -85,8 +86,10 @@ function Anotador({ torneo, partidoId }: { torneo: Torneo; partidoId: string }) 
 
 function Preparar({ torneo, p }: { torneo: Torneo; p: PartidoTorneo }) {
   const guardarMarcador = useTorneos((s) => s.guardarMarcador);
-  const guardar = useTorneos((s) => s.guardar);
+  const accionPartido = useTorneos((s) => s.accionPartido);
   const staff = useAmericanos((s) => s.staff);
+  const arbitro = useArbitro();
+  const volver = useVolverAnotador(torneo.id);
   const dA = dupla(torneo, p.duplaA)!;
   const dB = dupla(torneo, p.duplaB)!;
   const [primero, setPrimero] = useState<{ lado: Lado; id: string } | null>(null);
@@ -106,12 +109,12 @@ function Preparar({ torneo, p }: { torneo: Torneo; p: PartidoTorneo }) {
       primerA: primero.lado === "A" ? primero.id : otro,
       primerB: primero.lado === "B" ? primero.id : otro,
       pista,
-      anotador: staff?.nombre,
+      anotador: staff?.nombre ?? arbitro?.nombre,
     });
     vibrar([10, 40, 10]);
     sonar("ok");
     guardarMarcador(m);
-    guardar(iniciarPartido(torneo, p.id, pista));
+    accionPartido(torneo.id, p.id, { accion: "iniciar", pista }).then((err) => err && toast(err, "error"));
   }
 
   const Equipo = ({ lado, ids }: { lado: Lado; ids: string[] }) => {
@@ -147,7 +150,7 @@ function Preparar({ torneo, p }: { torneo: Torneo; p: PartidoTorneo }) {
   return (
     <main className="mx-auto max-w-2xl px-4 pb-10 pt-[max(1rem,env(safe-area-inset-top))]">
       <header className="flex items-center gap-3 py-3">
-        <Link href={`/torneos/${torneo.id}`} className="btn-ghost !p-2.5" aria-label="Volver">
+        <Link href={volver} className="btn-ghost !p-2.5" aria-label="Volver">
           <ArrowLeft className="size-5" />
         </Link>
         <div className="min-w-0">
@@ -182,7 +185,8 @@ interface Bandeja {
 function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: MarcadorVivo }) {
   const router = useRouter();
   const guardarMarcador = useTorneos((s) => s.guardarMarcador);
-  const guardar = useTorneos((s) => s.guardar);
+  const accionPartido = useTorneos((s) => s.accionPartido);
+  const volver = useVolverAnotador(torneo.id);
   const e = useMemo(() => calcularMarcador(m), [m]);
   const [bandeja, setBandeja] = useState<Bandeja | null>(null);
   const [menu, setMenu] = useState(false);
@@ -198,7 +202,7 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
   useEffect(() => {
     if (p.estado === "EN_JUEGO" || p.estado === "FINALIZADO" || m.finalizado) return;
     const pista = p.pistaReal ?? p.programacion?.pista ?? m.pista ?? null;
-    guardar(iniciarPartido(torneo, p.id, pista ?? undefined));
+    accionPartido(torneo.id, p.id, { accion: "iniciar", pista });
     if (pista !== m.pista) guardarMarcador({ ...m, pista, actualizadoEn: new Date().toISOString() });
     if (p.suspendido) {
       // FIP Regla 2.11–2.15: se sigue exactamente donde quedó; peloteo según cuánto duró la suspensión.
@@ -264,10 +268,10 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
         ? { sets: setsFinales(est), ganador: est.ganador!, tipo: "NORMAL" as const }
         : { ...resultadoRetiro(reglas, setsFinales(est).filter((s) => s.a + s.b > 0), ganador!), tipo };
     guardarMarcador({ ...marcador, finalizado: true, actualizadoEn: new Date().toISOString() });
-    guardar(cargarResultado(torneo, p.id, resultado));
+    accionPartido(torneo.id, p.id, { accion: "resultado", resultado }).then((err) => err && toast(err, "error"));
     sonar("ok");
     toast(`Resultado guardado: ${textoSets(resultado.sets)}`);
-    router.push(`/torneos/${torneo.id}`);
+    router.push(volver);
   }
 
   const Mitad = ({ lado }: { lado: Lado }) => {
@@ -329,7 +333,7 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
     <main className="flex h-dvh flex-col gap-2 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-[max(0.5rem,env(safe-area-inset-top))]">
       {/* Marcador */}
       <header className="glass flex items-center gap-2 rounded-2xl px-3 py-2">
-        <Link href={`/torneos/${torneo.id}`} className="btn-ghost !p-2" aria-label="Salir">
+        <Link href={volver} className="btn-ghost !p-2" aria-label="Salir">
           <ArrowLeft className="size-4" />
         </Link>
         <div className="min-w-0 flex-1 space-y-0.5">
@@ -442,6 +446,24 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
                   </div>
                 ) : (
                   <div>
+                    {m.puntos.at(-1)?.fin?.startsWith("ERROR") && (
+                      <div className="mb-2 flex items-center gap-1.5">
+                        <p className="mr-1 text-[11px] font-bold uppercase tracking-wider text-white/50">¿Dónde?</p>
+                        {(["RED", "AFUERA"] as const).map((z) => (
+                          <button
+                            key={z}
+                            className={clsx("btn-ghost !px-3 !py-1.5 text-xs", m.puntos.at(-1)?.zona === z && "seleccion !text-lima")}
+                            onClick={() => {
+                              vibrar(8);
+                              guardarMarcador(detallarUltimo(m, { zona: m.puntos.at(-1)?.zona === z ? null : z }));
+                              cerrarLuego(3500);
+                            }}
+                          >
+                            {z === "RED" ? "A la red" : "Afuera"}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-white/50">¿Con qué golpe? (opcional)</p>
                     <div className="flex flex-wrap gap-1.5">
                       {GOLPES.map((g) => (
