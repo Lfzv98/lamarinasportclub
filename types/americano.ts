@@ -10,11 +10,19 @@ export type Genero = "M" | "F";
 
 export type Rama = "FEMENINO" | "MASCULINO" | "MIXTO";
 
-export type Nivel = "7MA" | "6TA" | "5TA" | "4TA" | "3RA" | "OPEN";
+export type Nivel = "7MA" | "6TA" | "5TA" | "4TA" | "3RA" | "2DA" | "OPEN";
 
 export interface Categoria {
   rama: Rama;
+  /** Nivel de la categoría. En "Suma" es el nivel por defecto de los jugadores nuevos. */
   nivel: Nivel;
+  /**
+   * Categoría por suma: la suma de las categorías de la pareja no puede ser menor
+   * que este número (ej. Suma 9 → 4ta + 5ta, 3ra + 6ta). Open cuenta como 1.
+   */
+  suma?: number | null;
+  /** Nombre personalizado (ej. "Copa Aniversario"). Si existe, reemplaza la etiqueta. */
+  nombre?: string | null;
 }
 
 /** Individual Rotativo = Americano tradicional (cambias de pareja cada ronda). */
@@ -148,12 +156,26 @@ export interface FilaPosicion {
   puntos: number;
   /** Se retiró del evento (sigue en la tabla con lo que sumó). */
   retirado?: boolean;
+  /** Comparte la posición con otra fila (empate en todos los criterios). */
+  empatado?: boolean;
+}
+
+/** Por qué una fila quedó delante de otra con los mismos puntos. */
+export interface NotaDesempate {
+  arriba: string;
+  abajo: string;
+  puntos: number;
+  motivo: string;
+  /** Empate total: todas las filas que comparten posición. */
+  empatados?: string[];
 }
 
 export interface TablaPosiciones {
   eventoId: string;
   tipo: "JUGADOR" | "PAREJA";
   filas: FilaPosicion[];
+  /** Desempates aplicados entre filas con los mismos puntos (para mostrar y verificar). */
+  desempates?: NotaDesempate[];
   generadaEn: string;
 }
 
@@ -215,6 +237,8 @@ export interface EventoAmericano {
   canchas?: PistaClub[];
   /** Duración de cada ronda en minutos (cronómetro). */
   duracionRondaMin: number;
+  /** false = sin cronómetro: la ronda dura lo que tarden en cargarse los marcadores. Por defecto true. */
+  cronometro?: boolean;
   totalRondas: number;
   rondaActual: number;
   estado: EstadoEvento;

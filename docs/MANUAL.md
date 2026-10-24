@@ -21,14 +21,16 @@ El club tiene 4 pistas techadas (1 a 4) y 1 sin techo (5); la app ya viene confi
 
 | Área | Qué hace |
 | --- | --- |
-| Categorías | Femenino, Masculino y Mixto, cada una en 7ma, 6ta, 5ta, 4ta, 3ra y Open (Open Mixto en Mixto) |
-| Formatos | **Individual**: cambias de pareja cada ronda. **Dupla fija**: parejas inscritas, todos contra todos. **Mixto**: como Individual, pero cada pareja es siempre un hombre y una mujer |
+| Categorías | Femenino, Masculino y Mixto. **Por nivel** (7ma, 6ta, 5ta, 4ta, 3ra, 2da y Open) o **por Suma** (las categorías de la pareja suman N, ej. Suma 9 = 4ta + 5ta). Nombre propio opcional (ej. "Copa Aniversario") |
+| Formatos | **Individual**: cambias de pareja cada ronda. **Dupla fija**: duplas inscritas, todas contra todas. En la categoría Mixto, Individual arma siempre un hombre + una mujer al azar sin repetir pareja, y las duplas fijas son hombre + mujer |
 | Puntuación | 100% personalizable: puntos (24 en total, a 13 o cualquier número), games (5 en total, a 6, etc.) con tie-break opcional si empatan, o sets (1, mejor de 3 o de 5, a 4 o 6 games) con super tie opcional. Punto de oro o ventaja |
 | Criterio del ranking | Todos los puntos (cada jugador suma los puntos de su pareja, gane o pierda), Solo rondas ganadas, o Por victorias (3 por ganar, 1 por empate) |
 | Sorteo de parejas | Algoritmo balanceado: no repite compañero, reparte rivales y equilibra niveles. Quien descansa se elige por justicia (el que menos jugó) |
-| Pistas y horario | De 1 a 6 pistas. Calcula cuántas rondas caben en el horario del evento. Botón "¿Llueve?" que deja solo las pistas techadas |
-| En vivo | Cronómetro por ronda (iniciar, pausar, reiniciar), modal táctil para cargar marcadores, deshacer, avance de ronda |
-| Ranking | Tabla animada en tiempo real con PJ, PG, PP, PF, PC y +/-, flechas de subida y bajada, podio al final |
+| Rondas automáticas | Salen solas de las duplas o jugadores inscritos y las pistas: en Dupla fija, exactamente el todos contra todos; en Individual, el máximo sin repetir pareja, buscando que todos jueguen los mismos partidos. Se pueden cambiar a mano y avisa si se repiten parejas o si no cabe en el horario |
+| Pistas y horario | De 1 a 6 pistas. Avisa si sobran pistas para la gente inscrita y calcula a qué hora termina. Botón "¿Llueve?" que deja solo las pistas techadas |
+| En vivo | Cronómetro por ronda que se puede **apagar** (la ronda termina al cargar los marcadores), modal táctil para cargar marcadores, deshacer, avance de ronda y apartado **En espera** con las duplas o jugadores que descansan y en qué ronda vuelven |
+| Ranking | Tabla animada en tiempo real con PJ, PG, PP, PF, PC y +/-, flechas de subida y bajada, podio al final. Desempate por enfrentamiento directo (dupla fija), diferencia y puntos a favor; si todo es igual comparten posición, y la app explica cada empate |
+| Historial | Pestaña Historial dentro del Ranking: todos los marcadores ronda por ronda, con filtro por jugador o dupla y su resumen |
 | Modo TV | Pantalla completa para el televisor del club: pistas en juego, ranking que rota cada 12 s y un QR con la marca PR de PadelReserve para que los jugadores vean la tabla en su celular |
 | QR grande | Botón QR en la barra del evento (y tocando el QR en Modo TV): lo abre a pantalla completa para escanearlo fácil |
 | Cambios de plantel | Retirar a un jugador o pareja (lesión), sumar a quien llegó tarde o reincorporar. Lo jugado se conserva y se re-sortean solo las rondas que faltan |
@@ -54,13 +56,13 @@ Tras 5 PIN incorrectos seguidos, ese dispositivo espera 10 minutos.
 
 ### Crear un americano (staff)
 
-En el inicio, toca **Nuevo Americano**. El asistente tiene 5 pasos y guarda el borrador si se cierra la app.
+En el inicio, toca **Nuevo Americano**. El asistente tiene 5 pasos y guarda el borrador si se cierra la app. La flecha de arriba (y el "atrás" del celular) vuelve al paso anterior, no al inicio.
 
-1. **Categoría:** Femenino, Masculino o Mixto, y el nivel (7ma a Open).
-2. **Formato:** Individual, Dupla fija o Mixto; las reglas del partido (ver "Reglas de puntuación") y el criterio del ranking.
-3. **Pistas:** cuáles se usan, fecha, hora de inicio y fin, y minutos por ronda. La app muestra cuántas rondas caben. Si llueve, el botón **¿Llueve?** deja solo las pistas techadas.
-4. **Jugadores:** nombres (y género en Mixto), o parejas en Dupla fija. Avisa si falta gente o sobra para las pistas.
-5. **Listo:** revisa el resumen y crea el evento. Las rondas se sortean solas.
+1. **Categoría:** Femenino, Masculino o Mixto. Luego **Por nivel** (7ma a Open, incluida 2da) o **Suma** (elige N; Open cuenta 1, 2da 2… 7ma 7, y una pareja no puede sumar menos de N). Nombre propio opcional.
+2. **Formato:** Individual o Dupla fija (en Mixto: Individual mixto o Dupla fija mixta); las reglas del partido (ver "Reglas de puntuación") y el criterio del ranking.
+3. **Jugadores:** en Mixto individual hay una casilla para **Mujeres** y otra para **Hombres**, cada una con su contador. En Dupla fija se inscribe cada dupla (en mixta: hombre + mujer). En Suma, a cada jugador se le elige su categoría y la app marca en rojo la dupla que suma menos de lo permitido. Avisa cuántos quedan en espera por ronda.
+4. **Pistas y rondas:** cuáles pistas se usan; las **rondas salen en automático** según los inscritos y las pistas (se pueden cambiar con + y −, y "volver a automático"). **Cronómetro por ronda** encendido (con su duración) o apagado. Fecha y horario: si las rondas no caben, ofrece "Ajustar a N rondas". Si llueve, **¿Llueve?** deja solo las techadas.
+5. **Listo:** revisa el resumen, la vista previa de la ronda 1 (con quién espera) y crea el evento.
 
 ### Reglas de puntuación
 
@@ -76,7 +78,8 @@ Al cargar el marcador, la app solo acepta resultados posibles con esas reglas y 
 
 ### Durante el evento (staff)
 
-- Pestaña **Cuadro**: ves la ronda actual con cada pista. Toca **Iniciar ronda** para arrancar el cronómetro; puedes pausar y reanudar.
+- Pestaña **Cuadro**: ves la ronda actual con cada pista. Toca **Iniciar ronda** para arrancar el cronómetro; puedes pausar y reanudar. Si el cronómetro está apagado, en su lugar se ve cuántos marcadores de la ronda van cargados.
+- Si hay más duplas (o jugadores) que pistas, abajo aparece **En espera**: quién descansa esta ronda y en qué ronda vuelve a jugar. En el Modo TV también se muestra.
 - Toca una pista para **cargar marcador**. El modal no deja guardar un resultado imposible para el método elegido. Cada carga tiene **Deshacer**.
 - Con todas las pistas cargadas, toca **Siguiente** (o **Finalizar** en la última ronda). Se puede volver a una ronda anterior para corregir.
 - Botón **Jugadores** (o Parejas): retirar a alguien, sumar a quien llegó tarde o reincorporar. Solo se re-sortean las rondas que faltan.
@@ -85,6 +88,8 @@ Al cargar el marcador, la app solo acepta resultados posibles con esas reglas y 
 ### Ranking y Modo TV
 
 - Pestaña **Ranking**: tabla en vivo con PJ (jugados), PG (ganados), PP (perdidos), PF (puntos a favor), PC (en contra) y +/-. Abajo explica cómo se calcula. Al final muestra el podio y un botón para compartir.
+- **Empates:** si dos quedan con los mismos puntos, decide primero el enfrentamiento directo (en Dupla fija; con tres o más empatadas, la mini tabla entre ellas), luego la diferencia y luego los puntos a favor. Si todo es idéntico, comparten la posición (1, 1, 3). El recuadro **Empates en puntos** dice quién va delante y por qué.
+- **Historial** (botón junto a Tabla): todos los marcadores ronda por ronda. Eligiendo un jugador o dupla se ven solo sus partidos, sus rondas en espera y su resumen.
 - Pestaña **Modo TV**: ábrela en el computador o Smart TV del club y ponla en pantalla completa. La pantalla no se apaga, el cursor se esconde y el ranking cambia de página cada 12 s. El QR lleva a la tabla en el celular; tocándolo se ve a pantalla completa.
 
 ### Jugadores (sin cuenta)
@@ -144,9 +149,10 @@ Color de marca: verde #7FE302 del logo de La Marina. Tipografías Inter y Space 
 
 ### Cómo funciona el sorteo
 
-- **Individual y Mixto:** búsqueda local con reinicios y semilla fija (el mismo evento siempre da el mismo cuadro). Penaliza repetir compañero (mucho), repetir rival (algo) y el desequilibrio de nivel entre parejas. En Mixto cada pareja es un hombre y una mujer.
+- **Individual y Mixto:** búsqueda local con reinicios y semilla fija (el mismo evento siempre da el mismo cuadro). Penaliza repetir compañero (mucho), repetir rival (algo), el desequilibrio de nivel entre parejas y, en Suma, las parejas que suman menos de lo permitido. En Mixto cada pareja es un hombre y una mujer.
 - **Descansos:** si sobran jugadores para las pistas, descansa quien menos jugó.
-- **Dupla fija:** todos contra todos por el método del círculo, repartido en rondas según las pistas.
+- **Dupla fija:** todos contra todos por el método del círculo, repartido en rondas según las pistas. Nunca adelanta un cruce de la segunda vuelta mientras falte uno de la primera.
+- **Rondas automáticas** (`planRondas` en `lib/rotation.ts`): en Dupla fija, las rondas justas del todos contra todos (tope 30); en Individual, el máximo sin repetir pareja (tope 8), bajando si hace falta a una cantidad en la que todos juegan lo mismo. Probado en todas las combinaciones de 4 a 24 jugadores, 2 a 16 duplas, mixto de 2 a 12 por género y 1 a 6 pistas: cero parejas o cruces repetidos.
 - **Re-sorteo:** al cambiar el plantel, las rondas ya jugadas cuentan como historial y solo se regeneran las siguientes, con ids nuevos.
 
 ### Sincronización
@@ -177,7 +183,7 @@ cd lamarinasportclub
 npm install
 cp .env.example .env.local   # vacío = modo DEMO
 npm run dev                  # http://localhost:3000, PIN 1234
-npm test                     # 37 tests de lógica
+npm test                     # 52 tests de lógica
 ```
 
 ### 2. Crear las tablas en Supabase
@@ -265,12 +271,14 @@ Errores, siempre en JSON: `400` JSON mal formado, `401` sin sesión, `403` usuar
 
 ## Pruebas y solución de problemas
 
-Antes de entregar pasaron 37 tests de lógica (`npm test`), 22 pruebas en navegador real con Playwright, `tsc --noEmit` sin errores y el build de Next.js.
+Antes de entregar pasaron 52 tests de lógica (`npm test`), 49 pruebas en navegador real con Playwright (`tests/e2e/robustez.e2e.mjs` y `tests/e2e/moncho.e2e.mjs`), `tsc --noEmit` sin errores y el build de Next.js.
 
 | Prueba | Qué cubre |
 | --- | --- |
-| Rotación | Sin compañeros repetidos, descansos justos, Mixto siempre hombre + mujer, Dupla fija todos contra todos |
-| Puntuación | Marcadores imposibles rechazados, puntos a 13, games en total con tie a 2-2, super tie, los 3 criterios de ranking, desempates |
+| Rotación | Sin compañeros repetidos, descansos justos, Mixto siempre hombre + mujer, Dupla fija todos contra todos, rondas automáticas en todas las combinaciones de inscritos y pistas, Suma |
+| Puntuación | Marcadores imposibles rechazados, puntos a 13, games en total con tie a 2-2, super tie, los 3 criterios de ranking |
+| Empates | Enfrentamiento directo, triple empate (mini tabla), diferencia, puntos a favor y posición compartida |
+| Setup | Flecha y "atrás" vuelven al paso anterior, formato sin "Mixto", casillas de mujeres y hombres, Suma, cronómetro apagado, duplas en espera, historial |
 | Robustez | Dos dispositivos a la vez, reloj del celular atrasado, sin internet, datos locales corruptos, re-sorteos, borrado |
 | API | `401` sin sesión, PIN incorrecto, `429` al sexto intento, cookie falsa, `400`, `413`, `422`, `404` |
 | Pantallas | Celular, tablet, computador, TV 720p, 1080p, 4K y vertical |

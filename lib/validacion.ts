@@ -4,10 +4,11 @@
  * en una Edge Function o en el backend de PadelReserve.
  */
 import type { ConfigClub, EventoAmericano } from "@/types/americano";
+import { LIMITES_SUMA } from "./categories.ts";
 import { LIMITES, validarResultado } from "./scoring.ts";
 
 const RAMAS = ["FEMENINO", "MASCULINO", "MIXTO"];
-const NIVELES = ["7MA", "6TA", "5TA", "4TA", "3RA", "OPEN"];
+const NIVELES = ["7MA", "6TA", "5TA", "4TA", "3RA", "2DA", "OPEN"];
 const METODOS = ["PUNTOS_TOTALES", "GAMES_PUNTO_ORO", "SETS_CORTOS"];
 const ESTADOS = ["BORRADOR", "EN_CURSO", "FINALIZADO"];
 const HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -31,6 +32,11 @@ export function validarEvento(x: unknown): string[] {
   if (typeof e.horaInicio !== "string" || !HORA.test(e.horaInicio)) err("horaInicio debe ser HH:MM.");
   if (typeof e.horaFin !== "string" || !HORA.test(e.horaFin)) err("horaFin debe ser HH:MM.");
   if (!e.categoria || !RAMAS.includes(e.categoria.rama) || !NIVELES.includes(e.categoria.nivel)) err("categoria inválida.");
+  else {
+    if (e.categoria.suma != null && !esEntero(e.categoria.suma, LIMITES_SUMA.min, LIMITES_SUMA.max)) err(`categoria.suma debe estar entre ${LIMITES_SUMA.min} y ${LIMITES_SUMA.max}.`);
+    if (e.categoria.nombre != null && e.categoria.nombre !== "" && !esTexto(e.categoria.nombre, 60)) err("categoria.nombre: máximo 60 caracteres.");
+  }
+  if (e.cronometro !== undefined && typeof e.cronometro !== "boolean") err("cronometro debe ser true o false.");
   if (e.modalidad !== "INDIVIDUAL_ROTATIVO" && e.modalidad !== "DUPLA_FIJA") err("modalidad inválida.");
   if (!e.puntuacion || !METODOS.includes(e.puntuacion.metodo)) err("puntuacion.metodo inválido.");
   if (e.puntuacion?.criterio && !["PUNTOS_A_FAVOR", "SOLO_GANADOS", "VICTORIAS"].includes(e.puntuacion.criterio)) err("puntuacion.criterio inválido.");
@@ -67,6 +73,7 @@ export function validarEvento(x: unknown): string[] {
     if (ids.has(j.id)) err(`Jugador duplicado: ${j.id}.`);
     ids.add(j.id);
     if (j.genero !== "M" && j.genero !== "F") err(`Género inválido para ${j.nombre}.`);
+    if (j.nivel != null && !NIVELES.includes(j.nivel)) err(`Nivel inválido para ${j.nombre}.`);
   }
   for (const p of e.parejas) {
     if (!p || !Array.isArray(p.jugadorIds) || p.jugadorIds.length !== 2 || !p.jugadorIds.every((id) => ids.has(id)))

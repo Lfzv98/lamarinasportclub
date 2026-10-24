@@ -29,6 +29,8 @@ export interface NuevoEventoInput {
   pistas: number;
   canchas?: PistaClub[];
   duracionRondaMin: number;
+  /** false = sin cronómetro. Por defecto true. */
+  cronometro?: boolean;
   totalRondas: number;
   jugadores: Jugador[];
   parejas?: Pareja[];
@@ -55,6 +57,7 @@ function generarRondasDesde(
     rondas: Math.max(0, e.totalRondas - desde + 1),
     semilla: e.semilla + desde * 7919,
     mixto: e.categoria.rama === "MIXTO",
+    suma: e.categoria.suma ?? undefined,
     previas,
     desde,
     sufijo,
@@ -84,6 +87,7 @@ export function crearEvento(input: NuevoEventoInput): EventoAmericano {
     pistas: Math.min(6, Math.max(1, input.canchas?.length || input.pistas)),
     canchas: input.canchas,
     duracionRondaMin: input.duracionRondaMin,
+    ...(input.cronometro === false ? { cronometro: false } : {}),
     totalRondas: input.totalRondas,
     rondaActual: 1,
     estado: "BORRADOR" as const,

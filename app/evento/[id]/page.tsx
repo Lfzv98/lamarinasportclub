@@ -3,12 +3,13 @@
 import clsx from "clsx";
 import { useParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronRight, Coffee, Eye, LockKeyhole, Flag, Pause, Pencil, Play, RotateCcw, Trash2, Trophy, Users } from "lucide-react";
+import { Check, ChevronRight, Eye, LockKeyhole, Flag, Pause, Pencil, Play, RotateCcw, Trash2, Trophy, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { PlantelSheet } from "@/components/PlantelSheet";
 import { useEffect, useRef, useState } from "react";
 import { AvatarPareja } from "@/components/Avatar";
-import { Cronometro } from "@/components/Cronometro";
+import { Cronometro, MarcadorRonda } from "@/components/Cronometro";
+import { EnEspera } from "@/components/EnEspera";
 import { EventoShell } from "@/components/EventoShell";
 import { ScoreModal } from "@/components/ScoreModal";
 import { Confetti } from "@/components/ui/Confetti";
@@ -60,7 +61,8 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
 
   const ronda = evento.rondas.find((r) => r.numero === vista) ?? evento.rondas[0];
   const esActual = ronda?.numero === evento.rondaActual && evento.estado !== "FINALIZADO";
-  const reloj = useReloj(esActual ? ronda : undefined, evento.duracionRondaMin);
+  const conReloj = evento.cronometro !== false;
+  const reloj = useReloj(esActual && conReloj ? ronda : undefined, evento.duracionRondaMin);
   const relojVista = useReloj(ronda, evento.duracionRondaMin, { alarma: false });
   const prog = progresoEvento(evento);
   const porId = new Map(evento.jugadores.map((j) => [j.id, j]));
@@ -99,8 +101,6 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
 
   if (!ronda) return <p className="mt-10 text-center text-white/50">Este evento no tiene rondas. Revisa la cantidad de jugadores.</p>;
 
-  const descansan = ronda.descansanIds.map((id) => (evento.modalidad === "DUPLA_FIJA" ? evento.parejas.find((p) => p.id === id)?.nombre ?? id : porId.get(id)?.nombre ?? id));
-
   return (
     <div>
       <Confetti activo={fiesta} />
@@ -124,7 +124,7 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
             >
               {completa && <Check className="size-3.5" strokeWidth={3} />}
               R{r.numero}
-              <span className={clsx("text-[11px] font-medium", r.numero === vista ? "text-noche/70" : "text-white/40")}>{horaRonda(evento, r.numero)}</span>
+              {conReloj && <span className={clsx("text-[11px] font-medium", r.numero === vista ? "text-noche/70" : "text-white/40")}>{horaRonda(evento, r.numero)}</span>}
               {actual && r.numero !== vista && <span className="absolute -right-1 -top-1 size-2.5 animate-pulse rounded-full bg-neon" />}
             </button>
           );
@@ -134,13 +134,20 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
       <div className="mt-4 grid gap-4 lg:grid-cols-[300px_1fr]">
         {/* Panel de control de la ronda */}
         <aside className="glass flex flex-col items-center rounded-3xl p-6 lg:sticky lg:top-4 lg:self-start">
-          <p className="label !mb-1">Ronda {ronda.numero} de {evento.totalRondas} · {horaRonda(evento, ronda.numero)}</p>
-          <Cronometro
-            restantes={esActual ? reloj.restantes : relojVista.restantes}
-            progreso={esActual ? reloj.progreso : relojVista.progreso}
-            corriendo={esActual && reloj.corriendo}
-            className="my-3"
-          />
+          <p className="label !mb-1">
+            Ronda {ronda.numero} de {evento.totalRondas}
+            {conReloj && ` · ${horaRonda(evento, ronda.numero)}`}
+          </p>
+          {conReloj ? (
+            <Cronometro
+              restantes={esActual ? reloj.restantes : relojVista.restantes}
+              progreso={esActual ? reloj.progreso : relojVista.progreso}
+              corriendo={esActual && reloj.corriendo}
+              className="my-3"
+            />
+          ) : (
+            <MarcadorRonda ronda={ronda} total={evento.totalRondas} className="my-3" />
+          )}
 
           {!esStaff ? (
             <div className="mt-1 flex w-full flex-col items-center gap-2 text-center">
@@ -163,9 +170,11 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
           ) : esActual ? (
             <div className="flex w-full flex-col gap-2">
               {ronda.estado === "EN_JUEGO" ? (
-                <button className="btn-ghost w-full" onClick={() => act((e) => pausarRonda(e))}>
-                  <Pause className="size-4" /> Pausar
-                </button>
+                conReloj && (
+                  <button className="btn-ghost w-full" onClick={() => act((e) => pausarRonda(e))}>
+                    <Pause className="size-4" /> Pausar
+                  </button>
+                )
               ) : (
                 <button
                   className="btn-neon w-full py-4 text-base"
@@ -175,13 +184,15 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
                     act((e) => iniciarRonda(e));
                   }}
                 >
-                  <Play className="size-5" /> {ronda.estado === "PAUSADA" ? "Reanudar" : "Iniciar ronda"}
+                  <Play className="size-5" /> {ronda.estado === "PAUSADA" && conReloj ? "Reanudar" : "Iniciar ronda"}
                 </button>
               )}
               <div className="flex gap-2">
-                <button className="btn-ghost flex-1 !px-3 text-xs" onClick={() => act((e) => reiniciarCronometro(e))}>
-                  <RotateCcw className="size-3.5" /> Reloj
-                </button>
+                {conReloj && (
+                  <button className="btn-ghost flex-1 !px-3 text-xs" onClick={() => act((e) => reiniciarCronometro(e))}>
+                    <RotateCcw className="size-3.5" /> Reloj
+                  </button>
+                )}
                 <button
                   className={clsx("flex-1 !px-3 text-xs", rondaCompleta(ronda) ? "btn-neon animate-pulse-neon" : "btn-ghost")}
                   onClick={avanzar}
@@ -209,20 +220,6 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
             </div>
           </div>
 
-          {descansan.length > 0 && (
-            <div className="mt-6 w-full">
-              <p className="label flex items-center gap-1.5">
-                <Coffee className="size-3.5" /> Descansan
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {descansan.map((n) => (
-                  <span key={n} className="chip">
-                    {n}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
           {esStaff && <div className="mt-6 flex w-full gap-2">
             <button className="btn-ghost flex-1 !px-3 text-xs" onClick={() => setPlantel(true)}>
               <Users className="size-3.5" /> {evento.modalidad === "DUPLA_FIJA" ? "Parejas" : "Jugadores"}
@@ -281,6 +278,7 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
           {esStaff && pendientes > 0 && (
             <p className="mt-4 text-center text-xs text-white/40">Toca una pista para cargar el marcador · {pendientes} pendiente(s)</p>
           )}
+          <EnEspera evento={evento} ronda={ronda} />
         </section>
       </div>
 

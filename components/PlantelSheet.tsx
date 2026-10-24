@@ -18,6 +18,7 @@ import {
 } from "@/lib/evento";
 import { vibrar } from "@/lib/feedback";
 import { partidosPorRonda } from "@/lib/rotation";
+import { nivelParaSuma } from "@/lib/categories";
 import type { EventoAmericano, Genero, Jugador } from "@/types/americano";
 
 /**
@@ -48,7 +49,7 @@ export function PlantelSheet({
 
   const nuevoJugador = (nombre: string, g: Genero): Jugador => {
     const [n, ...resto] = nombre.trim().split(/\s+/);
-    return { id: nuevoId("jug_"), nombre: n, apellido: resto.join(" ") || undefined, genero: g, nivel: evento.categoria.nivel, fotoUrl: null };
+    return { id: nuevoId("jug_"), nombre: n, apellido: resto.join(" ") || undefined, genero: g, nivel: evento.categoria.suma ? nivelParaSuma(evento.categoria.suma) : evento.categoria.nivel, fotoUrl: null };
   };
 
   const nombreRepetido = (n: string) => evento.jugadores.some((j) => !j.retirado && `${j.nombre} ${j.apellido ?? ""}`.trim().toLowerCase() === n.trim().toLowerCase());

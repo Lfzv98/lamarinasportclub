@@ -19,13 +19,15 @@
  * regenera exactamente el mismo cuadro.
  */
 import type { Genero, Jugador, Pareja, Partido, Ronda } from "@/types/americano";
-import { RATING_NIVEL } from "./categories.ts";
+import { NUMERO_NIVEL, RATING_NIVEL } from "./categories.ts";
 
 export interface OpcionesRotacion {
   pistas: number;
   rondas: number;
   semilla: number;
   mixto?: boolean;
+  /** Categoría por suma: evita armar parejas que sumen menos (más fuertes que la categoría). */
+  suma?: number;
   /** Rondas ya jugadas: alimentan el historial al re-sortear (jugador retirado o tardío). */
   previas?: Ronda[];
   /** Número de la primera ronda a generar (por defecto 1). */
@@ -38,6 +40,7 @@ const COSTO_COMPANERO_REPETIDO = 1000;
 const COSTO_RIVAL_REPETIDO = 40;
 const COSTO_DESBALANCE = 12;
 const COSTO_PISTA_REPETIDA = 20;
+const COSTO_SUMA_INVALIDA = 300;
 
 /* ---------- utilidades ---------- */
 
@@ -95,21 +98,95 @@ export function partidosPorRonda(jugadores: Jugador[], pistas: number, mixto = f
   return Math.max(0, Math.min(pistas, Math.floor(jugadores.length / 4)));
 }
 
-/** Rondas sugeridas: idealmente cada jugador comparte pareja con todos (N−1), acotado a una tarde razonable. */
+/** Rondas sugeridas (atajo de `planRondas`). */
 export function rondasSugeridas(
   nJugadoresOParejas: number,
   modalidad: "INDIVIDUAL_ROTATIVO" | "DUPLA_FIJA",
   pistas: number,
   genero?: { hombres: number; mujeres: number },
 ): number {
+  return planRondas(nJugadoresOParejas, modalidad, pistas, genero).rondas;
+}
+
+export interface PlanRondas {
+  /** Rondas recomendadas. */
+  rondas: number;
+  /** Partidos simultáneos por ronda. */
+  porRonda: number;
+  /** Jugadores (o duplas) que esperan cada ronda. */
+  enEspera: number;
+  /** Individual: máximo de rondas sin repetir compañero. Dupla fija: rondas del todos contra todos. */
+  sinRepetir: number;
+  /** Con las rondas recomendadas, todos juegan la misma cantidad de partidos. */
+  equitativo: boolean;
+  /** Partidos por jugador/dupla con las rondas recomendadas: [mínimo, máximo]. */
+  partidos: [number, number];
+}
+
+/** Máximo de rondas de un evento (lo mismo que acepta la API). */
+export const MAX_RONDAS_PLAN = 30;
+/** Individual: tope para que el evento quepa en una tarde (≈ 2 h 30). */
+const TOPE_INDIVIDUAL = 8;
+
+/** Partidos que juega cada uno con `rondas` rondas: [mínimo, máximo]. */
+export function partidosPorUnidad(n: number, porRonda: number, rondas: number, porPartido: number): [number, number] {
+  if (n <= 0) return [0, 0];
+  const cupos = porRonda * porPartido * rondas;
+  return [Math.floor(cupos / n), Math.ceil(cupos / n)];
+}
+
+/**
+ * Cuántas rondas conviene jugar según las duplas/jugadores inscritos y las pistas:
+ * - Dupla fija: exactamente las rondas del todos contra todos (nadie repite rival ni le falta uno).
+ * - Individual: el máximo sin repetir compañero (tope 8), eligiendo si se puede una cantidad
+ *   en la que todos juegan los mismos partidos (los descansos se reparten parejo).
+ */
+export function planRondas(
+  n: number,
+  modalidad: "INDIVIDUAL_ROTATIVO" | "DUPLA_FIJA",
+  pistas: number,
+  genero?: { hombres: number; mujeres: number },
+): PlanRondas {
   if (modalidad === "DUPLA_FIJA") {
-    const n = nJugadoresOParejas;
-    if (n < 2) return 1;
+    const porRonda = Math.max(0, Math.min(pistas, Math.floor(n / 2)));
+    if (porRonda === 0) return { rondas: 1, porRonda: 0, enEspera: n, sinRepetir: 0, equitativo: true, partidos: [0, 0] };
     const total = (n * (n - 1)) / 2;
-    const porRonda = Math.max(1, Math.min(pistas, Math.floor(n / 2)));
-    return Math.max(1, Math.min(15, Math.ceil(total / porRonda)));
+    // Con duplas impares y pistas de sobra, cada jornada deja una dupla libre: n jornadas.
+    const necesarias = Math.ceil(total / porRonda);
+    const rondas = Math.min(MAX_RONDAS_PLAN, necesarias);
+    const completo = rondas === necesarias;
+    return { rondas, porRonda, enEspera: n - porRonda * 2, sinRepetir: necesarias, equitativo: completo, partidos: completo ? [n - 1, n - 1] : partidosPorUnidad(n, porRonda, rondas, 2) };
   }
-  return Math.max(3, Math.min(8, nJugadoresOParejas - 1, maxRondasSinRepetirPareja(nJugadoresOParejas, pistas, genero)));
+  const mixto = !!genero;
+  const porRonda = mixto
+    ? Math.max(0, Math.min(pistas, Math.floor(genero!.hombres / 2), Math.floor(genero!.mujeres / 2)))
+    : Math.max(0, Math.min(pistas, Math.floor(n / 4)));
+  const enEspera = mixto ? genero!.hombres + genero!.mujeres - porRonda * 4 : n - porRonda * 4;
+  if (porRonda === 0) return { rondas: 1, porRonda: 0, enEspera, sinRepetir: 0, equitativo: true, partidos: [0, 0] };
+  const sinRepetir = maxRondasSinRepetirPareja(n, pistas, genero);
+  const tope = Math.max(1, Math.min(TOPE_INDIVIDUAL, sinRepetir));
+  // ¿Con r rondas todos (de cada género, en mixto) juegan lo mismo?
+  const parejo = (r: number) =>
+    mixto
+      ? (r * (genero!.hombres - porRonda * 2)) % genero!.hombres === 0 && (r * (genero!.mujeres - porRonda * 2)) % genero!.mujeres === 0
+      : (r * enEspera) % n === 0;
+  let rondas = tope;
+  if (!parejo(tope)) {
+    const minimo = Math.max(3, Math.ceil(tope * 0.6));
+    for (let r = tope - 1; r >= minimo; r--)
+      if (parejo(r)) {
+        rondas = r;
+        break;
+      }
+  }
+  const partidos: [number, number] = mixto
+    ? (() => {
+        const h = partidosPorUnidad(genero!.hombres, porRonda, rondas, 2);
+        const m = partidosPorUnidad(genero!.mujeres, porRonda, rondas, 2);
+        return [Math.min(h[0], m[0]), Math.max(h[1], m[1])];
+      })()
+    : partidosPorUnidad(n, porRonda, rondas, 4);
+  return { rondas, porRonda, enEspera, sinRepetir, equitativo: parejo(rondas), partidos };
 }
 
 /**
@@ -131,6 +208,7 @@ export function maxRondasSinRepetirPareja(nJugadores: number, pistas: number, ge
 
 interface Historial {
   pistas?: Contador;
+  suma?: number;
   companeros: Contador;
   rivales: Contador;
   jugados: Contador;
@@ -148,6 +226,7 @@ function costoDisposicion(disp: Jugador[], h: Historial): number {
     costo += COSTO_COMPANERO_REPETIDO * h.companeros.get(clave(b0.id, b1.id));
     for (const x of [a0, a1]) for (const y of [b0, b1]) costo += COSTO_RIVAL_REPETIDO * h.rivales.get(clave(x.id, y.id));
     costo += COSTO_DESBALANCE * Math.abs(ratingJugador(a0) + ratingJugador(a1) - ratingJugador(b0) - ratingJugador(b1));
+    if (h.suma) for (const [x, y] of [[a0, a1], [b0, b1]]) if (x.nivel && y.nivel && NUMERO_NIVEL[x.nivel] + NUMERO_NIVEL[y.nivel] < h.suma) costo += COSTO_SUMA_INVALIDA;
   }
   return costo;
 }
@@ -266,7 +345,7 @@ function generarIndividualUnaVez(jugadores: Jugador[], opts: OpcionesRotacion): 
   if (nPartidos === 0) return [];
 
   const usoPistas = new Contador();
-  const h: Historial = { companeros: new Contador(), rivales: new Contador(), jugados: new Contador(), descansos: new Contador(), pistas: usoPistas };
+  const h: Historial = { companeros: new Contador(), rivales: new Contador(), jugados: new Contador(), descansos: new Contador(), pistas: usoPistas, suma: opts.suma };
   for (const r of opts.previas ?? []) {
     for (const p of r.partidos) {
       [...p.parejaA.jugadorIds, ...p.parejaB.jugadorIds].forEach((id) => usoPistas.inc(`${id}|${p.pista}`));
@@ -426,7 +505,8 @@ export function generarRondasDuplaFija(parejas: Pareja[], opts: OpcionesRotacion
       if (prueba.length > elegidos.length) elegidos = prueba;
     }
     // Si la vuelta actual no alcanza para llenar las pistas y ya está por terminar, completa con la siguiente.
-    if (elegidos.length < porRonda && actuales.length === cola.length && elegidos.length === actuales.length) {
+    // En la última ronda del evento no: ese partido sería un cruce repetido que nadie necesita.
+    if (r < desde + opts.rondas - 1 && elegidos.length < porRonda && actuales.length === cola.length && elegidos.length === actuales.length) {
       recargar();
       const ocupados = new Set(elegidos.flat());
       const extra = armar(cola.filter((m) => vueltaDe.get(m) === vueltas && !ocupados.has(m[0]) && !ocupados.has(m[1])).sort((x, y) => carga(x) - carga(y)));
