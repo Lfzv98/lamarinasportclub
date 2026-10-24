@@ -40,3 +40,12 @@ create index if not exists torneos_marcadores_torneo_idx on public.torneos_marca
 
 alter table public.torneos enable row level security;
 alter table public.torneos_marcadores enable row level security;
+
+-- Ranking FVP vigente (RankingFvp en types/ranking.ts): una sola fila id = 'fvp'.
+-- La llena la sincronización diaria con la hoja de la FVP o el archivo que sube el staff.
+create table if not exists public.ranking_fvp (
+  id             text primary key,
+  data           jsonb not null,
+  actualizado_en timestamptz not null default now()
+);
+alter table public.ranking_fvp enable row level security;

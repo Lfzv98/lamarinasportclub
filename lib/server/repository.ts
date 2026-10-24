@@ -14,6 +14,7 @@ import "server-only";
 import mock from "@/data/mockData.json";
 import { CLUB_POR_DEFECTO } from "@/lib/horarios";
 import type { ConfigClub, EventoAmericano } from "@/types/americano";
+import type { RankingFvp } from "@/types/ranking";
 import type { MarcadorVivo, Torneo } from "@/types/torneo";
 
 export interface AmericanosRepository {
@@ -211,4 +212,55 @@ export function getTorneosRepository(): TorneosRepository {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   return url && key ? supabaseTorneos(url, key) : demoTorneos;
+}
+
+/* ---------- RANKING FVP ---------- */
+
+export interface RankingRepository {
+  modo: "DEMO" | "SUPABASE";
+  obtener(): Promise<RankingFvp | null>;
+  guardar(r: RankingFvp): Promise<RankingFvp>;
+}
+
+const memoriaR = globalThis as unknown as { __rankingFvpDemo?: RankingFvp | null };
+
+const demoRanking: RankingRepository = {
+  modo: "DEMO",
+  async obtener() {
+    return memoriaR.__rankingFvpDemo ?? null;
+  },
+  async guardar(r) {
+    memoriaR.__rankingFvpDemo = r;
+    return r;
+  },
+};
+
+/** Una sola fila JSONB (id = 'fvp') con la lista vigente. */
+function supabaseRanking(url: string, key: string): RankingRepository {
+  const base = `${url.replace(/\/$/, "")}/rest/v1/${process.env.SUPABASE_RANKING_TABLE ?? "ranking_fvp"}`;
+  const headers = { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" };
+  return {
+    modo: "SUPABASE",
+    async obtener() {
+      const res = await fetch(`${base}?select=data&id=eq.fvp`, { headers, cache: "no-store" });
+      if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+      return ((await res.json()) as { data: RankingFvp }[])[0]?.data ?? null;
+    },
+    async guardar(r) {
+      const res = await fetch(base, {
+        method: "POST",
+        headers: { ...headers, Prefer: "resolution=merge-duplicates,return=minimal" },
+        body: JSON.stringify({ id: "fvp", data: r, actualizado_en: r.cargadoEn }),
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+      return r;
+    },
+  };
+}
+
+export function getRankingRepository(): RankingRepository {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  return url && key ? supabaseRanking(url, key) : demoRanking;
 }

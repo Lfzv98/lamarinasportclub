@@ -19,8 +19,8 @@ export const RAMAS_TORNEO: { id: RamaTorneo; label: string; corto: string }[] = 
   { id: "MIXTO", label: "Mixto", corto: "X" },
 ];
 
-export const EDADES_MASTER = [45, 55];
-export const EDADES_JUNIOR = [12, 14, 16, 18];
+export const EDADES_MASTER = [40, 45, 55];
+export const EDADES_JUNIOR = [12, 13, 14, 16, 18];
 
 const corto = (r: RamaTorneo) => RAMAS_TORNEO.find((x) => x.id === r)!.corto;
 
