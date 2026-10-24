@@ -71,10 +71,10 @@ En el paso Formato se elige cómo se cuenta y se escribe cualquier número. Los 
 | Método | Opciones | Ejemplo |
 | --- | --- | --- |
 | Puntos | En total o primero en llegar; de 4 a 99 puntos | "24 en total" (13-11) o "a 13" (13-9) |
-| Games | En total o primero en llegar; de 1 a 15 games; punto de oro o ventaja; tie-break opcional de 3 a 21 puntos | 5 games en total: si quedan 2-2, el último game es un tie a 5 (3-2, tie 5-3) |
-| Sets | 1 set, mejor de 3 o de 5; de 2 a 9 games por set; punto de oro o ventaja; super tie opcional en el set decisivo | Mejor de 3 a 6 games, 3er set super tie a 10 (6-4, 5-7, 10-8) |
+| Games | En total o primero en llegar; de 1 a 15 games; punto de oro o ventaja; tie-break opcional de 3 a 21 puntos, con o sin 2 de diferencia | 5 games en total: si quedan 2-2, el último game es un tie a 5 (3-2, tie 5-3) |
+| Sets | 1 set, mejor de 3 o de 5; de 2 a 9 games por set; punto de oro o ventaja; super tie opcional en el set decisivo, con o sin 2 de diferencia | Mejor de 3 a 6 games, 3er set super tie a 10 (6-4, 5-7, 10-8) |
 
-Al cargar el marcador, la app solo acepta resultados posibles con esas reglas y ofrece atajos con los finales válidos. Si el partido se definió en el tie-break, se puede anotar su marcador (es opcional y se muestra en la tarjeta de la pista). Si se acaba el tiempo antes de terminar, se puede guardar el marcador parcial.
+Al cargar el marcador, la app solo acepta resultados posibles con esas reglas y ofrece atajos con los finales válidos. El interruptor **Ganar por 2 de diferencia** (encendido por defecto) decide cómo termina el tie-break o el super tie: encendido, a 7 vale 7-5 u 8-6; apagado, gana el primero en llegar, por ejemplo 7-6. Si el partido se definió en el tie-break, se puede anotar su marcador (es opcional y se muestra en la tarjeta de la pista). Si se acaba el tiempo antes de terminar, se puede guardar el marcador parcial.
 
 ### Durante el evento (staff)
 
@@ -183,7 +183,7 @@ cd lamarinasportclub
 npm install
 cp .env.example .env.local   # vacío = modo DEMO
 npm run dev                  # http://localhost:3000, PIN 1234
-npm test                     # 53 tests de lógica
+npm test                     # 54 tests de lógica
 ```
 
 ### 2. Crear las tablas en Supabase
@@ -271,7 +271,7 @@ Errores, siempre en JSON: `400` JSON mal formado, `401` sin sesión, `403` usuar
 
 ## Pruebas y solución de problemas
 
-Antes de entregar pasaron 53 tests de lógica (`npm test`), 49 pruebas en navegador real con Playwright (`tests/e2e/robustez.e2e.mjs` y `tests/e2e/moncho.e2e.mjs`), `tsc --noEmit` sin errores y el build de Next.js.
+Antes de entregar pasaron 54 tests de lógica (`npm test`), 49 pruebas en navegador real con Playwright (`tests/e2e/robustez.e2e.mjs` y `tests/e2e/moncho.e2e.mjs`), `tsc --noEmit` sin errores y el build de Next.js.
 
 | Prueba | Qué cubre |
 | --- | --- |

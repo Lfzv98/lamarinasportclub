@@ -73,11 +73,18 @@ export function indiceSuperTie(cfg: ConfigPuntuacion): number | null {
   return cfg.metodo === "SETS_CORTOS" && cfg.superTie && max > 1 ? max - 1 : null;
 }
 
-/** Un tie-break a `meta` puntos se gana llegando a meta con 2 de diferencia (ej. a 7: 7-5, 8-6). */
-export function validarTie(meta: number, a: number, b: number): string | null {
+/** El tie-break exige 2 de diferencia salvo que las reglas lo apaguen. */
+export const tieConDiferencia = (cfg: ConfigPuntuacion) => cfg.tieConDiferencia !== false;
+
+/**
+ * Un tie-break a `meta` puntos se gana llegando a meta con 2 de diferencia (ej. a 7: 7-5, 8-6).
+ * Sin diferencia de 2, gana el primero en llegar a meta (ej. 7-6).
+ */
+export function validarTie(meta: number, a: number, b: number, conDiferencia = true): string | null {
   const alto = Math.max(a, b);
   const bajo = Math.min(a, b);
   if (alto < meta) return `El tie-break se juega a ${meta} puntos.`;
+  if (!conDiferencia) return alto === meta && bajo < meta ? null : `El tie-break termina al llegar a ${meta} (ej. ${meta}-${meta - 1}).`;
   if (alto === meta ? bajo > meta - 2 : alto - bajo !== 2) return `El tie-break se gana por 2 de diferencia (ej. ${meta}-${meta - 2} o ${meta + 1}-${meta - 1}).`;
   return null;
 }
@@ -149,7 +156,7 @@ export function validarResultado(cfg: ConfigPuntuacion, r: Resultado): string | 
       if (!enteros(tb.a, tb.b)) return "Tie-break: valores inválidos.";
       if (x === null) return "Este partido no tiene tie-break.";
       if (!definidoEnTie) return `El tie-break solo se juega si quedan ${x}-${x}.`;
-      const m = validarTie(cfg.tieBreak!, tb.a, tb.b);
+      const m = validarTie(cfg.tieBreak!, tb.a, tb.b, tieConDiferencia(cfg));
       if (m) return m;
       if (tb.a > tb.b !== r.puntosA > r.puntosB) return "El tie-break lo debe ganar la pareja que gana el partido.";
     }
@@ -163,7 +170,7 @@ export function validarResultado(cfg: ConfigPuntuacion, r: Resultado): string | 
   for (const [i, s] of sets.entries()) {
     if (!enteros(s.a, s.b)) return `Set ${i + 1}: valores inválidos.`;
     if (i === st) {
-      const m = validarTie(cfg.superTie!, s.a, s.b);
+      const m = validarTie(cfg.superTie!, s.a, s.b, tieConDiferencia(cfg));
       if (m) return `Super tie: ${m.replace("El tie-break", "se")}`;
     } else if (!validarSet(n, s.a, s.b)) {
       return n <= 4
@@ -189,13 +196,13 @@ export function descripcionPuntuacion(cfg: ConfigPuntuacion): string {
   if (cfg.metodo === "GAMES_PUNTO_ORO") {
     const partes = [modoDe(cfg) === "TOTAL" ? `${n} games en total` : `A ${n} games`];
     const x = empateTieBreak(cfg);
-    if (x !== null) partes.push(`si quedan ${x}-${x}, tie a ${cfg.tieBreak}`);
+    if (x !== null) partes.push(`si quedan ${x}-${x}, tie a ${cfg.tieBreak}${tieConDiferencia(cfg) ? "" : " sin diferencia de 2"}`);
     partes.push(oro);
     return partes.join(" · ");
   }
   const max = cfg.setsMaximos ?? 3;
   const partes = [max === 1 ? `1 set a ${n} games` : `Mejor de ${max} sets a ${n} games`];
-  if (indiceSuperTie(cfg) !== null) partes.push(`${max === 3 ? "3er" : "último"} set: super tie a ${cfg.superTie}`);
+  if (indiceSuperTie(cfg) !== null) partes.push(`${max === 3 ? "3er" : "último"} set: super tie a ${cfg.superTie}${tieConDiferencia(cfg) ? "" : " sin diferencia de 2"}`);
   partes.push(oro);
   return partes.join(" · ");
 }

@@ -83,6 +83,21 @@ test("la API rechaza reglas fuera de rango", () => {
       puntuacion: { metodo: "GAMES_PUNTO_ORO", gamesPorPartido: 5, modo: "TOTAL", tieBreak: 5 }, pistas: 2, duracionRondaMin: 15, totalRondas: 3, jugadores, semilla: 1,
   });
   assert.deepEqual(validarEvento(base), []);
-  for (const p of [{ modo: "RARO" }, { gamesPorPartido: 40 }, { tieBreak: 1 }, { setsMaximos: 2 }, { puntoDeOro: "si" }])
+  for (const p of [{ modo: "RARO" }, { gamesPorPartido: 40 }, { tieBreak: 1 }, { setsMaximos: 2 }, { puntoDeOro: "si" }, { tieConDiferencia: "no" }])
     assert.ok(validarEvento({ ...base, puntuacion: { ...base.puntuacion, ...p } }).length > 0, JSON.stringify(p));
+});
+
+test("tie-break sin diferencia de 2: gana el primero en llegar", () => {
+  const c: ConfigPuntuacion = { metodo: "GAMES_PUNTO_ORO", gamesPorPartido: 5, modo: "TOTAL", tieBreak: 7, tieConDiferencia: false };
+  ok(c, { puntosA: 3, puntosB: 2, tieBreak: { a: 7, b: 6 } });
+  ok(c, { puntosA: 2, puntosB: 3, tieBreak: { a: 4, b: 7 } });
+  mal(c, { puntosA: 3, puntosB: 2, tieBreak: { a: 8, b: 6 } }); // se pasó del 7
+  mal(c, { puntosA: 3, puntosB: 2, tieBreak: { a: 6, b: 5 } }); // nadie llegó
+  assert.match(descripcionPuntuacion(c), /tie a 7 sin diferencia de 2/);
+  // Con la regla por defecto, 7-6 no vale.
+  mal({ ...c, tieConDiferencia: undefined }, { puntosA: 3, puntosB: 2, tieBreak: { a: 7, b: 6 } });
+  const s: ConfigPuntuacion = { metodo: "SETS_CORTOS", gamesPorPartido: 4, setsMaximos: 3, superTie: 10, tieConDiferencia: false };
+  ok(s, { puntosA: 0, puntosB: 0, sets: [{ a: 4, b: 2 }, { a: 1, b: 4 }, { a: 10, b: 9 }] });
+  mal(s, { puntosA: 0, puntosB: 0, sets: [{ a: 4, b: 2 }, { a: 1, b: 4 }, { a: 11, b: 9 }] });
+  assert.match(descripcionPuntuacion(s), /super tie a 10 sin diferencia de 2/);
 });

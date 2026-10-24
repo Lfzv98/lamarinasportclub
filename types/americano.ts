@@ -126,6 +126,8 @@ export interface ConfigPuntuacion {
   tieBreak?: number | null;
   /** Sets: el set decisivo se reemplaza por un super tie-break a estos puntos (ej. 10). */
   superTie?: number | null;
+  /** Tie-break y super tie: hay que ganar por 2 de diferencia (true, por defecto) o gana el primero en llegar (false, ej. 7-6). */
+  tieConDiferencia?: boolean;
   /** Cómo se ordena el ranking. Por defecto: PUNTOS_A_FAVOR en puntos totales, VICTORIAS en games/sets. */
   criterio?: CriterioRanking;
 }

@@ -51,6 +51,7 @@ export function validarEvento(x: unknown): string[] {
     }
     if (c.setsMaximos !== undefined && ![1, 3, 5].includes(c.setsMaximos)) err("setsMaximos debe ser 1, 3 o 5.");
     if (c.puntoDeOro !== undefined && typeof c.puntoDeOro !== "boolean") err("puntoDeOro debe ser true o false.");
+    if (c.tieConDiferencia !== undefined && typeof c.tieConDiferencia !== "boolean") err("tieConDiferencia debe ser true o false.");
     for (const k of ["tieBreak", "superTie"] as const)
       if (c[k] != null && !esEntero(c[k], LIMITES.tie.min, LIMITES.tie.max)) err(`${k} debe estar entre ${LIMITES.tie.min} y ${LIMITES.tie.max} puntos.`);
   }
