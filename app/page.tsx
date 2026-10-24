@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Settings, Shuffle, Trophy } from "lucide-react";
+import { ArrowRight, BookOpen, Settings, Shuffle, Trophy } from "lucide-react";
 import { InstallButton } from "@/components/InstallButton";
 import { Logo } from "@/components/Logo";
 import { StaffChip } from "@/components/StaffGate";
@@ -48,6 +48,9 @@ export default function Home() {
         <header className="relative mx-auto flex max-w-5xl items-center justify-end gap-2 px-4 py-3 sm:px-6">
           <InstallButton />
           <StaffChip />
+          <Link href="/manual" className="btn-ghost !p-2.5" aria-label="Manual del staff" title="Manual del staff">
+            <BookOpen className="size-4" />
+          </Link>
           <Link
             href="/club"
             onClick={(e) => {
