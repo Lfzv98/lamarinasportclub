@@ -132,3 +132,49 @@ export async function verificarPadelReserve(email: string, password: string): Pr
 export function ipDe(req: Request) {
   return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "local";
 }
+
+/* ---------- participantes de torneos ---------- */
+
+/**
+ * Clave de participantes por torneo. La cookie `lm_torneos` guarda, firmada, a qué
+ * torneos entró este dispositivo y hasta cuándo (el vencimiento de cada clave).
+ */
+export const COOKIE_TORNEOS = "lm_torneos";
+
+export type AccesosTorneo = Record<string, number>;
+
+export function leerAccesos(req: Request): AccesosTorneo {
+  const c = req.headers.get("cookie") ?? "";
+  const m = c.split(/;\s*/).find((x) => x.startsWith(`${COOKIE_TORNEOS}=`));
+  const token = m ? decodeURIComponent(m.slice(COOKIE_TORNEOS.length + 1)) : null;
+  if (!token) return {};
+  const [datos, firma] = token.split(".");
+  if (!datos || !firma) return {};
+  const esperada = Buffer.from(firmar(`t:${datos}`));
+  const recibida = Buffer.from(firma);
+  if (esperada.length !== recibida.length || !timingSafeEqual(esperada, recibida)) return {};
+  try {
+    const todos = JSON.parse(Buffer.from(datos, "base64url").toString()) as AccesosTorneo;
+    const ahora = Date.now() / 1000;
+    return Object.fromEntries(Object.entries(todos).filter(([, exp]) => exp > ahora));
+  } catch {
+    return {};
+  }
+}
+
+export function tokenAccesos(accesos: AccesosTorneo): { token: string; maxAge: number } {
+  const datos = b64(JSON.stringify(accesos));
+  const max = Math.max(60, ...Object.values(accesos).map((exp) => Math.ceil(exp - Date.now() / 1000)));
+  return { token: `${datos}.${firmar(`t:${datos}`)}`, maxAge: max };
+}
+
+/** Huella corta de la clave: al cambiarla, los accesos dados con la anterior dejan de valer. */
+export function huellaClave(clave: string): string {
+  return firmar(`k:${clave.trim().toUpperCase()}`).slice(0, 10);
+}
+
+export function claveCorrecta(recibida: string, esperada: string): boolean {
+  const a = Buffer.from(recibida.trim().toUpperCase());
+  const b = Buffer.from(esperada.trim().toUpperCase());
+  return a.length === b.length && timingSafeEqual(a, b);
+}

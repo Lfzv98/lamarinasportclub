@@ -61,7 +61,7 @@ En el inicio, toca **Nuevo Americano**. El asistente tiene 5 pasos y guarda el b
 1. **Categoría:** Femenino, Masculino o Mixto. Luego **Por nivel** (7ma a Open; 2da solo en Masculino y Mixto) o **Suma** (elige N; Open cuenta 1, 2da 2… 7ma 7, y una pareja no puede sumar menos de N). Nombre propio opcional.
 2. **Formato:** Individual o Dupla fija (en Mixto: Individual mixto o Dupla fija mixta); las reglas del partido (ver "Reglas de puntuación") y el criterio del ranking.
 3. **Jugadores:** en Mixto individual hay una casilla para **Mujeres** y otra para **Hombres**, cada una con su contador. En Dupla fija se inscribe cada dupla (en mixta: hombre + mujer). En Suma, a cada jugador se le elige su categoría y la app marca en rojo la dupla que suma menos de lo permitido. Avisa cuántos quedan en espera por ronda.
-4. **Pistas y rondas:** cuáles pistas se usan, tocándolas en el **mapa del club** (las techadas bajo la estructura y la 5 al aire libre) o en su tarjeta; las **rondas salen en automático** según los inscritos y las pistas (se pueden cambiar con + y −, y "volver a automático"). **Cronómetro por ronda** encendido (con su duración) o apagado. **Fecha, Inicio y Fin**: toca cada botón y elige en la pantallita (calendario con atajos Hoy, Mañana y Sábado; reloj con hora, minutos de 15 en 15 y atajos de duración 1 h 30 a 3 h). Si las rondas no caben, ofrece "Ajustar a N rondas". Si llueve, **¿Llueve?** deja solo las techadas.
+4. **Pistas y rondas:** cuáles pistas se usan, tocándolas en la **fila de pistas** (las 5 en línea, con alfombras azules como las reales, número flotante y si es techada o al aire libre). Las pistas flotan en perspectiva con sombra suave; la elegida se eleva y respira en azul brillante con borde, brillo y luz lima. También se puede tocar su tarjeta; las **rondas salen en automático** según los inscritos y las pistas (se pueden cambiar con + y −, y "volver a automático"). **Cronómetro por ronda** encendido (con su duración) o apagado. **Fecha, Inicio y Fin**: toca cada botón y elige en la pantallita (calendario con atajos Hoy, Mañana y Sábado; reloj con hora, minutos de 15 en 15 y atajos de duración 1 h 30 a 3 h). Si las rondas no caben, ofrece "Ajustar a N rondas". Si llueve, **¿Llueve?** deja solo las techadas.
 5. **Listo:** revisa el resumen, la vista previa de la ronda 1 (con quién espera) y crea el evento.
 
 ### Reglas de puntuación
@@ -119,7 +119,8 @@ La app usa los colores del sistema de reservas: índigo de la marca `#0F058C` co
 
 - Tema por defecto: **oscuro índigo** (clase `tema-noche` en el `<html>` de `app/layout.tsx`). El Modo TV usa el mismo.
 - Tema claro (fondo gris perla y tarjetas blancas, igual que las reservas): ya está hecho; basta con quitar `tema-noche` del `<html>`.
-- `components/MapaPistas.tsx` dibuja el mapa del club en perspectiva a partir de las pistas de Mi club (techadas y al aire libre).
+- `components/MapaPistas.tsx` dibuja las pistas del club en una fila horizontal, flotando en perspectiva; se adapta a cualquier ancho de pantalla.
+- Se adapta a todo tamaño: celular chico (320 px) y grande, en vertical u horizontal, tablet, laptop, monitor ancho y TV. El Modo TV usa un lienzo de 1920×1080 y, si la pantalla está en vertical, uno de 1080×1920 con todo en una columna.
 
 ### Stack
 
@@ -149,7 +150,7 @@ Color de marca: verde #7FE302 del logo de La Marina. Tipografías Inter y Space 
 | `lib/evento.ts` | Ciclo de vida del evento, cronómetro, cambios de plantel, fusión |
 | `lib/horarios.ts` | Horarios del club, pistas, rondas que caben |
 | `components/SelectorHorario.tsx` | Botones Fecha, Inicio y Fin con su pantallita (calendario y reloj); usa `components/ui/Hoja.tsx` |
-| `components/MapaPistas.tsx` | Mapa del club en perspectiva para elegir pistas (paso Pistas y rondas) |
+| `components/MapaPistas.tsx` | Fila de pistas flotantes para elegir pistas (paso Pistas y rondas) |
 | `lib/validacion.ts` | Validación estricta de lo que llega a la API |
 | `lib/store.ts` | Estado local y sincronización |
 | `lib/server/` | Repositorio (DEMO o Supabase), auth de staff, manejo de errores HTTP |
@@ -219,7 +220,7 @@ En Vercel → Settings → Environment Variables, y luego un Redeploy:
 | `STAFF_EMAILS` | Opcional | Correos con permiso de staff, separados por coma |
 | `SUPABASE_AMERICANOS_TABLE` / `SUPABASE_CLUB_TABLE` | Opcional | Si quieres otros nombres de tabla |
 
-Con las dos primeras, la app cambia sola de DEMO a SUPABASE y el badge pasa de "Demo" a "En línea".
+Con las dos primeras, la app cambia sola de DEMO a SUPABASE y aparece el badge "En línea" (en DEMO no se muestra ningún badge).
 
 ### 4. Dar acceso de staff a usuarios de PadelReserve
 
@@ -298,7 +299,7 @@ Antes de entregar pasaron 55 tests de lógica (`npm test`), 67 pruebas en navega
 
 | Problema | Solución |
 | --- | --- |
-| El badge dice "Demo" en producción | Faltan `NEXT_PUBLIC_SUPABASE_URL` o `SUPABASE_SERVICE_ROLE_KEY`, o falta el Redeploy después de agregarlas |
+| No aparece el badge "En línea" en producción | Faltan `NEXT_PUBLIC_SUPABASE_URL` o `SUPABASE_SERVICE_ROLE_KEY`, o falta el Redeploy después de agregarlas |
 | "N por subir" en el badge | Hay cambios guardados en el celular esperando conexión o sesión. Se suben solos; si persiste, ingresar de nuevo como staff |
 | El PIN no funciona con Supabase | Con Supabase el PIN solo existe si `STAFF_PIN` está definido |
 | "Demasiados intentos" | Esperar 10 minutos o ingresar desde otra red |

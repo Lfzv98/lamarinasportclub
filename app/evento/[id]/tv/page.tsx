@@ -15,6 +15,7 @@ import { PistaLabel } from "@/components/PistaLabel";
 import { QR } from "@/components/QR";
 import { QRPopup, useUrlRanking } from "@/components/QRPopup";
 import { useReloj } from "@/hooks/useReloj";
+import { Escenario, Reloj, useCursorOculto, useFullscreenYWakeLock, useVertical } from "@/components/Pantalla";
 import { categoriaLabel } from "@/lib/categories";
 import { horaRonda } from "@/lib/horarios";
 import { calcularTabla, ganador, nombresDeFila } from "@/lib/scoring";
@@ -32,68 +33,16 @@ export default function ModoTVPage() {
   if (!evento)
     return (
       <main className="flex min-h-dvh items-center justify-center">
-        {hidratado ? <Link href="/" className="btn-neon">Evento no encontrado · Volver</Link> : <div className="size-12 animate-spin rounded-full border-2 border-white/10 border-t-neon" />}
+        {hidratado ? <Link href="/americanos" className="btn-neon">Evento no encontrado · Volver</Link> : <div className="size-12 animate-spin rounded-full border-2 border-white/10 border-t-neon" />}
       </main>
     );
   return <TV evento={evento} />;
 }
 
-function useFullscreenYWakeLock() {
-  const [full, setFull] = useState(false);
-  useEffect(() => {
-    const h = () => setFull(!!document.fullscreenElement);
-    document.addEventListener("fullscreenchange", h);
-    // Evita que la pantalla del bar se apague.
-    let lock: { release: () => Promise<void> } | null = null;
-    const pedir = () =>
-      (navigator as Navigator & { wakeLock?: { request: (t: "screen") => Promise<{ release: () => Promise<void> }> } }).wakeLock
-        ?.request("screen")
-        .then((l) => (lock = l))
-        .catch(() => undefined);
-    pedir();
-    document.addEventListener("visibilitychange", pedir);
-    return () => {
-      document.removeEventListener("fullscreenchange", h);
-      document.removeEventListener("visibilitychange", pedir);
-      lock?.release().catch(() => undefined);
-    };
-  }, []);
-  const alternar = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => undefined);
-  return { full, alternar };
-}
-
-function useCursorOculto() {
-  const [oculto, setOculto] = useState(false);
-  useEffect(() => {
-    let t: ReturnType<typeof setTimeout>;
-    const mover = () => {
-      setOculto(false);
-      clearTimeout(t);
-      t = setTimeout(() => setOculto(true), 3000);
-    };
-    mover();
-    window.addEventListener("mousemove", mover);
-    return () => {
-      clearTimeout(t);
-      window.removeEventListener("mousemove", mover);
-    };
-  }, []);
-  return oculto;
-}
-
-function Reloj() {
-  const [h, setH] = useState("");
-  useEffect(() => {
-    const f = () => setH(new Date().toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" }));
-    f();
-    const t = setInterval(f, 10_000);
-    return () => clearInterval(t);
-  }, []);
-  return <span className="font-display text-3xl font-semibold tabular text-white/70">{h}</span>;
-}
-
 function TV({ evento }: { evento: EventoAmericano }) {
   const { full, alternar } = useFullscreenYWakeLock();
+  const vertical = useVertical();
+  const filasPorPagina = vertical ? 8 : FILAS_POR_PAGINA;
   const cursorOculto = useCursorOculto();
   const tabla = useMemo(() => calcularTabla(evento), [evento]);
   const ronda = evento.rondas.find((r) => r.numero === evento.rondaActual);
@@ -101,21 +50,21 @@ function TV({ evento }: { evento: EventoAmericano }) {
   const reloj = useReloj(evento.estado !== "FINALIZADO" && conReloj ? ronda : undefined, evento.duracionRondaMin);
 
   // Paginación automática del ranking cuando hay muchos jugadores.
-  const paginas = Math.max(1, Math.ceil(tabla.filas.length / FILAS_POR_PAGINA));
+  const paginas = Math.max(1, Math.ceil(tabla.filas.length / filasPorPagina));
   const [pagina, setPagina] = useState(0);
   useEffect(() => {
     if (paginas <= 1) return setPagina(0);
     const t = setInterval(() => setPagina((p) => (p + 1) % paginas), SEGUNDOS_POR_PAGINA * 1000);
     return () => clearInterval(t);
   }, [paginas]);
-  const tablaPagina = { ...tabla, filas: tabla.filas.slice(pagina * FILAS_POR_PAGINA, (pagina + 1) * FILAS_POR_PAGINA) };
+  const tablaPagina = { ...tabla, filas: tabla.filas.slice(pagina * filasPorPagina, (pagina + 1) * filasPorPagina) };
 
   const terminado = evento.estado === "FINALIZADO";
   const campeon = tabla.filas[0];
   const espera = ronda ? enEspera(evento, ronda) : [];
 
   return (
-    <Escenario oculto={cursorOculto}>
+    <Escenario oculto={cursorOculto} vertical={vertical}>
       <header className="flex items-center gap-6">
         <Logo className="!h-14" />
         <div className="h-12 w-px bg-white/10" />
@@ -139,7 +88,7 @@ function TV({ evento }: { evento: EventoAmericano }) {
 
       <AnimatePresence mode="wait">
         {terminado && campeon ? (
-          <motion.section key="campeon" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="grid flex-1 grid-cols-[1fr_1.3fr] items-center gap-10">
+          <motion.section key="campeon" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className={clsx("grid flex-1 items-center gap-10", vertical ? "grid-cols-1 content-center" : "grid-cols-[1fr_1.3fr]")}>
             <div className="flex flex-col items-center text-center">
               <motion.div animate={{ rotate: [0, -8, 8, 0] }} transition={{ repeat: Infinity, duration: 3 }}>
                 <Trophy className="size-28 text-neon drop-shadow-[0_0_40px_rgba(127,227,2,0.6)]" />
@@ -151,10 +100,10 @@ function TV({ evento }: { evento: EventoAmericano }) {
               <p className="mt-6 font-display text-6xl font-bold">{campeon.nombre}</p>
               <p className="mt-2 font-display text-4xl font-bold text-neon">{campeon.puntos} pts</p>
             </div>
-            <Leaderboard tabla={{ ...tabla, filas: tabla.filas.slice(0, FILAS_POR_PAGINA) }} nombresPorFila={(f) => nombresDeFila(evento, f)} modoTV />
+            <Leaderboard tabla={{ ...tabla, filas: tabla.filas.slice(0, filasPorPagina) }} nombresPorFila={(f) => nombresDeFila(evento, f)} modoTV />
           </motion.section>
         ) : (
-          <motion.section key="vivo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] gap-8">
+          <motion.section key="vivo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={clsx("grid min-h-0 flex-1 gap-8", vertical ? "grid-cols-1 grid-rows-[minmax(0,1.1fr)_minmax(0,1fr)]" : "grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]")}>
             <div className="flex min-h-0 flex-col gap-6">
               <div className="glass flex items-center gap-8 rounded-[2rem] p-6">
                 {conReloj ? (
@@ -218,25 +167,7 @@ function TV({ evento }: { evento: EventoAmericano }) {
  * Lienzo fijo de 1920×1080 escalado para llenar cualquier pantalla (proyector
  * 720p, TV Full HD o 4K, monitor vertical) sin que cambie el diseño.
  */
-function Escenario({ oculto, children }: { oculto: boolean; children: React.ReactNode }) {
-  const [escala, setEscala] = useState(1);
-  useEffect(() => {
-    const ajustar = () => setEscala(Math.min(window.innerWidth / 1920, window.innerHeight / 1080));
-    ajustar();
-    window.addEventListener("resize", ajustar);
-    return () => window.removeEventListener("resize", ajustar);
-  }, []);
-  return (
-    <main className={clsx("tema-noche pantalla fixed inset-0 flex items-center justify-center overflow-hidden", oculto && "cursor-none")}>
-      <div
-        className="flex shrink-0 flex-col gap-6 p-10"
-        style={{ width: 1920, height: 1080, transform: `scale(${escala})`, transformOrigin: "center" }}
-      >
-        {children}
-      </div>
-    </main>
-  );
-}
+/** Pantalla en vertical (celular, tablet o TV girada): el lienzo pasa a 1080×1920 y todo va en una columna. */
 
 function PistaTV({ partido, evento, compacto = false }: { partido: Partido; evento: EventoAmericano; compacto?: boolean }) {
   const porId = new Map(evento.jugadores.map((j) => [j.id, j]));

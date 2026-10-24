@@ -63,7 +63,7 @@ function Tabla({ evento }: { evento: EventoAmericano }) {
       )}
 
       <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="w-full max-w-xs">
+        <div className="w-full min-w-0 max-w-xs">
           <Segmented
             opciones={[
               { id: "TABLA", label: <span className="flex items-center justify-center gap-1.5"><ListOrdered className="size-4" /> Tabla</span> },
@@ -73,7 +73,9 @@ function Tabla({ evento }: { evento: EventoAmericano }) {
             onChange={setVista}
           />
         </div>
-        <CompartirButton titulo={`Ranking · ${evento.nombre}`} ruta={`/evento/${evento.id}/tabla`} />
+        <div className="shrink-0">
+          <CompartirButton titulo={`Ranking · ${evento.nombre}`} ruta={`/evento/${evento.id}/tabla`} />
+        </div>
       </div>
       {vista === "TABLA" ? (
         <>

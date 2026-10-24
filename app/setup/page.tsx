@@ -241,7 +241,7 @@ function Setup() {
 
   function volver() {
     if (paso > 0) ir(paso - 1);
-    else router.push("/");
+    else router.push("/americanos");
   }
 
   function elegirFormato(f: Formato) {
