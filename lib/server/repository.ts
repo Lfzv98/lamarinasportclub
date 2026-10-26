@@ -253,7 +253,7 @@ function supabaseTorneos(url: string, key: string): TorneosRepository {
     async listarExtras(torneoId, tipo) {
       const filas = await pedir<{ id: string; evento_id: string; tipo: string; data: unknown; actualizado_en: string }[]>(
         tablaX,
-        `?select=id,evento_id,tipo,actualizado_en${tipo === "arbitros" ? ",data" : ""}&evento_id=eq.${encodeURIComponent(torneoId)}&tipo=eq.${encodeURIComponent(tipo)}`,
+        `?select=id,evento_id,tipo,actualizado_en${tipo === "arbitros" || tipo === "tenis" ? ",data" : ""}&evento_id=eq.${encodeURIComponent(torneoId)}&tipo=eq.${encodeURIComponent(tipo)}`,
       );
       return filas.map((f) => ({ id: f.id, torneoId: f.evento_id, tipo: f.tipo, data: f.data ?? null, actualizadoEn: f.actualizado_en }));
     },

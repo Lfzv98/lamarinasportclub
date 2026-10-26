@@ -9,6 +9,7 @@ import { createPortal } from "react-dom";
 import {
   BookOpen,
   ChevronRight,
+  CircleDot,
   Flag,
   FlaskConical,
   Home,
@@ -43,6 +44,7 @@ const SECCIONES: { titulo: string; items: Item[] }[] = [
       { href: "/", titulo: "Inicio", Icono: Home },
       { href: "/americanos", titulo: "Americanos", sub: "Eventos, cuadro vivo y ranking", Icono: Shuffle },
       { href: "/torneos", titulo: "Torneos", sub: "Categorías, llaves y programación", Icono: Trophy },
+      { href: "/tenis", titulo: "Tenis", sub: "Cancha dura y arcilla", Icono: CircleDot },
       { href: "/arbitro", titulo: "Árbitros", sub: "La tablet de cada pista", Icono: Flag },
     ],
   },
@@ -50,7 +52,8 @@ const SECCIONES: { titulo: string; items: Item[] }[] = [
     titulo: "Staff",
     items: [
       { href: "/setup", titulo: "Nuevo americano", Icono: Plus, staff: true },
-      { href: "/torneos/nuevo", titulo: "Nuevo torneo", Icono: Plus, staff: true },
+      { href: "/torneos/nuevo", titulo: "Nuevo torneo de pádel", Icono: Plus, staff: true },
+      { href: "/tenis/nuevo", titulo: "Nuevo torneo de tenis", Icono: Plus, staff: true },
       { href: "/torneos/ranking", titulo: "Ranking FVP", sub: "Lista de atletas federados", Icono: Medal, staff: true },
       { href: "/manual", titulo: "Manual del staff", Icono: BookOpen },
     ],
@@ -58,7 +61,7 @@ const SECCIONES: { titulo: string; items: Item[] }[] = [
   {
     titulo: "Ajustes",
     items: [
-      { href: "/club#datos-prueba", titulo: "Datos de prueba", sub: "Torneo, americanos y árbitros de ejemplo en un toque", Icono: FlaskConical, staff: true },
+      { href: "/club#datos-prueba", titulo: "Datos de prueba", sub: "Torneos, americanos y árbitros de ejemplo en un toque", Icono: FlaskConical, staff: true },
       { href: "/club", titulo: "Mi club", sub: "Pistas, horarios y contacto", Icono: Settings, staff: true },
       { href: "/club#arbitros", titulo: "Árbitros del club", sub: "PIN de árbitros y plantel", Icono: Flag, staff: true },
       { href: "/club#claves", titulo: "Claves de torneos", sub: "Acceso de los participantes", Icono: KeyRound, staff: true },

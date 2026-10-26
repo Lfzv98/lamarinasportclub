@@ -8,8 +8,8 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 
 | Ruta | Qué hace |
 | --- | --- |
-| `/` | Inicio: tres entradas, **Americanos**, **Torneos** y **Árbitros** |
-| Menú (☰ arriba a la derecha) | Todas las secciones: Americanos, Torneos, Árbitros, Nuevo americano/torneo, Ranking FVP, Manual y Ajustes (Datos de prueba, Mi club, Árbitros del club, Claves). Lo del staff lleva candado y pide el mismo PIN del staff |
+| `/` | Inicio: tres entradas, **Americanos**, **Torneos** y **Árbitros**, y la entrada a **Tenis** |
+| Menú (☰ arriba a la derecha) | Todas las secciones: Americanos, Torneos, Tenis, Árbitros, Nuevo americano/torneo de pádel/torneo de tenis, Ranking FVP, Manual y Ajustes (Datos de prueba, Mi club, Árbitros del club, Claves). Lo del staff lleva candado y pide el mismo PIN del staff |
 | `/arbitro` | Panel del árbitro (tablet): se registra una sola vez en el club (nombre, teléfono, PIN de árbitros y un código propio de 4 dígitos) y sirve para todos los torneos, luego entra tocando su nombre y su código. Ve su turno y su pista, llama, empieza, anota y toma las fotos de las duplas |
 | `/americanos` | Eventos activos e historial, acceso rápido a Modo TV |
 | `/setup` | Asistente de 5 pasos: categoría, formato y puntuación, pistas y horario, jugadores, resumen con sorteo |
@@ -29,6 +29,15 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 | `/torneos/:id/tv` | Modo TV del torneo: todas las pistas, próximos, resultados y patrocinadores |
 | `/torneos/:id/estadisticas` | Rankings y ficha por jugador; resumen para el club (staff) |
 | `/torneos/:id/ajustes` | Días, pistas, desempates, patrocinadores, historial y eliminar (staff) |
+
+| `/tenis` | Tenis: dos puertas, **Cancha dura** (hard court) y **Arcilla** (clay court), y los partidos en cancha ahora |
+| `/tenis/:superficie` | `dura` o `arcilla`: torneos, partidos en vivo y consejos de esa superficie, con su color |
+| `/tenis/nuevo` | (staff) Torneo con cuadro, liga o partido rápido; singles o dobles; formato ITF; pega la lista con `(1)`, `(2)` para las cabezas de serie |
+| `/tenis/t/:id` | Cuadro (o tabla de la liga), partidos e inscritos; llamar a cancha, anotar, W.O. o retiro |
+| `/tenis/t/:id/p/:partido` | Partido para el público: marcador vivo, cancha con quién saca, gráfico de impulso y estadísticas |
+| `/tenis/t/:id/p/:partido/anotar` | Anotador (staff o árbitro): sorteo con moneda, orden de saque, faltas y doble falta, ace, reloj de 25 s, cambios de lado y descansos ITF, canto en voz alta y revisión de marca en arcilla |
+| `/tenis/t/:id/tv` | Modo TV de tenis con el color de la superficie |
+| `/tenis/jugadores` | Ranking de jugadores con su récord en cancha dura y en arcilla |
 
 ## Reglas soportadas
 
@@ -51,6 +60,15 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 - **Árbitros:** rol aparte del staff. El club tiene un solo PIN de árbitros, que el staff crea y cambia en Ajustes (página protegida con el PIN del staff). Sirve para que cada árbitro se registre una vez en el plantel del club; después entra con su nombre y su código en todos los torneos y únicamente puede llamar, empezar y anotar partidos: no abre cuadros, horarios ni ajustes. Cambiar el PIN cierra las sesiones abiertas. Cada árbitro se registra con nombre, apellido, teléfono y un código propio (guardado solo como HMAC), así cada punto queda firmado con su nombre y no hay "yo no fui". El staff asigna turnos por pista y franja (o los reparte solo) y ve cuántos partidos y puntos anotó cada uno.
 - **Fotos de duplas y jugadores:** el árbitro (o el staff) fotografía a cada dupla en la pista; la foto sale junto a sus nombres en el anotador, la TV de la pista y la página del partido. En Americanos ("Jugadores y fotos") y en Inscritos de Torneos el staff puede fotografiar a cada jugador; su cara sale en cuadros, ranking y TV. Se comprimen en el dispositivo (≤400 KB).
 - **Tres públicos:** la tablet del árbitro anota; las pantallas de TV muestran marcador y relato público; las estadísticas de cada atleta solo se ven con la clave del torneo.
+
+## Tenis
+
+- **Superficies:** cancha dura (azul) y arcilla (terracota), cada una con su look, su cancha dibujada a escala y sus consejos. En arcilla el anotador permite **revisar la marca** y al terminar recuerda pasar la rastra.
+- **Reglas ITF** (`lib/tenis/marcador.ts`): 15-30-40 con ventaja o sin ventaja (punto decisivo); sets a 6 con tie-break a 7; formatos Clásico, Súper tie-break (tercer set a 10), Sets cortos (a 4), Pro set (a 8) y Grand Slam (mejor de 5, tie-break a 10 en 6-6 del quinto). Saque que rota por juego (en dobles entre los cuatro), en el tie-break 1 y luego 2; cambios de lado en juegos impares (sin descanso tras el primero, 90 s), 120 s entre sets y cada 6 puntos del tie-break.
+- **Cuadros** (`lib/tenis/torneo.ts`): eliminación con cabezas de serie en sus líneas y byes para los mejores, liga todos contra todos con tabla, o partido único. El ganador avanza solo.
+- **Estadísticas:** aces, dobles faltas, % de primer saque, puntos ganados con 1º y 2º saque, quiebres, winners y errores, rachas y gráfico de impulso.
+- **Permisos:** solo el staff crea torneos y partidos (sin límite); los árbitros del club solo anotan y llaman partidos; el público ve todo.
+- **Datos:** `/api/tenis` (GET público, POST staff o árbitro). Por ahora cada torneo es una fila de `eventos_extras` (`evento_id = 'tenis'`, `tipo = 'tenis'`), así no hace falta una tabla nueva.
 
 ## Permisos
 
