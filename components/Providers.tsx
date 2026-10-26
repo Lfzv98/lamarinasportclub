@@ -3,6 +3,7 @@
 import { MotionConfig } from "framer-motion";
 import { useEffect } from "react";
 import { useAmericanos } from "@/lib/store";
+import { TENIS_ACTIVO } from "@/lib/tenis/activo";
 import { useTenis } from "@/lib/tenisStore";
 import { useTorneos } from "@/lib/torneosStore";
 import { Toaster } from "./ui/Toaster";
@@ -20,7 +21,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         useAmericanos.getState().cargarStaff().finally(() => {
           useAmericanos.getState().sincronizar();
           useTorneos.getState().sincronizar();
-          useTenis.getState().sincronizar();
+          if (TENIS_ACTIVO) useTenis.getState().sincronizar();
         });
       });
     Promise.resolve()
@@ -35,7 +36,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       if (document.visibilityState !== "visible") return;
       useAmericanos.getState().sincronizar();
       useTorneos.getState().sincronizar();
-      useTenis.getState().sincronizar();
+      if (TENIS_ACTIVO) useTenis.getState().sincronizar();
     }, INTERVALO_SYNC_MS);
 
     if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {

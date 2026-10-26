@@ -8,8 +8,8 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 
 | Ruta | Qué hace |
 | --- | --- |
-| `/` | Inicio: tres entradas, **Americanos**, **Torneos** y **Árbitros**, y la entrada a **Tenis** |
-| Menú (☰ arriba a la derecha) | Todas las secciones: Americanos, Torneos, Tenis, Árbitros, Nuevo americano/torneo de pádel/torneo de tenis, Ranking FVP, Manual y Ajustes (Datos de prueba, Mi club, Árbitros del club, Claves). Lo del staff lleva candado y pide el mismo PIN del staff |
+| `/` | Inicio: tres entradas, **Americanos**, **Torneos** y **Árbitros** (y **Tenis** solo si el club lo tiene encendido) |
+| Menú (☰ arriba a la derecha) | Todas las secciones: Americanos, Torneos, Árbitros, Nuevo americano/torneo de pádel (Tenis y Nuevo torneo de tenis solo en clubes con tenis), Ranking FVP, Manual y Ajustes (Datos de prueba, Mi club, Árbitros del club, Claves). Lo del staff lleva candado y pide el mismo PIN del staff |
 | `/arbitro` | Panel del árbitro (tablet): se registra una sola vez en el club (nombre, teléfono, PIN de árbitros y un código propio de 4 dígitos) y sirve para todos los torneos, luego entra tocando su nombre y su código. Ve su turno y su pista, llama, empieza, anota y toma las fotos de las duplas |
 | `/americanos` | Eventos activos e historial, acceso rápido a Modo TV |
 | `/setup` | Asistente de 5 pasos: categoría, formato y puntuación, pistas y horario, jugadores, resumen con sorteo |
@@ -62,6 +62,8 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 - **Tres públicos:** la tablet del árbitro anota; las pantallas de TV muestran marcador y relato público; las estadísticas de cada atleta solo se ven con la clave del torneo.
 
 ## Tenis
+
+> **Apagado por defecto.** La Marina no tiene tenis: esta sección es para ofrecer el sistema en clubes de Caracas. Se enciende con `NEXT_PUBLIC_TENIS=1` en el despliegue de ese club (`lib/tenis/activo.ts`). Apagado no sale en el inicio ni en el menú, `/tenis` da 404, `/api/tenis` no responde y los datos de prueba no cargan tenis.
 
 - **Superficies:** cancha dura (azul) y arcilla (terracota), cada una con su look, su cancha dibujada a escala y sus consejos. En arcilla el anotador permite **revisar la marca** y al terminar recuerda pasar la rastra.
 - **Reglas ITF** (`lib/tenis/marcador.ts`): 15-30-40 con ventaja o sin ventaja (punto decisivo); sets a 6 con tie-break a 7; formatos Clásico, Súper tie-break (tercer set a 10), Sets cortos (a 4), Pro set (a 8) y Grand Slam (mejor de 5, tie-break a 10 en 6-6 del quinto). Saque que rota por juego (en dobles entre los cuatro), en el tie-break 1 y luego 2; cambios de lado en juegos impares (sin descanso tras el primero, 90 s), 120 s entre sets y cada 6 puntos del tie-break.

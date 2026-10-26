@@ -56,7 +56,7 @@ Tras 5 PIN incorrectos seguidos, ese dispositivo espera 10 minutos.
 
 ### Menú
 
-El botón **☰** (arriba a la derecha del inicio y de Ajustes) abre el menú con todas las secciones: Americanos, Torneos, Tenis, Árbitros, Nuevo americano, Nuevo torneo de pádel, Nuevo torneo de tenis, Ranking FVP, Manual y **Ajustes** (Datos de prueba, Mi club, Árbitros del club y Claves de torneos). Lo que es del staff lleva un candado: sin sesión pide el mismo PIN del staff y, al entrar, abre la sección que tocaste. Abajo está **Ingresar como staff** o la sesión abierta, con la opción de salir.
+El botón **☰** (arriba a la derecha del inicio y de Ajustes) abre el menú con todas las secciones: Americanos, Torneos, Árbitros, Nuevo americano, Nuevo torneo de pádel, Ranking FVP, Manual y **Ajustes** (Datos de prueba, Mi club, Árbitros del club y Claves de torneos). Lo que es del staff lleva un candado: sin sesión pide el mismo PIN del staff y, al entrar, abre la sección que tocaste. Abajo está **Ingresar como staff** o la sesión abierta, con la opción de salir.
 
 ### Crear un americano (staff)
 

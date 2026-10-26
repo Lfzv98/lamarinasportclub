@@ -6,6 +6,7 @@ import { leerPlantel, guardarPlantel, type ArbitroGuardado } from "./arbitros";
 import { getRepository, getTorneosRepository } from "./repository";
 import { guardarTenis, listarTenis } from "./tenis";
 import { torneosDemoTenis } from "@/lib/tenis/demo";
+import { TENIS_ACTIVO } from "@/lib/tenis/activo";
 
 /**
  * Datos de prueba para enseñar la app (botón en Ajustes): dos americanos en juego y uno terminado,
@@ -47,7 +48,7 @@ export async function cargarDemo(): Promise<{ americanos: number; torneos: numbe
   const p = await leerPlantel();
   const nuevos = datos.extras.flatMap((x) => x.data.arbitros).filter((a) => !p.arbitros.some((y) => y.id === a.id));
   await guardarPlantel({ pin: p.pin ?? datos.extras[0]?.data.pin ?? null, arbitros: [...p.arbitros, ...(nuevos as ArbitroGuardado[])] });
-  const tenis = torneosDemoTenis(`${PREFIJO}${marca}-`, hoyClub());
+  const tenis = TENIS_ACTIVO ? torneosDemoTenis(`${PREFIJO}${marca}-`, hoyClub()) : [];
   for (const t of tenis) await guardarTenis(t);
   return { americanos: datos.eventos.length, torneos: datos.torneos.length, arbitros: nuevos.length, tenis: tenis.length };
 }
@@ -59,7 +60,7 @@ export async function borrarDemo(): Promise<void> {
   for (const e of await am.listar()) if (e.id.startsWith(PREFIJO) && !e.eliminado) await am.guardar({ ...e, eliminado: true, actualizadoEn: ahora });
   const tr = getTorneosRepository();
   for (const t of await tr.listar()) if (t.id.startsWith(PREFIJO) && !t.eliminado) await tr.guardar({ ...t, eliminado: true, actualizadoEn: ahora });
-  for (const t of await listarTenis()) if (t.id.startsWith(PREFIJO) && !t.eliminado) await guardarTenis({ ...t, eliminado: true, actualizadoEn: ahora });
+  if (TENIS_ACTIVO) for (const t of await listarTenis()) if (t.id.startsWith(PREFIJO) && !t.eliminado) await guardarTenis({ ...t, eliminado: true, actualizadoEn: ahora });
   const p = await leerPlantel();
   await guardarPlantel({ ...p, arbitros: p.arbitros.filter((a) => !ARBITROS_DEMO.includes(a.id)) });
 }

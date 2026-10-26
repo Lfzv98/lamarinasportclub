@@ -11,8 +11,9 @@ import { useListaEventos } from "@/lib/store";
 import { useListaTorneos } from "@/lib/torneosStore";
 import { useListaTenis } from "@/lib/tenisStore";
 import { PelotaTenis } from "@/components/tenis/piezas";
+import { TENIS_ACTIVO } from "@/lib/tenis/activo";
 
-/** Inicio: tres puertas, Americanos, Torneos y Árbitros, y la entrada a Tenis. */
+/** Inicio: tres puertas, Americanos, Torneos y Árbitros, y la entrada a Tenis si el club lo tiene. */
 export default function Home() {
   const eventos = useListaEventos();
   const torneos = useListaTorneos();
@@ -111,7 +112,8 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Tenis: cancha dura y arcilla. */}
+          {/* Tenis: cancha dura y arcilla (solo en clubes con tenis). */}
+          {TENIS_ACTIVO && (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32 }} className="mt-4">
             <Link href="/tenis" className="sobre-marca group relative grid min-h-56 grid-cols-2 overflow-hidden rounded-[2rem] ring-1 ring-white/10 transition hover:ring-white/30 active:scale-[0.99] sm:min-h-48">
               <span className="relative flex flex-col justify-end bg-gradient-to-br from-[#2f7ff0] to-[#0d3a8c] p-6 sm:p-8">
@@ -134,6 +136,7 @@ export default function Home() {
               <span className="pointer-events-none absolute inset-y-0 left-1/2 w-px bg-white/40" />
             </Link>
           </motion.div>
+          )}
         </div>
       </div>
     </main>
