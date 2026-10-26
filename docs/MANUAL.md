@@ -100,9 +100,17 @@ Escanean el QR del Modo TV, el QR grande que muestra el staff (botón QR en la b
 
 En el inicio, **Ajustes** (el engranaje; solo staff, con el mismo PIN del staff) permite editar las pistas (nombre y si es techada), el horario de apertura y cierre por día, los minutos entre rondas y el contacto. Los eventos nuevos usan estos datos. También tiene las claves de los torneos, **Árbitros del club** (PIN de árbitros y plantel) y **Datos de prueba**.
 
+### Inscripción online de torneos
+
+Cada torneo puede recibir inscripciones por la web. En **Ajustes del torneo → Inscripción online** se activa y se llena: precio por dupla, fecha de cierre, frase destacada, presentación, premios, qué incluye, si se pide talla de franela, categorías abiertas, métodos de pago (Pago Móvil, transferencia, Zelle, Binance, efectivo) con sus datos, WhatsApp de ayuda, Instagram y reglamento. El cupo de cada categoría se fija en Inscritos → Reglas.
+
+La dupla abre el enlace (o el QR), elige la categoría, llena sus datos (nombre, cédula, correo, teléfono, lado, talla, alergias), acepta el reglamento y reporta el pago con referencia o foto del comprobante. Recibe un código (ej. `LM-7K4Q`) para consultar cómo va. Con la cédula la app mira el ranking FVP: nadie se inscribe por debajo de su categoría y quien no aparece en la lista igual puede inscribirse.
+
+El staff lo ve en **Inscritos → Inscripciones online**: confirma el pago y la dupla entra sola a Inscritos, o la rechaza con un motivo (la dupla lo ve con su código). También ve cuántas franelas de cada talla pedir, las alergias para la comida y puede bajar todo a Excel.
+
 ### Datos de prueba (para enseñar la app)
 
-La app arranca vacía: los campos solo dicen qué va en cada uno. En **Ajustes → Datos de prueba**, **Cargar datos de prueba** crea en un toque 3 americanos, un torneo de hoy con partidos en juego (clave `MARINA`) y 6 árbitros de ejemplo (código `1234`; si no había PIN de árbitros queda el `2468`). **Borrar datos de prueba** los quita y no toca lo que creó el club.
+La app arranca vacía: los campos solo dicen qué va en cada uno. En **Ajustes → Datos de prueba**, **Cargar datos de prueba** crea en un toque 3 americanos, un torneo de hoy con partidos en juego (clave `MARINA`), la Copa Navidad con la inscripción online abierta y 6 árbitros de ejemplo (código `1234`; si no había PIN de árbitros queda el `2468`). **Borrar datos de prueba** los quita y no toca lo que creó el club.
 
 ### Instalar la app
 

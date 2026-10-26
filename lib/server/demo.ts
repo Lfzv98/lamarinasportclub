@@ -3,6 +3,7 @@ import mock from "@/data/mockData.json";
 import type { EventoAmericano } from "@/types/americano";
 import type { MarcadorVivo, Torneo } from "@/types/torneo";
 import { leerPlantel, guardarPlantel, type ArbitroGuardado } from "./arbitros";
+import { borrarDemoInscripcion, cargarDemoInscripcion } from "./demoInscripcion";
 import { getRepository, getTorneosRepository } from "./repository";
 
 /**
@@ -42,10 +43,12 @@ export async function cargarDemo(): Promise<{ americanos: number; torneos: numbe
   const tr = getTorneosRepository();
   for (const t of datos.torneos) await tr.guardar({ ...correr(t, dias, ids), actualizadoEn: ahora });
   for (const m of datos.marcadores) await tr.guardarMarcador(correr(m, dias, ids));
+  await cargarDemoInscripcion(`${PREFIJO}${marca}-`, hoyClub());
   const p = await leerPlantel();
   const nuevos = datos.extras.flatMap((x) => x.data.arbitros).filter((a) => !p.arbitros.some((y) => y.id === a.id));
   await guardarPlantel({ pin: p.pin ?? datos.extras[0]?.data.pin ?? null, arbitros: [...p.arbitros, ...(nuevos as ArbitroGuardado[])] });
-  return { americanos: datos.eventos.length, torneos: datos.torneos.length, arbitros: nuevos.length };
+  // + la Copa Navidad con la inscripción online abierta.
+  return { americanos: datos.eventos.length, torneos: datos.torneos.length + 1, arbitros: nuevos.length };
 }
 
 /** Quita lo que cargó `cargarDemo` (borrado lógico, así los otros dispositivos también lo sueltan). */
@@ -54,7 +57,9 @@ export async function borrarDemo(): Promise<void> {
   const am = getRepository();
   for (const e of await am.listar()) if (e.id.startsWith(PREFIJO) && !e.eliminado) await am.guardar({ ...e, eliminado: true, actualizadoEn: ahora });
   const tr = getTorneosRepository();
-  for (const t of await tr.listar()) if (t.id.startsWith(PREFIJO) && !t.eliminado) await tr.guardar({ ...t, eliminado: true, actualizadoEn: ahora });
+  const demo = (await tr.listar()).filter((t) => t.id.startsWith(PREFIJO));
+  for (const t of demo) if (!t.eliminado) await tr.guardar({ ...t, eliminado: true, actualizadoEn: ahora });
+  await borrarDemoInscripcion(demo.map((t) => t.id));
   const p = await leerPlantel();
   await guardarPlantel({ ...p, arbitros: p.arbitros.filter((a) => !ARBITROS_DEMO.includes(a.id)) });
 }

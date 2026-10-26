@@ -4,7 +4,7 @@ import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, BarChart3, CalendarClock, Flag, GitFork, KeyRound, LayoutDashboard, Lock, Settings, Users } from "lucide-react";
+import { ArrowLeft, BarChart3, CalendarClock, Flag, GitFork, KeyRound, LayoutDashboard, Lock, Settings, Ticket, Users } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "@/components/Logo";
 import { StaffChip } from "@/components/StaffGate";
@@ -83,7 +83,12 @@ export function ClaveGate({ torneo }: { torneo: Torneo }) {
           <p className="mt-4 text-xs text-white/45">La clave te la da el staff de La Marina y vale durante los días del torneo.</p>
         </form>
       )}
-      <Link href="/torneos" className="btn-ghost mt-8">
+      {torneo.inscripcion?.abierta && torneo.estado === "INSCRIPCION" && (
+        <Link href={`/inscripcion/${torneo.id}`} className="btn-neon mt-8">
+          <Ticket className="size-4" /> Inscribir mi dupla
+        </Link>
+      )}
+      <Link href="/torneos" className="btn-ghost mt-4">
         <ArrowLeft className="size-4" /> Torneos
       </Link>
     </main>

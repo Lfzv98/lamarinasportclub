@@ -9,6 +9,7 @@
  * `lib/torneo/*` a partir de estos datos, así nunca queda desincronizado.
  */
 import type { Genero, PistaClub, SetScore } from "./americano";
+import type { ConfigInscripcion } from "./inscripcion";
 
 export type RamaTorneo = "MASCULINO" | "FEMENINO" | "MIXTO";
 
@@ -295,6 +296,8 @@ export interface Torneo {
   /** Sedes. Sin sedes = todo en el club organizador. Las pistas sin `sedeId` son de la sede principal. */
   sedes?: SedeTorneo[];
   patrocinadores?: Patrocinador[];
+  /** Inscripción online (página pública /inscripcion/:id). Sin configurar = cerrada. */
+  inscripcion?: ConfigInscripcion | null;
   /** Descanso mínimo entre partidos de un mismo jugador. */
   descansoMin: number;
   /** Minutos de tolerancia antes de proponer W.O. */

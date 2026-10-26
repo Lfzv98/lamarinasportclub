@@ -7,6 +7,7 @@ import { use, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowDown, ArrowUp, CalendarPlus, History, ImagePlus, Megaphone, Save, Star, Trash2 } from "lucide-react";
 import { StaffGate } from "@/components/StaffGate";
+import { AjustesInscripcion } from "@/components/torneo/AjustesInscripcion";
 import { fechaCorta, TorneoShell } from "@/components/torneo/TorneoShell";
 import { Stepper } from "@/components/ui/Stepper";
 import { toast } from "@/components/ui/Toaster";
@@ -61,6 +62,7 @@ function Ajustes({ torneo }: { torneo: Torneo }) {
     criterios: torneo.criterios.map((c) => ({ ...c })),
     patrocinadores: (torneo.patrocinadores ?? []).map((p) => ({ ...p })),
     validarFvp: torneo.validarFvp !== false,
+    inscripcion: torneo.inscripcion ?? null,
   }));
   const archivo = useRef<HTMLInputElement>(null);
   const [nuevoSponsor, setNuevoSponsor] = useState("");
@@ -136,6 +138,8 @@ function Ajustes({ torneo }: { torneo: Torneo }) {
           <Interruptor valor={b.finalesUltimoDia} onChange={(v) => setB({ ...b, finalesUltimoDia: v })} etiqueta="Finales el último día" />
         </div>
       </div>
+
+      <AjustesInscripcion torneo={torneo} valor={b.inscripcion} onChange={(inscripcion) => setB((x) => ({ ...x, inscripcion }))} />
 
       <p className="label mt-8">Días</p>
       <ul className="space-y-2">

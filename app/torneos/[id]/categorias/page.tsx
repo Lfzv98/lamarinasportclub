@@ -14,6 +14,7 @@ import { Stepper } from "@/components/ui/Stepper";
 import { Switch } from "@/components/ui/Switch";
 import { toast } from "@/components/ui/Toaster";
 import { AtletaFvpLinea, EstadoFvpChip, ExcepcionFvp, RevisarFvpHoja } from "@/components/torneo/Fvp";
+import { AvisoInscripciones } from "@/components/torneo/AvisoInscripciones";
 import { SorteoPopup } from "@/components/torneo/SorteoPopup";
 import { TorneoShell } from "@/components/torneo/TorneoShell";
 import { descripcionReglas, minutosEstimados, nombreCategoria, nombreCorto, tieBreakPorDefecto, validarDupla } from "@/lib/torneo/categorias";
@@ -55,7 +56,8 @@ function Categorias({ torneo }: { torneo: Torneo }) {
   if (!cat) return <p className="mt-10 text-center text-white/50">Este torneo no tiene categorías.</p>;
   return (
     <>
-      <div className="-mx-4 mt-2 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:px-0">
+      <AvisoInscripciones torneo={torneo} />
+      <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:px-0">
         {torneo.categorias.map((c) => {
           const on = c.categoria.id === cat.categoria.id;
           const estado = estadoCategoria(c);
