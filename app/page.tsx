@@ -2,19 +2,18 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, BookOpen, Flag, Settings, Shuffle, Trophy } from "lucide-react";
+import { ArrowRight, Flag, Shuffle, Trophy } from "lucide-react";
 import { InstallButton } from "@/components/InstallButton";
 import { Logo } from "@/components/Logo";
+import { MenuApp } from "@/components/MenuApp";
 import { StaffChip } from "@/components/StaffGate";
-import { useAmericanos, useEsStaff, useListaEventos } from "@/lib/store";
+import { useListaEventos } from "@/lib/store";
 import { useListaTorneos } from "@/lib/torneosStore";
 
 /** Inicio: tres puertas, Americanos, Torneos y Árbitros. */
 export default function Home() {
   const eventos = useListaEventos();
   const torneos = useListaTorneos();
-  const esStaff = useEsStaff();
-  const setPedirLogin = useAmericanos((s) => s.setPedirLogin);
   const americanosVivos = eventos.filter((e) => e.estado === "EN_CURSO").length;
   const torneosVivos = torneos.filter((t) => t.estado === "EN_JUEGO").length;
   const torneosProximos = torneos.filter((t) => t.estado !== "FINALIZADO").length;
@@ -58,22 +57,7 @@ export default function Home() {
         <header className="relative mx-auto flex max-w-5xl items-center justify-end gap-2 px-4 py-3 sm:px-6">
           <InstallButton />
           <StaffChip />
-          <Link href="/manual" className="btn-ghost !p-2.5" aria-label="Manual del staff" title="Manual del staff">
-            <BookOpen className="size-4" />
-          </Link>
-          <Link
-            href="/club"
-            onClick={(e) => {
-              if (esStaff) return;
-              e.preventDefault();
-              setPedirLogin(true);
-            }}
-            className="btn-ghost !p-2.5"
-            aria-label="Ajustes"
-            title="Ajustes del club"
-          >
-            <Settings className="size-4" />
-          </Link>
+          <MenuApp />
         </header>
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}

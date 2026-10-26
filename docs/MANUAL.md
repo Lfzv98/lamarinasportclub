@@ -54,6 +54,10 @@ Hay dos tipos de usuario: el **staff**, que crea eventos y carga marcadores, y l
 
 Tras 5 PIN incorrectos seguidos, ese dispositivo espera 10 minutos.
 
+### Menú
+
+El botón **☰** (arriba a la derecha del inicio y de Ajustes) abre el menú con todas las secciones: Americanos, Torneos, Árbitros, Nuevo americano, Nuevo torneo, Ranking FVP, Manual y **Ajustes** (Datos de prueba, Mi club, Árbitros del club y Claves de torneos). Lo que es del staff lleva un candado: sin sesión pide el mismo PIN del staff y, al entrar, abre la sección que tocaste. Abajo está **Ingresar como staff** o la sesión abierta, con la opción de salir.
+
 ### Crear un americano (staff)
 
 En el inicio, toca **Nuevo Americano**. El asistente tiene 5 pasos y guarda el borrador si se cierra la app. La flecha de arriba (y el "atrás" del celular) vuelve al paso anterior, no al inicio.
@@ -98,7 +102,7 @@ Escanean el QR del Modo TV, el QR grande que muestra el staff (botón QR en la b
 
 ### Mi club (staff)
 
-En el inicio, **Ajustes** (el engranaje; solo staff, con el mismo PIN del staff) permite editar las pistas (nombre y si es techada), el horario de apertura y cierre por día, los minutos entre rondas y el contacto. Los eventos nuevos usan estos datos. También tiene las claves de los torneos, **Árbitros del club** (PIN de árbitros y plantel) y **Datos de prueba**.
+En el menú ☰, **Ajustes** (solo staff, con el mismo PIN del staff) permite editar las pistas (nombre y si es techada), el horario de apertura y cierre por día, los minutos entre rondas y el contacto. Los eventos nuevos usan estos datos. También tiene las claves de los torneos, **Árbitros del club** (PIN de árbitros y plantel) y **Datos de prueba**.
 
 ### Datos de prueba (para enseñar la app)
 
@@ -113,9 +117,15 @@ La app arranca vacía: los campos solo dicen qué va en cada uno. En **Ajustes �
 
 Los torneos tienen su propio rol de **árbitro** (anotador), aparte del staff. El árbitro solo puede llamar, empezar y anotar partidos y fotografiar a las duplas; no abre cuadros, horarios ni ajustes.
 
+### Inscribir duplas y ranking FVP
+
+En las categorías por nivel, al escribir la cédula la app busca al jugador en la lista de la FVP y muestra su categoría. Un jugador de categoría más alta queda bloqueado; uno que no está en la lista queda "por verificar" y frena el sorteo.
+
+Para inscribir a quien **no está en la lista FVP** (no federado o recién inscrito), activa **Inscribir igual (excepción del staff)**: el motivo ya viene escrito ("Fuera de la lista FVP"), puedes cambiarlo, y la excepción queda firmada con tu nombre y no frena el sorteo. Para un jugador bloqueado por categoría hay que escribir el motivo. Si el ranking no contesta en 8 segundos, la dupla se puede inscribir igual y queda por verificar.
+
 ### Registro del árbitro (una sola vez, para todos los torneos)
 
-1. El staff abre **Ajustes** (el engranaje del inicio; pide el PIN del staff) → **Árbitros del club**. Ahí crea el **PIN de árbitros** (lo escribe, de 4 a 6 números, o toca **Uno al azar**), lo ve, lo cambia o cierra el registro. Solo el staff lo ve. **Enviar a los árbitros** lo comparte por WhatsApp con las instrucciones.
+1. El staff abre **Ajustes** (menú ☰ del inicio; pide el PIN del staff) → **Árbitros del club**. Ahí crea el **PIN de árbitros** (lo escribe, de 4 a 6 números, o toca **Uno al azar**), lo ve, lo cambia o cierra el registro. Solo el staff lo ve. **Enviar a los árbitros** lo comparte por WhatsApp con las instrucciones.
 2. El árbitro entra en Inicio → **Árbitros** y toca **Soy nuevo: registrarme**: nombre, apellido, teléfono y el PIN de árbitros. No hace falta que exista un torneo.
 3. Crea su **código personal** de 4 dígitos y lo repite. El código se guarda cifrado (HMAC) y nunca sale del servidor.
 4. Desde ahí, para entrar solo toca su nombre en la cuadrícula **¿Quién eres?** y escribe su código (entra solo al cuarto dígito). Si lo olvida, se registra otra vez con el mismo teléfono y elige uno nuevo.

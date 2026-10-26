@@ -51,7 +51,7 @@ export function DatosPrueba({ onCambio }: { onCambio?: () => void }) {
   }
 
   return (
-    <section className="mt-10">
+    <section id="datos-prueba" className="mt-10 scroll-mt-6">
       <h2 className="label">Datos de prueba</h2>
       <div className="glass space-y-4 rounded-[2rem] p-5">
         <div className="flex items-start gap-3">
