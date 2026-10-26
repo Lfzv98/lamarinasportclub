@@ -128,7 +128,7 @@ export function MatchCard({ torneo, p, onClick, compacto = false, sinHora = fals
           <span className="ml-auto shrink-0 font-semibold text-amber-200">Suspendido{p.suspendido.marcador ? ` · ${p.suspendido.marcador}` : ""}</span>
         )}
         {p.estado === "PENDIENTE" && p.programacion && !p.bye && !sinHora && !p.suspendido && (
-          <span className="ml-auto shrink-0 capitalize">
+          <span className="ml-auto shrink-0">
             {fechaCorta(p.programacion.fecha)} {p.programacion.hora} · {pistaCorta(torneo, p.programacion.pista)}
           </span>
         )}

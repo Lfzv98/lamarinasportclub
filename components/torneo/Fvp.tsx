@@ -122,7 +122,7 @@ function Revisar({ torneo, cat, dupla, onClose }: { torneo: Torneo; cat: Categor
           <AtletaFvpLinea cedula={cedulas[i]} atleta={fvp.buscar?.(cedulas[i]) ?? null} listo={fvp.listo} nivel={cat.categoria.nivel} />
         </div>
       ))}
-      {v?.nota && v.estado !== "VERIFICADA" && <p className={clsx("text-sm", v.estado === "BLOQUEADA" ? "text-coral" : "text-amber-300")}>{v.nota}</p>}
+      {v?.nota && v.estado !== "VERIFICADA" && fvp.resumen?.cargado !== false && <p className={clsx("text-sm", v.estado === "BLOQUEADA" ? "text-coral" : "text-amber-300")}>{v.nota}</p>}
       {fvp.resumen && !fvp.resumen.cargado && <p className="text-xs text-white/45">Aún no hay lista FVP cargada. Cárgala en Torneos → Ranking FVP.</p>}
       {v?.estado !== "VERIFICADA" && <ExcepcionFvp activa={excepcion} motivo={motivo} onActiva={setExcepcion} onMotivo={setMotivo} />}
       <button className="btn-neon w-full" onClick={aplicar} disabled={!fvp.listo}>

@@ -15,7 +15,8 @@ export const GET = manejar(async (req: Request) => {
   const torneoId = new URL(req.url).searchParams.get("torneoId");
   if (!torneoId) throw new ErrorApi(400, "Falta torneoId.");
   const t = await getTorneosRepository().obtener(torneoId);
-  if (!t || t.eliminado) throw new ErrorApi(404, "Torneo no encontrado.");
+  // Un torneo recién creado puede no haber llegado aún al servidor: todavía no tiene fotos.
+  if (!t || t.eliminado) return NextResponse.json({ fotos: {} });
   if (!puedeVer(t, (await visorDe(req)))) return NextResponse.json({ fotos: {} });
   const lista = await getTorneosRepository().listarExtras(t.id, "foto");
   return NextResponse.json({ fotos: Object.fromEntries(lista.map((x) => { const id = x.id.split(":").slice(2).join(":"); return [id, urlFoto(t.id, "dupla", id, x.actualizadoEn)]; })) });

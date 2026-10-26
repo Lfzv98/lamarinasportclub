@@ -66,7 +66,7 @@ function Programacion({ torneo }: { torneo: Torneo }) {
                 onClick={() => setDia(d.fecha)}
                 className={clsx("shrink-0 rounded-xl border px-3 py-2 text-left text-sm transition", d.fecha === dia ? "seleccion sobre-marca" : "border-white/10")}
               >
-                <span className={clsx("block font-semibold capitalize", d.fecha === dia && "text-lima")}>{fechaCorta(d.fecha)}</span>
+                <span className={clsx("block font-semibold", d.fecha === dia && "text-lima")}>{fechaCorta(d.fecha)}</span>
                 <span className="block text-[11px] text-white/50">
                   {d.inicio}–{d.fin} · {n} partidos
                 </span>
