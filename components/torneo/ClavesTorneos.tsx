@@ -31,7 +31,7 @@ export function ClavesTorneos() {
   const torneos = useListaTorneos();
   return (
     <>
-      <h2 className="label mt-10">Claves de torneos</h2>
+      <h2 id="claves" className="label mt-10 scroll-mt-6">Claves de torneos</h2>
       <p className="-mt-1 mb-3 text-sm text-white/50">
         Los participantes entran con esta clave mientras dure el torneo. Al vencer, ya no pueden ver cuadros ni horarios. Los árbitros tienen su propio PIN, que solo sirve para anotar. El staff entra siempre con su PIN.
       </p>

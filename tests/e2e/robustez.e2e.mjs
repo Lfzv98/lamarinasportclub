@@ -147,7 +147,7 @@ ok(await pb.locator("text=Americano Viernes Neón").count() === 0, "evento elimi
 
 // 10) localStorage corrupto no deja la app colgada
 const C = await b.newContext(vp); const pc = await nuevo(C);
-await pc.goto(`${U}/`); await pc.evaluate(() => localStorage.setItem("lamarina-americanos-v1", "{roto"));
+await pc.goto(`${U}/americanos`); await pc.evaluate(() => localStorage.setItem("lamarina-americanos-v1", "{roto"));
 await pc.reload({ waitUntil: "networkidle" }); await pc.waitForTimeout(1500);
 ok(await pc.locator("text=Eventos activos").count() > 0 && (await pc.locator(".animate-pulse.h-40").count()) === 0, "datos locales corruptos: la app carga igual");
 

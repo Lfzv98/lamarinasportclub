@@ -13,7 +13,7 @@ import { Segmented } from "@/components/ui/Segmented";
 import { Stepper } from "@/components/ui/Stepper";
 import { Switch } from "@/components/ui/Switch";
 import { toast } from "@/components/ui/Toaster";
-import { AtletaFvpLinea, EstadoFvpChip, ExcepcionFvp, RevisarFvpHoja } from "@/components/torneo/Fvp";
+import { AtletaFvpLinea, EstadoFvpChip, ExcepcionFvp, motivoSugerido, RevisarFvpHoja } from "@/components/torneo/Fvp";
 import { SorteoPopup } from "@/components/torneo/SorteoPopup";
 import { TorneoShell } from "@/components/torneo/TorneoShell";
 import { descripcionReglas, minutosEstimados, nombreCategoria, nombreCorto, tieBreakPorDefecto, validarDupla } from "@/lib/torneo/categorias";
@@ -314,7 +314,7 @@ function InscribirHoja({ torneo, cat, abierta, onClose }: { torneo: Torneo; cat:
       {chequeaFvp && (
         <>
           <input className="input mt-2 !py-2.5" placeholder="Cédula (V-12345678)" value={x.cedula} onChange={(e) => set({ ...x, cedula: e.target.value })} aria-label={`Cédula del jugador ${n}`} />
-          <AtletaFvpLinea cedula={x.cedula} atleta={fvp.buscar?.(x.cedula) ?? null} listo={fvp.listo} nivel={cat.categoria.nivel} />
+          <AtletaFvpLinea cedula={x.cedula} atleta={fvp.buscar?.(x.cedula) ?? null} listo={fvp.listo} nivel={cat.categoria.nivel} sinLista={!fvp.buscar} />
         </>
       )}
       {(cat.categoria.rama === "MIXTO" || conEdad) && (
@@ -342,7 +342,11 @@ function InscribirHoja({ torneo, cat, abierta, onClose }: { torneo: Torneo; cat:
       pie={
         <div className="space-y-2">
           {error && (a.nombre || b.nombre) && <p className="text-sm text-coral">{error}</p>}
-          {!error && v?.estado === "POR_VERIFICAR" && <p className="text-sm text-amber-300">{v.nota} Quedará por verificar y frena el sorteo hasta que el staff la revise.</p>}
+          {!error && excepcion && v && v.estado !== "VERIFICADA" ? (
+            <p className="text-sm text-sky-300">Se inscribe como excepción del staff: queda firmada con tu nombre y no frena el sorteo.</p>
+          ) : (
+            !error && v?.estado === "POR_VERIFICAR" && <p className="text-sm text-amber-300">{v.nota?.replace(/\.$/, "")}. Quedará por verificar y frena el sorteo hasta que el staff la revise, o activa "Inscribir igual".</p>
+          )}
           <div className="flex gap-2">
             <button className="btn-ghost flex-1" onClick={() => inscribir(true)} disabled={!!error}>
               Inscribir y otra
@@ -364,7 +368,7 @@ function InscribirHoja({ torneo, cat, abierta, onClose }: { torneo: Torneo; cat:
       <div className="space-y-3">
         {campos(a, setA, 1)}
         {campos(b, setB, 2)}
-        {v && v.estado !== "VERIFICADA" && fvp.listo && (a.nombre || b.nombre) && <ExcepcionFvp activa={excepcion} motivo={motivo} onActiva={setExcepcion} onMotivo={setMotivo} />}
+        {v && v.estado !== "VERIFICADA" && fvp.listo && (a.nombre || b.nombre) && <ExcepcionFvp activa={excepcion} motivo={motivo} onActiva={setExcepcion} onMotivo={setMotivo} sugerencia={motivoSugerido(v)} />}
         {chequeaFvp && fvp.resumen && !fvp.resumen.cargado && <p className="text-xs text-white/45">Aún no hay lista FVP cargada: la dupla quedará por verificar. Cárgala en Torneos → Ranking FVP.</p>}
         {chequeaFvp && fvp.error && <p className="text-xs text-white/45">Sin conexión con el ranking FVP: la dupla quedará por verificar.</p>}
         <label className="flex items-center justify-between gap-3 text-sm">
