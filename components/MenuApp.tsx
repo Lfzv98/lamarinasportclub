@@ -27,6 +27,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useAmericanos, useEsStaff } from "@/lib/store";
+import { TENIS_ACTIVO } from "@/lib/tenis/activo";
 
 interface Item {
   href: string;
@@ -44,7 +45,7 @@ const SECCIONES: { titulo: string; items: Item[] }[] = [
       { href: "/", titulo: "Inicio", Icono: Home },
       { href: "/americanos", titulo: "Americanos", sub: "Eventos, cuadro vivo y ranking", Icono: Shuffle },
       { href: "/torneos", titulo: "Torneos", sub: "Categorías, llaves y programación", Icono: Trophy },
-      { href: "/tenis", titulo: "Tenis", sub: "Cancha dura y arcilla", Icono: CircleDot },
+      ...(TENIS_ACTIVO ? [{ href: "/tenis", titulo: "Tenis", sub: "Cancha dura y arcilla", Icono: CircleDot }] : []),
       { href: "/arbitro", titulo: "Árbitros", sub: "La tablet de cada pista", Icono: Flag },
     ],
   },
@@ -53,7 +54,7 @@ const SECCIONES: { titulo: string; items: Item[] }[] = [
     items: [
       { href: "/setup", titulo: "Nuevo americano", Icono: Plus, staff: true },
       { href: "/torneos/nuevo", titulo: "Nuevo torneo de pádel", Icono: Plus, staff: true },
-      { href: "/tenis/nuevo", titulo: "Nuevo torneo de tenis", Icono: Plus, staff: true },
+      ...(TENIS_ACTIVO ? [{ href: "/tenis/nuevo", titulo: "Nuevo torneo de tenis", Icono: Plus, staff: true }] : []),
       { href: "/torneos/ranking", titulo: "Ranking FVP", sub: "Lista de atletas federados", Icono: Medal, staff: true },
       { href: "/manual", titulo: "Manual del staff", Icono: BookOpen },
     ],
