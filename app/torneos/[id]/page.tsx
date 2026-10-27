@@ -4,21 +4,20 @@ import clsx from "clsx";
 import Link from "next/link";
 import { use, useState } from "react";
 import { motion } from "framer-motion";
-import { Clock, CloudRain, Flag, Megaphone, MonitorPlay, Play, Radio, Timer, Trophy, Tv } from "lucide-react";
+import { ClipboardCheck, Clock, CloudRain, Radio, Timer, Trophy, Tv } from "lucide-react";
 import { ImprevistosHoja } from "@/components/torneo/ImprevistosHoja";
-import { toast } from "@/components/ui/Toaster";
 import { MatchCard, ResultadoHoja } from "@/components/torneo/piezas";
 import { TorneoShell } from "@/components/torneo/TorneoShell";
 import { FranjaPatrocinadores } from "@/components/torneo/Patrocinadores";
-import { MarcadorMini, useAhora, useMarcadoresEnVivo } from "@/components/torneo/vivo";
-import { sonar, vibrar } from "@/lib/feedback";
-import { nombreCorto } from "@/lib/torneo/categorias";
-import { atrasoMinutos, estadoPistas, limiteWO, partidosListos, vencidosWO } from "@/lib/torneo/programacion";
-import { nombrePista, pistaCorta, suspensionesActivas, textoPistas } from "@/lib/torneo/imprevistos";
-import { cargarWO, categoria, dupla, llamarAPista, nombreDupla, progresoTorneo } from "@/lib/torneo/torneo";
+import { useAhora, useMarcadoresEnVivo } from "@/components/torneo/vivo";
+import { TarjetaPista } from "@/components/torneo/Pistas";
+import { PasosTorneo } from "@/components/torneo/PasosTorneo";
+import { useEsMesa } from "@/lib/arbitro";
+import { atrasoMinutos, estadoPistas, partidosListos, vencidosWO } from "@/lib/torneo/programacion";
+import { suspensionesActivas, textoPistas } from "@/lib/torneo/imprevistos";
+import { progresoTorneo } from "@/lib/torneo/torneo";
 import { useEsStaff } from "@/lib/store";
-import { useTorneos } from "@/lib/torneosStore";
-import type { PartidoTorneo, Torneo } from "@/types/torneo";
+import type { Torneo } from "@/types/torneo";
 
 export default function TorneoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -29,7 +28,7 @@ function EnVivo({ torneo }: { torneo: Torneo }) {
   useMarcadoresEnVivo(torneo.id);
   const ahora = useAhora(15_000);
   const esStaff = useEsStaff();
-  const guardar = useTorneos((s) => s.guardar);
+  const esMesa = useEsMesa();
   const [abierto, setAbierto] = useState<string | null>(null);
   const [imprevistos, setImprevistos] = useState(false);
   const prog = progresoTorneo(torneo);
@@ -46,15 +45,23 @@ function EnVivo({ torneo }: { torneo: Torneo }) {
     .slice(0, 6);
   const publicadas = torneo.categorias.filter((c) => c.cuadro?.publicado).length;
 
-  const llamar = (p: PartidoTorneo, pista: number) => {
-    vibrar([10, 30, 10]);
-    sonar("ok");
-    guardar(llamarAPista(torneo, p.id, pista));
-    toast(`A ${nombrePista(torneo, pista)}: ${nombreDupla(torneo, dupla(torneo, p.duplaA))} vs ${nombreDupla(torneo, dupla(torneo, p.duplaB))}`);
-  };
+  const porRevisar = torneo.categorias.flatMap((c) => c.cuadro?.partidos ?? []).filter((p) => p.estado === "FINALIZADO" && p.revision?.estado === "POR_REVISAR").length;
 
   return (
     <>
+      {esStaff && <PasosTorneo torneo={torneo} />}
+      {esMesa && publicadas > 0 && (
+        <Link href={`/torneos/${torneo.id}/mesa`} className="glass mt-2 flex items-center gap-3 rounded-2xl p-3.5 transition hover:border-neon/40">
+          <span className="flex size-10 items-center justify-center rounded-xl bg-lima text-marino-2">
+            <ClipboardCheck className="size-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">Mesa técnica</span>
+            <span className="block text-xs text-white/50">Pistas, llamados y resultados que envían los árbitros</span>
+          </span>
+          {porRevisar > 0 && <span className="rounded-full bg-amber-300 px-2.5 py-1 text-xs font-bold text-marino-2">{porRevisar} por revisar</span>}
+        </Link>
+      )}
       <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { icon: Trophy, v: `${prog.jugados}/${prog.total}`, l: "Partidos jugados" },
@@ -109,91 +116,9 @@ function EnVivo({ torneo }: { torneo: Torneo }) {
             </div>
           </div>
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {pistas.map((c, i) => {
-              const actual = c.enJuego ?? c.llamado;
-              const cat = actual ? categoria(torneo, actual.categoriaId) : null;
-              return (
-                <motion.div
-                  key={c.numero}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.04 }}
-                  className={clsx("glass relative overflow-hidden rounded-3xl p-4", c.enJuego && "!border-neon/40")}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className={clsx("flex size-9 items-center justify-center rounded-full font-display font-bold", c.enJuego ? "bg-lima text-marino-2" : c.sede ? "bg-cielo/25 text-cielo" : "bg-pista text-blanco")}>{c.sede ? c.numero % 100 : c.numero}</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold">
-                        {c.nombre}
-                        {c.sede && <span className="font-normal text-cielo"> · {c.sede}</span>}
-                      </p>
-                      <p className="text-xs text-white/45">
-                        {c.enJuego ? `En juego · ${nombreCorto(cat!.categoria)} · ${c.enJuego.etiqueta}` : c.llamado ? `Llamado · ${nombreCorto(cat!.categoria)}` : c.suspendida ? `Suspendida · ${c.suspendida}` : "Libre"}
-                      </p>
-                    </div>
-                    <Link href={`/torneos/${torneo.id}/pista/${c.numero}`} className="btn-ghost !p-2" title="Pantalla de esta pista" aria-label={`Pantalla de ${c.nombre}`}>
-                      <MonitorPlay className="size-4" />
-                    </Link>
-                  </div>
-                  <div className="mt-3">
-                    {c.enJuego ? (
-                      <button className="block w-full text-left" onClick={() => setAbierto(c.enJuego!.id)}>
-                        <MarcadorMini torneo={torneo} p={c.enJuego} />
-                      </button>
-                    ) : c.llamado ? (
-                      <div>
-                        <MatchCard torneo={torneo} p={c.llamado} compacto onClick={() => setAbierto(c.llamado!.id)} />
-                        <Llamado torneo={torneo} p={c.llamado} ahora={ahora} />
-                        {esStaff && (
-                          <div className="mt-2 flex gap-2">
-                            <Link href={`/torneos/${torneo.id}/anotar/${encodeURIComponent(c.llamado.id)}`} className="btn-neon flex-1 !py-2">
-                              <Play className="size-4" /> Empezar
-                            </Link>
-                          </div>
-                        )}
-                        {esStaff && vencidos.has(c.llamado.id) && (
-                          <div className="mt-2 grid grid-cols-2 gap-2">
-                            {(["A", "B"] as const).map((l) => {
-                              const p = c.llamado!;
-                              const nombre = nombreDupla(torneo, dupla(torneo, l === "A" ? p.duplaA : p.duplaB));
-                              return (
-                                <button
-                                  key={l}
-                                  className="btn-ghost !py-1.5 text-xs !text-coral"
-                                  onClick={() => {
-                                    if (!confirm(`¿W.O.? No se presentó ${nombre}.`)) return;
-                                    guardar(cargarWO(torneo, p.id, l === "A" ? "B" : "A", "Staff"));
-                                    toast(`W.O.: gana ${nombreDupla(torneo, dupla(torneo, l === "A" ? p.duplaB : p.duplaA))}`);
-                                  }}
-                                >
-                                  <Flag className="size-3.5" /> No vino {nombre}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    ) : c.siguiente ? (
-                      <div>
-                        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/40">Siguiente</p>
-                        <MatchCard torneo={torneo} p={c.siguiente} compacto onClick={() => setAbierto(c.siguiente!.id)} />
-                        {esStaff && (
-                          <button className="btn-neon mt-2 w-full !py-2" onClick={() => llamar(c.siguiente!, c.numero)}>
-                            <Megaphone className="size-4" /> Llamar a {c.sede ? pistaCorta(torneo, c.numero) : c.nombre.toLowerCase()}
-                          </button>
-                        )}
-                      </div>
-                    ) : c.suspendida ? (
-                      <p className="flex items-center justify-center gap-2 py-4 text-sm text-amber-200">
-                        <CloudRain className="size-4" /> {c.suspendida}: sin juego por ahora
-                      </p>
-                    ) : (
-                      <p className="py-4 text-center text-sm text-white/40">Sin partidos listos</p>
-                    )}
-                  </div>
-                </motion.div>
-              );
-            })}
+            {pistas.map((c, i) => (
+              <TarjetaPista key={c.numero} torneo={torneo} c={c} ahora={ahora} i={i} mesa={!!esMesa} vencido={vencidos.has(c.llamado?.id ?? "")} onAbrir={setAbierto} />
+            ))}
           </div>
 
           {proximos.length > 0 && (
@@ -222,19 +147,5 @@ function EnVivo({ torneo }: { torneo: Torneo }) {
       <ResultadoHoja torneo={torneo} partidoId={abierto} onClose={() => setAbierto(null)} />
       {esStaff && <ImprevistosHoja torneo={torneo} abierta={imprevistos} onClose={() => setImprevistos(false)} />}
     </>
-  );
-}
-
-function Llamado({ torneo, p, ahora }: { torneo: Torneo; p: PartidoTorneo; ahora: number }) {
-  const limite = limiteWO(torneo, p);
-  if (!p.llamadoEn || limite === null) return null;
-  const pasados = Math.floor((ahora - new Date(p.llamadoEn).getTime()) / 60_000);
-  const quedan = Math.ceil((limite - ahora) / 60_000);
-  return (
-    <p className={clsx("mt-2 text-xs font-semibold", quedan <= 0 ? "text-coral" : quedan <= 5 ? "text-amber-200" : "text-white/50")}>
-      {quedan > 0 ? quedan > torneo.toleranciaWO
-          ? `Llamado hace ${pasados} min · hora prevista ${new Date(limite - torneo.toleranciaWO * 60_000).toTimeString().slice(0, 5)}`
-          : `Llamado hace ${pasados} min · W.O. en ${quedan} min` : `Pasó la tolerancia de ${torneo.toleranciaWO} min: se puede dar W.O.`}
-    </p>
   );
 }

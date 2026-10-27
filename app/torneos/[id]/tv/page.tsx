@@ -5,18 +5,18 @@ import Link from "next/link";
 import { use } from "react";
 import { ArrowLeft, CloudRain, Maximize, Megaphone, Minimize, Radio } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { Escenario, Reloj, useCursorOculto, useFullscreenYWakeLock, useVertical } from "@/components/Pantalla";
+import { ANCHO_ESTRECHO, Escenario, Reloj, useCursorOculto, useFullscreenYWakeLock, useLienzo, useVertical } from "@/components/Pantalla";
 import { QR } from "@/components/QR";
 import { TorneoShellMinimo } from "@/components/torneo/minimo";
 import { FranjaPatrocinadores } from "@/components/torneo/Patrocinadores";
-import { textoOrigen } from "@/components/torneo/piezas";
+import { lineasOrigen } from "@/components/torneo/piezas";
 import { MarcadorMini, useMarcadoresEnVivo } from "@/components/torneo/vivo";
 import { nombreCorto } from "@/lib/torneo/categorias";
 import { estadoPistas, partidosListos } from "@/lib/torneo/programacion";
 import { textoSets } from "@/lib/torneo/tabla";
 import { nombrePista } from "@/lib/torneo/imprevistos";
 import { categoria } from "@/lib/torneo/torneo";
-import type { Torneo } from "@/types/torneo";
+import type { PartidoTorneo, Torneo } from "@/types/torneo";
 
 /** Modo TV del torneo (terraza / bar): todas las pistas en vivo, lo que viene y los últimos resultados. */
 export default function TorneoTVPage({ params }: { params: Promise<{ id: string }> }) {
@@ -26,9 +26,11 @@ export default function TorneoTVPage({ params }: { params: Promise<{ id: string 
 
 function TV({ torneo }: { torneo: Torneo }) {
   useMarcadoresEnVivo(torneo.id, 2000);
-  const { full, alternar } = useFullscreenYWakeLock();
+  const { full, alternar, puede } = useFullscreenYWakeLock();
   const oculto = useCursorOculto();
   const vertical = useVertical();
+  const lienzo = useLienzo(vertical);
+  const estrecho = lienzo.ancho < ANCHO_ESTRECHO;
   const pistas = estadoPistas(torneo);
   const proximos = partidosListos(torneo).filter((p) => !pistas.some((c) => c.llamado?.id === p.id)).slice(0, 6);
   const recientes = torneo.categorias
@@ -40,23 +42,25 @@ function TV({ torneo }: { torneo: Torneo }) {
   const cat = (id: string) => nombreCorto(categoria(torneo, id)!.categoria);
 
   return (
-    <Escenario oculto={oculto} vertical={vertical}>
+    <Escenario oculto={oculto} lienzo={lienzo}>
       <header className="flex items-center gap-6">
         <Logo className="!h-14" />
         <div className="h-12 w-px bg-white/10" />
-        <h1 className="min-w-0 flex-1 truncate font-display text-4xl font-bold">{torneo.nombre}</h1>
+        <h1 className={clsx("min-w-0 flex-1 font-display font-bold", estrecho ? "text-3xl leading-tight" : "truncate text-4xl")}>{torneo.nombre}</h1>
         <Reloj />
         <div className={clsx("flex gap-2 transition-opacity", oculto && "opacity-0")}>
           <Link href={`/torneos/${torneo.id}`} className="btn-ghost !p-3" aria-label="Salir">
             <ArrowLeft className="size-5" />
           </Link>
-          <button className="btn-ghost !p-3" onClick={alternar} aria-label="Pantalla completa">
-            {full ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
-          </button>
+          {puede && (
+            <button className="btn-ghost !p-3" onClick={alternar} aria-label="Pantalla completa">
+              {full ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
+            </button>
+          )}
         </div>
       </header>
-      <div className={clsx("grid min-h-0 flex-1 gap-6", vertical ? "grid-cols-1" : "grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]")}>
-        <div className="grid min-h-0 auto-rows-fr grid-cols-2 gap-5">
+      <div className={clsx("grid min-h-0 flex-1 gap-6", vertical || estrecho ? "grid-cols-1" : "grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]")}>
+        <div className={clsx("grid min-h-0 gap-5", estrecho ? "grid-cols-1" : "grid-cols-2", !lienzo.desplaza && "auto-rows-fr")}>
           {pistas.map((c) => (
             <div key={c.numero} className={clsx("glass flex min-h-0 flex-col rounded-[2rem] p-6", c.enJuego && "!border-neon/40")}>
               <div className="flex items-center gap-3">
@@ -83,39 +87,42 @@ function TV({ torneo }: { torneo: Torneo }) {
               </div>
               <div className="mt-auto pt-4">
                 {c.enJuego ? (
-                  <MarcadorMini torneo={torneo} p={c.enJuego} grande />
+                  <MarcadorMini torneo={torneo} p={c.enJuego} grande completo />
                 ) : c.llamado ? (
-                  <p className="text-2xl font-semibold leading-snug">
-                    {textoOrigen(torneo, c.llamado, "A")} <span className="text-white/35">vs</span> {textoOrigen(torneo, c.llamado, "B")}
-                  </p>
+                  <Cruce torneo={torneo} p={c.llamado} className="text-xl font-semibold" />
                 ) : (
-                  <p className="text-xl text-white/40">{c.siguiente ? `Siguiente: ${textoOrigen(torneo, c.siguiente, "A")} vs ${textoOrigen(torneo, c.siguiente, "B")}` : "—"}</p>
+                  c.siguiente ? (
+                    <div className="text-white/45">
+                      <p className="text-sm font-semibold uppercase tracking-wider">Siguiente</p>
+                      <Cruce torneo={torneo} p={c.siguiente} className="mt-1 text-lg" />
+                    </div>
+                  ) : (
+                    <p className="text-xl text-white/40">—</p>
+                  )
                 )}
               </div>
             </div>
           ))}
           <div className="glass flex items-center gap-6 rounded-[2rem] p-6">
-            <div className="rounded-2xl bg-blanco p-3">
+            <div className="shrink-0 rounded-2xl bg-blanco p-3">
               <QR texto={url} size={150} />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="font-display text-2xl font-bold">Sigue el torneo</p>
               <p className="mt-1 text-lg text-white/55">Cuadros, horarios y tus estadísticas</p>
             </div>
           </div>
         </div>
         <div className="flex min-h-0 flex-col gap-5">
-          <div className="glass min-h-0 flex-1 rounded-[2rem] p-6">
+          <div className="glass min-h-0 flex-1 overflow-hidden rounded-[2rem] p-6">
             <p className="font-display text-2xl font-bold">Próximos partidos</p>
-            <ul className="mt-4 space-y-3">
+            <ul className="mt-4 space-y-3 [mask-image:linear-gradient(to_bottom,black_85%,transparent)]">
               {proximos.map((p) => (
                 <li key={p.id} className="flex items-center gap-4 rounded-2xl bg-white/[0.04] px-4 py-3">
                   <span className="w-16 font-display text-xl font-bold text-lima">{p.programacion?.hora ?? "--"}</span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-lg font-semibold">
-                      {textoOrigen(torneo, p, "A")} <span className="text-white/35">vs</span> {textoOrigen(torneo, p, "B")}
-                    </p>
-                    <p className="text-sm text-white/45">
+                    <Cruce torneo={torneo} p={p} className="text-lg font-semibold" />
+                    <p className="mt-1 text-sm text-white/45">
                       {cat(p.categoriaId)} · {p.etiqueta} · {nombrePista(torneo, p.programacion?.pista)}
                     </p>
                   </div>
@@ -132,8 +139,8 @@ function TV({ torneo }: { torneo: Torneo }) {
                 return (
                   <li key={p.id} className="flex items-center gap-3 text-lg">
                     <span className="w-20 shrink-0 text-sm text-white/45">{cat(p.categoriaId)}</span>
-                    <span className="min-w-0 flex-1 truncate">
-                      <b>{textoOrigen(torneo, p, ganaA ? "A" : "B")}</b> <span className="text-white/40">a</span> {textoOrigen(torneo, p, ganaA ? "B" : "A")}
+                    <span className="min-w-0 flex-1 break-words leading-tight">
+                      <b>{lineasOrigen(torneo, p, ganaA ? "A" : "B").join(" / ")}</b> <span className="text-white/40">a</span> {lineasOrigen(torneo, p, ganaA ? "B" : "A").join(" / ")}
                     </span>
                     <span className="font-display font-bold text-lima">{textoSets(p.resultado!.sets, !ganaA)}</span>
                   </li>
@@ -150,5 +157,20 @@ function TV({ torneo }: { torneo: Torneo }) {
         </div>
       </div>
     </Escenario>
+  );
+}
+
+/** Las dos duplas con nombre y apellido de cada jugador, una línea por jugador: nada se corta en la TV. */
+function Cruce({ torneo, p, className }: { torneo: Torneo; p: PartidoTorneo; className?: string }) {
+  return (
+    <div className={clsx("grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 leading-tight", className)}>
+      <div className="min-w-0 break-words">
+        {lineasOrigen(torneo, p, "A").map((n, i) => <p key={i}>{n}</p>)}
+      </div>
+      <span className="text-white/35">vs</span>
+      <div className="min-w-0 break-words">
+        {lineasOrigen(torneo, p, "B").map((n, i) => <p key={i}>{n}</p>)}
+      </div>
+    </div>
   );
 }

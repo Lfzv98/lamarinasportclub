@@ -226,6 +226,12 @@ export function nombreJugador(j?: Jugador): string {
   return j.apellido ? `${j.nombre} ${j.apellido.charAt(0)}.` : j.nombre;
 }
 
+/** Nombre y apellido completos, sin abreviar (para la TV). */
+export function nombreCompleto(j?: Jugador): string {
+  if (!j) return "?";
+  return [j.nombre, j.apellido].filter(Boolean).join(" ");
+}
+
 export function partidosJugados(evento: EventoAmericano): Partido[] {
   return evento.rondas.flatMap((r) => r.partidos).filter((p) => p.estado === "FINALIZADO" && p.resultado);
 }
@@ -365,6 +371,14 @@ export function etiquetaMarcador(cfg: ConfigPuntuacion): string {
 }
 
 /** Nombres de los jugadores detrás de una fila (para los avatares). */
+/** Como `nombresDeFila`, pero con nombre y apellido completos de cada jugador (TV). */
+export function nombresCompletosDeFila(evento: EventoAmericano, f: FilaPosicion): string[] {
+  const porId = new Map(evento.jugadores.map((j) => [j.id, j]));
+  if (evento.modalidad === "INDIVIDUAL_ROTATIVO") return [nombreCompleto(porId.get(f.entidadId))];
+  const p = evento.parejas.find((x) => x.id === f.entidadId);
+  return p ? p.jugadorIds.map((id) => nombreCompleto(porId.get(id))) : [f.nombre];
+}
+
 export function nombresDeFila(evento: EventoAmericano, f: FilaPosicion): string[] {
   const porId = new Map(evento.jugadores.map((j) => [j.id, j]));
   if (evento.modalidad === "INDIVIDUAL_ROTATIVO") return [f.nombre];

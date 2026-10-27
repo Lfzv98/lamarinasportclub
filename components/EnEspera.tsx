@@ -4,12 +4,15 @@ import clsx from "clsx";
 import { motion } from "framer-motion";
 import { Coffee } from "lucide-react";
 import { AvatarPareja } from "@/components/Avatar";
+import { nombreCompleto } from "@/lib/scoring";
 import type { EventoAmericano, Ronda } from "@/types/americano";
 
 export interface Espera {
   id: string;
   nombre: string;
   nombres: string[];
+  /** Nombre y apellido completos de cada jugador (TV). */
+  completo: string;
   fotos: (string | null | undefined)[];
   /** Próxima ronda en la que juega (null si ya no le toca). */
   vuelve: number | null;
@@ -23,10 +26,10 @@ export function enEspera(evento: EventoAmericano, ronda: Ronda): Espera[] {
     if (evento.modalidad === "DUPLA_FIJA") {
       const p = evento.parejas.find((x) => x.id === id);
       const js = (p?.jugadorIds ?? []).map((j) => porId.get(j));
-      return { id, nombre: p?.nombre ?? id, nombres: js.map((j) => j?.nombre ?? "?"), fotos: js.map((j) => j?.fotoUrl), vuelve: siguiente(id) };
+      return { id, nombre: p?.nombre ?? id, nombres: js.map((j) => j?.nombre ?? "?"), completo: js.map((j) => nombreCompleto(j)).join(" / "), fotos: js.map((j) => j?.fotoUrl), vuelve: siguiente(id) };
     }
     const j = porId.get(id);
-    return { id, nombre: j ? `${j.nombre}${j.apellido ? ` ${j.apellido.charAt(0)}.` : ""}` : id, nombres: [j?.nombre ?? "?"], fotos: [j?.fotoUrl], vuelve: siguiente(id) };
+    return { id, nombre: j ? `${j.nombre}${j.apellido ? ` ${j.apellido.charAt(0)}.` : ""}` : id, nombres: [j?.nombre ?? "?"], completo: j ? nombreCompleto(j) : id, fotos: [j?.fotoUrl], vuelve: siguiente(id) };
   });
 }
 

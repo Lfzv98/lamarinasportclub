@@ -73,12 +73,14 @@ function Delta({ v, grande }: { v?: number; grande?: boolean }) {
 
 const COLS = "grid-cols-[1.75rem_minmax(0,1fr)_repeat(3,1.6rem)_2.1rem_2.3rem] sm:grid-cols-[2.75rem_minmax(0,1fr)_repeat(6,3rem)_3.5rem]";
 const COLS_TV = "grid-cols-[4rem_minmax(0,1fr)_repeat(6,5rem)_6rem]";
+const COLS_TV_ESTRECHO = "grid-cols-[3rem_minmax(0,1fr)_repeat(6,3.25rem)_4rem]";
 
 /** Tabla de posiciones con animación de cambio de posición (layout animations). */
-export function Leaderboard({ tabla, nombresPorFila, modoTV = false, limite }: { tabla: TablaPosiciones; nombresPorFila: (f: FilaPosicion) => string[]; modoTV?: boolean; limite?: number }) {
+/** `estrecho`: modo TV en una pantalla angosta (celular), con columnas más justas. */
+export function Leaderboard({ tabla, nombresPorFila, modoTV = false, estrecho = false, limite }: { tabla: TablaPosiciones; nombresPorFila: (f: FilaPosicion) => string[]; modoTV?: boolean; estrecho?: boolean; limite?: number }) {
   const cambios = useCambios(tabla.filas);
   const filas = limite ? tabla.filas.slice(0, limite) : tabla.filas;
-  const cols = modoTV ? COLS_TV : COLS;
+  const cols = modoTV ? (estrecho ? COLS_TV_ESTRECHO : COLS_TV) : COLS;
   const th = clsx("text-center font-semibold uppercase tracking-wider text-white/40", modoTV ? "text-base" : "text-[10px] sm:text-[11px]");
 
   return (
@@ -117,7 +119,16 @@ export function Leaderboard({ tabla, nombresPorFila, modoTV = false, limite }: {
                 </span>
                 <span className={clsx("flex min-w-0 items-center", modoTV ? "gap-3" : "gap-2")}>
                   <AvatarPareja nombres={nombresPorFila(f)} fotos={f.fotoUrls} size={modoTV ? 48 : 28} />
-                  <span className={clsx("min-w-0 truncate font-semibold", modoTV ? "text-2xl" : "text-[13px] sm:text-sm")}>{f.nombre}</span>
+                  {modoTV ? (
+                    // En la TV va el nombre completo de cada jugador, uno por línea, sin cortar.
+                    <span className={clsx("min-w-0 break-words font-semibold leading-tight", nombresPorFila(f).length > 1 ? "text-xl" : "text-2xl")}>
+                      {nombresPorFila(f).map((n, i) => (
+                        <span key={i} className="block">{n}</span>
+                      ))}
+                    </span>
+                  ) : (
+                    <span className="min-w-0 truncate text-[13px] font-semibold sm:text-sm">{f.nombre}</span>
+                  )}
                   {f.retirado && <span className="chip shrink-0 !px-2 !py-0.5 text-[10px] text-white/50">Retiro</span>}
                   {f.posicion === 1 && f.pj > 0 && <Crown className={clsx("shrink-0 text-neon", modoTV ? "size-6" : "size-4")} />}
                   <Delta v={delta} grande={modoTV} />

@@ -15,16 +15,19 @@ import type {
   Dupla,
   FaseReglas,
   JugadorTorneo,
+  CorreccionResultado,
   Origen,
   PartidoTorneo,
+  Programacion,
   ReglasPartido,
   ResultadoTorneo,
+  RevisionResultado,
   Torneo,
 } from "@/types/torneo";
 import type { PistaClub, SetScore } from "@/types/americano";
 import { CONFIG_CUADRO_BASE, nombreCategoria, reglasPorDefecto } from "./categorias.ts";
 import { duplasActivas, proponerFormato, sortear } from "./cuadro.ts";
-import { CRITERIOS_POR_DEFECTO, calcularTablaGrupo, resultadoWO, type TablaGrupo } from "./tabla.ts";
+import { CRITERIOS_POR_DEFECTO, calcularTablaGrupo, resultadoWO, textoSets, type TablaGrupo } from "./tabla.ts";
 
 export const nuevoId = (prefijo = "") =>
   prefijo + (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36));
@@ -102,6 +105,15 @@ export function nombreDupla(t: Torneo, d?: Dupla | null): string {
     const j = jugador(t, id);
     return j ? j.apellido?.trim() || j.nombre : "?";
   }).join(" / ");
+}
+
+/** Nombre y apellido completos de cada jugador de la dupla, sin abreviar (para la TV). */
+export function nombresCompletosDupla(t: Torneo, d?: Dupla | null): string[] {
+  if (!d) return ["Por definir"];
+  return d.jugadorIds.map((id) => {
+    const j = jugador(t, id);
+    return j ? nombreJugador(j) : "?";
+  });
 }
 
 export function dupla(t: Torneo, id?: string | null): Dupla | undefined {
@@ -456,24 +468,83 @@ export function actualizarPartido(t: Torneo, partidoId: string, fn: (p: PartidoT
   }));
 }
 
-export function cargarResultado(t: Torneo, partidoId: string, resultado: ResultadoTorneo, por?: string): Torneo {
+/**
+ * Cierra un partido con su resultado. `revision`: POR_REVISAR cuando lo cierra el árbitro de pista
+ * (llega a la bandeja de mesa técnica), VISTO cuando lo carga el árbitro principal o el staff.
+ */
+export function cargarResultado(t: Torneo, partidoId: string, resultado: ResultadoTorneo, por?: string, revision?: RevisionResultado["estado"]): Torneo {
   const p = partido(t, partidoId);
   if (!p) return t;
-  const out = actualizarPartido(t, partidoId, (x) => ({ ...x, estado: "FINALIZADO", resultado, finEn: x.finEn ?? new Date().toISOString() }));
+  const en = new Date().toISOString();
+  const out = actualizarPartido(t, partidoId, (x) => ({
+    ...x,
+    estado: "FINALIZADO",
+    resultado,
+    finEn: x.finEn ?? en,
+    revision: revision
+      ? { estado: revision, cargadoPor: por, en, ...(revision === "VISTO" ? { por } : {}), correcciones: x.revision?.correcciones }
+      : (x.revision ?? null),
+  }));
   return recalcular({ ...tocar(out), estado: out.estado === "FINALIZADO" ? out.estado : "EN_JUEGO" }, p.categoriaId, por);
+}
+
+/** Texto de un resultado para el historial: "6-3 6-4", "W.O." o "6-3 2-1 (retiro)". */
+export function textoResultado(r?: ResultadoTorneo | null): string {
+  if (!r) return "sin resultado";
+  if (r.tipo === "WO") return `W.O. (gana ${r.ganador})`;
+  const base = textoSets(r.sets);
+  return r.tipo === "RETIRO" ? `${base} (retiro)` : r.tipo === "DESCALIFICACION" ? `${base} (descalificación)` : base;
+}
+
+/** Mesa técnica da por bueno el resultado que cerró el árbitro de pista. */
+export function marcarVisto(t: Torneo, partidoId: string, por: string): Torneo {
+  const p = partido(t, partidoId);
+  if (!p || p.estado !== "FINALIZADO") return t;
+  return tocar(
+    actualizarPartido(t, partidoId, (x) => ({
+      ...x,
+      revision: { ...(x.revision ?? { cargadoPor: undefined }), estado: "VISTO", por, en: new Date().toISOString() },
+    })),
+  );
+}
+
+/**
+ * Corrige un resultado ya cerrado: queda quién, cuándo, qué había antes y el motivo. Si cambia el
+ * ganador y la llave ya había avanzado, los partidos afectados se anulan solos (ver `efectoCorreccion`).
+ */
+export function corregirResultado(t: Torneo, partidoId: string, resultado: ResultadoTorneo, motivo: string, por: string): Torneo {
+  const p = partido(t, partidoId);
+  if (!p) return t;
+  const correccion: CorreccionResultado = { en: new Date().toISOString(), por, antes: textoResultado(p.resultado), despues: textoResultado(resultado), motivo: motivo.trim() };
+  const conRegistro = actualizarPartido(t, partidoId, (x) => ({
+    ...x,
+    revision: { ...(x.revision ?? {}), estado: "VISTO", en: correccion.en, por, correcciones: [...(x.revision?.correcciones ?? []), correccion] },
+  }));
+  const out = cargarResultado(conRegistro, partidoId, resultado, por);
+  return tocar(out, `Corrección en ${p.etiqueta}: ${correccion.antes} → ${correccion.despues}. Motivo: ${correccion.motivo}`, por);
+}
+
+/** Qué partidos ya jugados o en juego se anularían si se corrige así el resultado (para avisar antes). */
+export function efectoCorreccion(t: Torneo, partidoId: string, resultado: ResultadoTorneo): PartidoTorneo[] {
+  const antes = new Map(todosLosPartidos(t).map((p) => [p.id, p]));
+  const despues = cargarResultado(t, partidoId, resultado);
+  return todosLosPartidos(despues).filter((p) => {
+    const a = antes.get(p.id);
+    return p.id !== partidoId && a && !a.bye && a.estado !== "PENDIENTE" && p.estado === "PENDIENTE";
+  });
 }
 
 export function borrarResultado(t: Torneo, partidoId: string, por?: string): Torneo {
   const p = partido(t, partidoId);
   if (!p) return t;
-  const out = actualizarPartido(t, partidoId, (x) => ({ ...x, estado: "PENDIENTE", resultado: null, finEn: null, inicioEn: null }));
+  const out = actualizarPartido(t, partidoId, (x) => ({ ...x, estado: "PENDIENTE", resultado: null, finEn: null, inicioEn: null, revision: null }));
   return recalcular(tocar(out, `Resultado borrado: ${p.etiqueta}.`, por), p.categoriaId, por);
 }
 
-export function cargarWO(t: Torneo, partidoId: string, ganador: "A" | "B", por?: string): Torneo {
+export function cargarWO(t: Torneo, partidoId: string, ganador: "A" | "B", por?: string, revision?: RevisionResultado["estado"]): Torneo {
   const p = partido(t, partidoId);
   if (!p) return t;
-  const out = cargarResultado(t, partidoId, resultadoWO(reglasDe(t, p), ganador), por);
+  const out = cargarResultado(t, partidoId, resultadoWO(reglasDe(t, p), ganador), por, revision);
   const pierde = ganador === "A" ? p.duplaB : p.duplaA;
   return tocar(out, `W.O. en ${p.etiqueta}: no se presentó ${nombreDupla(t, dupla(t, pierde))}.`, por);
 }
@@ -502,9 +573,35 @@ export function moverPartido(t: Torneo, partidoId: string, prog: { fecha: string
   );
 }
 
+/**
+ * Marca los partidos publicados que cambiaron de día, hora o pista entre dos versiones del torneo
+ * (reprogramación por atraso, lluvia o a mano), para avisar a sus jugadores. Si vuelve a la hora
+ * original, la marca se borra.
+ */
+export function marcarCambiosHorario(antes: Torneo | undefined, despues: Torneo): Torneo {
+  if (!antes) return despues;
+  const previos = new Map(todosLosPartidos(antes).map((p) => [p.id, p]));
+  const igual = (a?: Pick<Programacion, "fecha" | "hora" | "pista"> | null, b?: Pick<Programacion, "fecha" | "hora" | "pista"> | null) =>
+    !!a && !!b && a.fecha === b.fecha && a.hora === b.hora && a.pista === b.pista;
+  let hubo = false;
+  const categorias = despues.categorias.map((c) => {
+    if (!c.cuadro?.publicado) return c;
+    const partidos = c.cuadro.partidos.map((p) => {
+      const v = previos.get(p.id);
+      if (!v?.programacion || !p.programacion || p.estado !== "PENDIENTE" || p.bye || igual(v.programacion, p.programacion)) return p;
+      const original = p.cambioHorario?.antes ?? { fecha: v.programacion.fecha, hora: v.programacion.hora, pista: v.programacion.pista };
+      hubo = true;
+      if (igual(original, p.programacion)) return { ...p, cambioHorario: null };
+      return { ...p, cambioHorario: { antes: original, en: new Date().toISOString() } };
+    });
+    return { ...c, cuadro: { ...c.cuadro, partidos } };
+  });
+  return hubo ? { ...despues, categorias } : despues;
+}
+
 export function configurarTorneo(
   t: Torneo,
-  cambios: Partial<Pick<Torneo, "nombre" | "dias" | "canchas" | "descansoMin" | "toleranciaWO" | "finalesUltimoDia" | "bloqueos" | "criterios" | "sedes" | "patrocinadores" | "validarFvp" | "inscripcion">>,
+  cambios: Partial<Pick<Torneo, "nombre" | "dias" | "canchas" | "descansoMin" | "toleranciaWO" | "finalesUltimoDia" | "horarioEstelar" | "bloqueos" | "criterios" | "sedes" | "patrocinadores" | "validarFvp" | "inscripcion">>,
 ): Torneo {
   const out = { ...t, ...cambios };
   return cambios.criterios ? recalcularTodo(tocar(out, "Criterios de desempate actualizados.")) : tocar(out);

@@ -42,7 +42,7 @@ function useEscala(ancho: number, alto: number) {
 }
 
 function TV({ torneo: t }: { torneo: TorneoTenis }) {
-  const { full, alternar } = useFullscreenYWakeLock();
+  const { full, alternar, puede } = useFullscreenYWakeLock();
   const oculto = useCursorOculto();
   const escala = useEscala(1920, 1080);
   const d = SUPERFICIES[t.superficie];
@@ -75,9 +75,11 @@ function TV({ torneo: t }: { torneo: TorneoTenis }) {
               <Link href={`/tenis/t/${t.id}`} className="btn-ghost !p-3" aria-label="Salir">
                 <ArrowLeft className="size-5" />
               </Link>
-              <button className="btn-ghost !p-3" onClick={alternar} aria-label="Pantalla completa">
-                {full ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
-              </button>
+              {puede && (
+                <button className="btn-ghost !p-3" onClick={alternar} aria-label="Pantalla completa">
+                  {full ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
+                </button>
+              )}
             </div>
           </header>
 
@@ -120,9 +122,9 @@ function TV({ torneo: t }: { torneo: TorneoTenis }) {
                     <div className="mt-auto pt-4">
                       {p.estado === "LLAMADO" && !p.marcador ? (
                         <div className="space-y-3 font-display text-5xl font-bold">
-                          <p className="truncate">{nombreInscrito(t, p.a)}</p>
+                          <p className="break-words leading-tight">{nombreInscrito(t, p.a)}</p>
                           <p className="text-3xl text-white/40">vs</p>
-                          <p className="truncate">{nombreInscrito(t, p.b)}</p>
+                          <p className="break-words leading-tight">{nombreInscrito(t, p.b)}</p>
                         </div>
                       ) : (
                         <MarcadorTenis torneo={t} partido={p} tam="tv" />
@@ -140,8 +142,8 @@ function TV({ torneo: t }: { torneo: TorneoTenis }) {
                   <ul className="mt-4 space-y-4">
                     {proximos.map((p) => (
                       <li key={p.id} className="text-2xl">
-                        <p className="truncate font-semibold">
-                          {nombreInscrito(t, p.a, true)} <span className="text-white/40">vs</span> {nombreInscrito(t, p.b, true)}
+                        <p className="break-words font-semibold leading-tight">
+                          {nombreInscrito(t, p.a)} <span className="text-white/40">vs</span> {nombreInscrito(t, p.b)}
                         </p>
                         <p className="text-lg text-white/50">{ronda(p)}</p>
                       </li>
@@ -155,8 +157,8 @@ function TV({ torneo: t }: { torneo: TorneoTenis }) {
                   <ul className="mt-4 space-y-4">
                     {resultados.map((p) => (
                       <li key={p.id} className="text-2xl">
-                        <p className="truncate font-semibold">
-                          {nombreInscrito(t, p.resultado!.ganador === 0 ? p.a : p.b, true)} <span className="text-white/45">a</span> {nombreInscrito(t, p.resultado!.ganador === 0 ? p.b : p.a, true)}
+                        <p className="break-words font-semibold leading-tight">
+                          {nombreInscrito(t, p.resultado!.ganador === 0 ? p.a : p.b)} <span className="text-white/45">a</span> {nombreInscrito(t, p.resultado!.ganador === 0 ? p.b : p.a)}
                         </p>
                         <p className="font-display text-xl tabular" style={{ color: d.claro }}>
                           {textoResultado(t, p)}

@@ -3,6 +3,7 @@
 import clsx from "clsx";
 import { useCallback, useEffect, useState } from "react";
 import {
+  Crown,
   Eye,
   EyeOff,
   Flag,
@@ -262,6 +263,21 @@ export function PlantelLista({
     );
     onCambio();
   }
+  async function cambiarPrincipal(a: ArbitroStaff) {
+    const r = await fetch("/api/arbitros", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: a.id, principal: !a.principal }),
+    });
+    if (!r.ok) return toast("No se pudo cambiar. Revisa la conexión.", "error");
+    vibrar(10);
+    toast(
+      a.principal
+        ? `${a.nombre} vuelve a ser árbitro de pista`
+        : `${a.nombre} es árbitro principal: abre la mesa técnica con su nombre y su código`,
+    );
+    onCambio();
+  }
   async function borrar(a: ArbitroStaff) {
     if (
       !confirm(
@@ -305,6 +321,9 @@ export function PlantelLista({
             <div className="min-w-0 flex-1 basis-[12rem]">
               <p className="font-semibold">
                 {a.nombre} {a.apellido}{" "}
+                {a.principal && (
+                  <span className="chip ml-1 !text-lima">Principal · mesa técnica</span>
+                )}
                 {!a.activo && (
                   <span className="chip ml-1 !text-amber-200">En pausa</span>
                 )}
@@ -328,6 +347,17 @@ export function PlantelLista({
                   <MessageCircle className="size-4" />
                 </a>
               )}
+              <button
+                className={clsx(
+                  "btn-ghost !px-3 !py-2 text-xs",
+                  a.principal && "!border-lima/50 !text-lima",
+                )}
+                onClick={() => cambiarPrincipal(a)}
+                title="El árbitro principal opera la mesa técnica: revisa y corrige resultados y llama partidos a pista"
+              >
+                <Crown className="size-3.5" />{" "}
+                {a.principal ? "Principal" : "Hacer principal"}
+              </button>
               <button
                 className="btn-ghost !px-3 !py-2 text-xs"
                 onClick={() => cambiarActivo(a)}

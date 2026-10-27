@@ -6,11 +6,14 @@
  * La cookie la pone el servidor (POST /api/arbitro); aquí solo se refleja quién es.
  */
 import { create } from "zustand";
+import { useAmericanos } from "@/lib/store";
 
 export interface Arbitro {
   /** Árbitro del plantel del club. */
   id: string;
   nombre: string;
+  /** Árbitro principal: abre la mesa técnica (revisa y corrige resultados). */
+  principal?: boolean;
 }
 
 /** Lo que muestra la pantalla de entrada: nombre e inicial del apellido. */
@@ -98,3 +101,15 @@ export function useArbitro(): Arbitro | null | undefined {
 
 /** ¿Puede anotar este torneo? Los árbitros del club anotan en cualquier torneo. */
 export const esArbitroDe = (a: Arbitro | null | undefined, _torneoId?: string) => !!a;
+
+/** ¿Este dispositivo opera la mesa técnica? Staff o árbitro principal. undefined = todavía no se sabe. */
+export function useEsMesa(): boolean | undefined {
+  const arbitro = useArbitro();
+  const staff = useAmericanos((s) => s.staff);
+  if (staff) return true;
+  if (staff === undefined || arbitro === undefined) return undefined;
+  return !!arbitro?.principal;
+}
+
+/** Fuera de React: ¿quien opera este dispositivo es mesa técnica? */
+export const esMesaAhora = () => !!useAmericanos.getState().staff || !!useArbitroStore.getState().arbitro?.principal;

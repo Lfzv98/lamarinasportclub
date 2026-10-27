@@ -13,6 +13,7 @@ import { AnotadorGate, useVolverAnotador } from "@/components/torneo/Arbitraje";
 import { Hoja } from "@/components/ui/Hoja";
 import { toast } from "@/components/ui/Toaster";
 import { TorneoShellMinimo } from "@/components/torneo/minimo";
+import { EstadoConexion } from "@/components/torneo/Conexion";
 import { useAhora } from "@/components/torneo/vivo";
 import { sonar, vibrar } from "@/lib/feedback";
 import { subirFoto, useFotos, useFotosTorneo } from "@/lib/fotos";
@@ -58,6 +59,9 @@ export default function AnotarPage({ params }: { params: Promise<{ id: string; p
   const { id, pid } = use(params);
   return (
     <AnotadorGate torneoId={id}>
+      <div className="pointer-events-none fixed inset-x-0 top-[max(0.25rem,env(safe-area-inset-top))] z-[60] flex justify-center">
+        <EstadoConexion className="pointer-events-auto shadow-lg" />
+      </div>
       <TorneoShellMinimo id={id}>{(t) => <Anotador torneo={t} partidoId={decodeURIComponent(pid)} />}</TorneoShellMinimo>
     </AnotadorGate>
   );
@@ -72,20 +76,81 @@ function Anotador({ torneo, partidoId }: { torneo: Torneo; partidoId: string }) 
   const marcador = useMarcador(partidoId);
   // Antes de ofrecer "empezar", trae el marcador del servidor: si el partido ya se está
   // anotando en otro teléfono, se sigue desde ahí en vez de empezar de cero.
+  // También dice si otro árbitro lo está anotando ahora mismo (se evalúa una vez, al abrir).
+  const arbitro = useArbitro();
+  const staff = useAmericanos((s) => s.staff);
+  const staffSinArbitro = !!staff && !arbitro;
+  const yo = arbitro?.id ?? "staff";
   const [listo, setListo] = useState(false);
+  const [otro, setOtro] = useState<{ nombre: string; hace: number } | null>(null);
+  const [aceptado, setAceptado] = useState(false);
   useEffect(() => {
-    useTorneos.getState().sincronizarMarcadores(torneo.id).finally(() => setListo(true));
-  }, [torneo.id]);
+    useTorneos
+      .getState()
+      .sincronizarMarcadores(torneo.id)
+      .finally(() => {
+        setOtro(otroAnotando(useTorneos.getState().marcadores[partidoId], yo));
+        setListo(true);
+      });
+  }, [torneo.id, partidoId, yo]);
   if (!p) return <p className="p-10 text-center text-white/60">Partido no encontrado.</p>;
   if (!p.duplaA || !p.duplaB) return <p className="p-10 text-center text-white/60">Todavía no se conocen las dos duplas.</p>;
-  if (!marcador && !listo)
+  if (!listo)
     return (
       <main className="flex min-h-dvh items-center justify-center">
         <div className="size-10 animate-spin rounded-full border-2 border-white/10 border-t-neon" />
       </main>
     );
+  if (!aceptado && (staffSinArbitro ? !marcador?.finalizado : otro))
+    return <AvisoAntesDeAnotar torneo={torneo} p={p} otro={otro} onAceptar={() => setAceptado(true)} />;
   if (!marcador) return <Preparar torneo={torneo} p={p} />;
   return <Tablero torneo={torneo} p={p} m={marcador} />;
+}
+
+/* ---------- 0. avisos antes de tocar el marcador ---------- */
+
+function otroAnotando(m: MarcadorVivo | undefined, yo: string): { nombre: string; hace: number } | null {
+  if (!m || m.finalizado) return null;
+  const ultimo = m.anotadores?.at(-1);
+  if (!ultimo || ultimo.id === yo) return null;
+  const hace = Date.now() - new Date(m.actualizadoEn).getTime();
+  return hace < 3 * 60_000 ? { nombre: ultimo.nombre, hace } : null;
+}
+
+/**
+ * El marcador de un partido lo lleva su árbitro de pista. El staff solo anota en una emergencia
+ * (pista sin árbitro, tablet sin batería), y un segundo árbitro entra como relevo solo si lo confirma.
+ */
+function AvisoAntesDeAnotar({ torneo, p, otro, onAceptar }: { torneo: Torneo; p: PartidoTorneo; otro: { nombre: string; hace: number } | null; onAceptar: () => void }) {
+  const volver = useVolverAnotador(torneo.id);
+  const aceptar = () => {
+    vibrar(10);
+    onAceptar();
+  };
+  const emergencia = !otro;
+  return (
+    <main className="flex min-h-dvh flex-col items-center justify-center gap-5 p-6 text-center">
+      <span className={clsx("flex size-16 items-center justify-center rounded-2xl", emergencia ? "bg-amber-300 text-marino-2" : "bg-cielo text-marino-2")}>
+        {emergencia ? <ShieldAlert className="size-8" /> : <Flag className="size-8" />}
+      </span>
+      <div className="max-w-md">
+        <h1 className="font-display text-2xl font-bold">{otro ? `Este partido lo está anotando ${otro.nombre}` : "Anotar en lugar del árbitro"}</h1>
+        <p className="mt-2 text-sm text-white/60">
+          {otro
+            ? `Su último punto llegó hace ${Math.max(1, Math.round(otro.hace / 1000))} s. Si sigues, tomas el relevo desde el mismo marcador y cada punto queda firmado con tu nombre. Si los dos anotan a la vez, el marcador se confunde.`
+            : `El marcador de ${p.etiqueta} lo lleva el árbitro de su pista, y al terminar llega solo a mesa técnica. Anota tú solo si la pista no tiene árbitro o su tablet falló: el partido queda marcado como anotado por el staff.`}
+        </p>
+      </div>
+      <div className="flex w-full max-w-sm flex-col gap-3">
+        <button className="btn-neon w-full !py-4 text-lg" onClick={aceptar}>
+          {otro ? "Tomar el relevo" : "Sí, anotar en su lugar"}
+        </button>
+        <Link href={volver} className="btn-ghost w-full">
+          <ArrowLeft className="size-4" /> Volver
+        </Link>
+      </div>
+    </main>
+  );
 }
 
 /* ---------- 1. antes de empezar: fotos, sorteo, elección y saque ---------- */
@@ -594,9 +659,12 @@ function Tablero({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marcad
         ? { sets: setsFinales(est), ganador: est.ganador!, tipo: "NORMAL" as const }
         : { ...resultadoRetiro(reglas, setsFinales(est).filter((s) => s.a + s.b > 0), ganador!), tipo };
     guardarMarcador({ ...marcador, finalizado: true, actualizadoEn: new Date().toISOString() });
-    accionPartido(torneo.id, p.id, { accion: "resultado", resultado }).then((err) => err && toast(err, "error"));
+    accionPartido(torneo.id, p.id, { accion: "resultado", resultado }).then((err) => {
+      if (err) toast(err, "error");
+      else if (useTorneos.getState().offline) toast("Sin señal: el resultado quedó guardado en la tablet y se envía solo al volver la conexión.", "info");
+    });
     sonar("ok");
-    toast(`Resultado guardado: ${textoSets(resultado.sets)}`);
+    toast(`Enviado a mesa técnica: ${textoSets(resultado.sets)}`);
     router.push(volver);
   }
 

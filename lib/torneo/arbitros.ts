@@ -103,6 +103,18 @@ export function turnoActual(t: Torneo, arbitroId: string, ahora: number): TurnoA
   return corriendo ?? hoy.find((x) => aMin(x.desde) > m) ?? null;
 }
 
+/**
+ * Árbitro de turno en una pista ahora (null = nadie de turno). `hayTurnos` dice si el torneo tiene
+ * turnos para hoy: sin turnos cargados no se puede saber quién arbitra cada pista.
+ */
+export function turnoEnPista(t: Torneo, pista: number, ahora: number): { turno: TurnoArbitro | null; hayTurnos: boolean } {
+  const { fecha, hora } = relojClub(ahora);
+  const hoy = (t.arbitros?.turnos ?? []).filter((x) => x.fecha === fecha);
+  const m = aMin(hora);
+  const turno = hoy.find((x) => x.pista === pista && m >= aMin(x.desde) - 30 && m < (aMin(x.hasta) || 24 * 60)) ?? null;
+  return { turno, hayTurnos: hoy.length > 0 };
+}
+
 /* ---------- sorteo previo (FIP) ---------- */
 
 /** Moneda al aire con el generador criptográfico del dispositivo. */

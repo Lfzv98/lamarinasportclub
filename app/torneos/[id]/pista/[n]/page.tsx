@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, CloudRain, Maximize, Megaphone, Minimize, Trophy } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { Logo } from "@/components/Logo";
-import { Escenario, Reloj, useCursorOculto, useFullscreenYWakeLock } from "@/components/Pantalla";
+import { ANCHO_ESTRECHO, Escenario, Reloj, useCursorOculto, useFullscreenYWakeLock, useLienzo, useVertical } from "@/components/Pantalla";
 import { QR } from "@/components/QR";
 import { TorneoShellMinimo } from "@/components/torneo/minimo";
 import { FranjaPatrocinadores, PresentaPista } from "@/components/torneo/Patrocinadores";
@@ -16,7 +16,7 @@ import { useFotoDupla, useFotosTorneo } from "@/lib/fotos";
 import { nombreCategoria } from "@/lib/torneo/categorias";
 import { atencionEnCurso, calcularMarcador, cambioDeLadoEnCurso, descansoReglamentario, relatoPublico, setsFinales, type Lado } from "@/lib/torneo/marcador";
 import { estadoPistas, limiteWO } from "@/lib/torneo/programacion";
-import { categoria, dupla, nombreDupla, nombreJugador } from "@/lib/torneo/torneo";
+import { categoria, dupla, nombreJugador, nombresCompletosDupla } from "@/lib/torneo/torneo";
 import { useMarcador } from "@/lib/torneosStore";
 import type { MarcadorVivo, PartidoTorneo, Torneo } from "@/types/torneo";
 
@@ -29,8 +29,12 @@ export default function PistaPage({ params }: { params: Promise<{ id: string; n:
 function Pantalla({ torneo, numero }: { torneo: Torneo; numero: number }) {
   useMarcadoresEnVivo(torneo.id, 1500);
   useFotosTorneo(torneo.id);
-  const { full, alternar } = useFullscreenYWakeLock();
+  const { full, alternar, puede } = useFullscreenYWakeLock();
   const oculto = useCursorOculto();
+  const vertical = useVertical();
+  const lienzo = useLienzo(vertical);
+  const estrecho = lienzo.ancho < ANCHO_ESTRECHO;
+  const columna = vertical || estrecho;
   const estado = estadoPistas(torneo).find((p) => p.numero === numero);
   const partido = estado?.enJuego ?? null;
   const marcador = useMarcador(partido?.id);
@@ -38,11 +42,11 @@ function Pantalla({ torneo, numero }: { torneo: Torneo; numero: number }) {
   const url = typeof window !== "undefined" ? `${location.origin}/torneos/${torneo.id}` : "";
 
   return (
-    <Escenario oculto={oculto} vertical={false}>
-      <header className="flex items-center gap-6">
+    <Escenario oculto={oculto} lienzo={lienzo}>
+      <header className="flex flex-wrap items-center gap-x-6 gap-y-4">
         <Logo className="!h-14" />
         <div className="h-12 w-px bg-white/10" />
-        <div className="min-w-0 flex-1">
+        <div className="min-w-[16rem] flex-1">
           <h1 className="truncate font-display text-3xl font-bold">{torneo.nombre}</h1>
           <p className="text-lg text-white/50">{partido ? `${nombreCategoria(categoria(torneo, partido.categoriaId)!.categoria)} · ${partido.etiqueta}` : "Marcador oficial"}</p>
         </div>
@@ -53,20 +57,22 @@ function Pantalla({ torneo, numero }: { torneo: Torneo; numero: number }) {
           <Link href={`/torneos/${torneo.id}`} className="btn-ghost !p-3" aria-label="Salir">
             <ArrowLeft className="size-5" />
           </Link>
-          <button className="btn-ghost !p-3" onClick={alternar} aria-label="Pantalla completa">
-            {full ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
-          </button>
+          {puede && (
+            <button className="btn-ghost !p-3" onClick={alternar} aria-label="Pantalla completa">
+              {full ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
+            </button>
+          )}
         </div>
       </header>
 
       <AnimatePresence mode="wait">
         {partido && marcador ? (
-          <motion.div key={partido.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_28rem] gap-6">
-            <Marcador torneo={torneo} p={partido} m={marcador} />
+          <motion.div key={partido.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className={clsx("grid min-h-0 flex-1 gap-6", columna ? "grid-cols-1" : "grid-cols-[minmax(0,1fr)_28rem]")}>
+            <Marcador torneo={torneo} p={partido} m={marcador} estrecho={estrecho} />
             <Relato torneo={torneo} p={partido} m={marcador} />
           </motion.div>
         ) : (
-          <motion.div key="espera" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid flex-1 grid-cols-[minmax(0,1fr)_26rem] items-center gap-10">
+          <motion.div key="espera" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className={clsx("grid flex-1 items-center gap-10", columna ? "grid-cols-1" : "grid-cols-[minmax(0,1fr)_26rem]")}>
             {estado?.suspendida && !estado.llamado ? (
               <div className="text-center">
                 <CloudRain className="mx-auto size-24 text-amber-200" />
@@ -91,7 +97,7 @@ function Pantalla({ torneo, numero }: { torneo: Torneo; numero: number }) {
   );
 }
 
-function Marcador({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: MarcadorVivo }) {
+function Marcador({ torneo, p, m, estrecho = false }: { torneo: Torneo; p: PartidoTorneo; m: MarcadorVivo; estrecho?: boolean }) {
   const e = useMemo(() => calcularMarcador(m), [m]);
   const sets = setsFinales(e);
   const jug = (id: string) => torneo.jugadores.find((j) => j.id === id);
@@ -128,11 +134,13 @@ function Marcador({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marca
                 ? "TIE-BREAK"
                 : null;
   const ultimos = e.jugados.slice(-16);
+  // En un celular las columnas de sets y puntos se angostan para dejarle espacio a los nombres.
+  const filas = estrecho ? "grid-cols-[minmax(0,1fr)_repeat(var(--sets),2.75rem)_5.5rem]" : "grid-cols-[1fr_repeat(var(--sets),5rem)_11rem]";
 
   return (
     <div className="flex min-h-0 flex-col gap-5">
       <div className="glass flex flex-1 flex-col justify-center gap-4 rounded-[2.5rem] p-8">
-        <div className="grid grid-cols-[1fr_repeat(var(--sets),5rem)_11rem] items-center gap-4 text-center text-lg font-semibold uppercase tracking-[0.2em] text-white/35" style={{ ["--sets" as string]: sets.length }}>
+        <div className={clsx("grid items-center text-center font-semibold uppercase text-white/35", filas, estrecho ? "gap-2 px-4 text-xs tracking-wider" : "gap-4 text-lg tracking-[0.2em]")} style={{ ["--sets" as string]: sets.length }}>
           <span className="text-left">{m.reglas.sets === 3 ? "Mejor de 3" : "1 set"} · {m.reglas.puntoDeOro ? "punto de oro" : "ventaja"}</span>
           {sets.map((_, i) => (
             <span key={i}>{i === 2 && m.reglas.superTie ? ((m.reglas.tieDecisivo ?? 10) === 7 ? "TB" : "STB") : `Set ${i + 1}`}</span>
@@ -143,24 +151,21 @@ function Marcador({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marca
           const ids = l === "A" ? m.jugadoresA : m.jugadoresB;
           const gana = e.terminado && e.ganador === l;
           return (
-            <div key={l} className={clsx("grid grid-cols-[1fr_repeat(var(--sets),5rem)_11rem] items-center gap-4 rounded-[2rem] px-6 py-5", gana ? "seleccion" : "bg-white/[0.04]")} style={{ ["--sets" as string]: sets.length }}>
-              <div className="flex min-w-0 items-center gap-5">
-                <span className={clsx("h-20 w-2 shrink-0 rounded-full", l === "A" ? "bg-lima" : "bg-cielo")} />
-                <CaraDupla torneo={torneo} duplaId={l === "A" ? p.duplaA : p.duplaB} ids={ids} alto={96} />
-                <div className="min-w-0">
-                  <p className="truncate font-display text-5xl font-bold">{nombreDupla(torneo, dupla(torneo, l === "A" ? p.duplaA : p.duplaB))}</p>
-                  <p className="mt-1 flex items-center gap-3 text-xl text-white/55">
-                    {ids.map((id) => (
-                      <span key={id} className={clsx("flex items-center gap-2", !e.terminado && e.sacador === id && "font-bold text-lima")}>
-                        {!e.terminado && e.sacador === id && <span className="size-3.5 rounded-full bg-lima shadow-[0_0_14px_rgba(207,243,91,0.9)]" />}
-                        {jug(id)?.nombre}
-                      </span>
-                    ))}
-                  </p>
+            <div key={l} className={clsx("grid items-center rounded-[2rem]", filas, estrecho ? "gap-2 px-4 py-4" : "gap-4 px-6 py-5", gana ? "seleccion" : "bg-white/[0.04]")} style={{ ["--sets" as string]: sets.length }}>
+              <div className={clsx("flex min-w-0 items-center", estrecho ? "gap-3" : "gap-5")}>
+                <span className={clsx("w-2 shrink-0 self-stretch rounded-full", l === "A" ? "bg-lima" : "bg-cielo")} />
+                {!estrecho && <CaraDupla torneo={torneo} duplaId={l === "A" ? p.duplaA : p.duplaB} ids={ids} alto={96} />}
+                <div className="min-w-0 space-y-1">
+                  {ids.map((id) => (
+                    <p key={id} className={clsx("flex items-center gap-3 break-words font-display font-bold leading-tight", estrecho ? "text-2xl" : "text-4xl", !e.terminado && e.sacador === id && "text-lima")}>
+                      {!e.terminado && e.sacador === id && <span className="size-4 shrink-0 rounded-full bg-lima shadow-[0_0_14px_rgba(207,243,91,0.9)]" />}
+                      <span className="min-w-0">{nombreJugador(jug(id))}</span>
+                    </p>
+                  ))}
                 </div>
               </div>
               {sets.map((s, j) => (
-                <span key={j} className={clsx("font-display text-6xl font-bold tabular", j === e.setActual && !e.terminado ? "text-white" : (l === "A" ? s.a > s.b : s.b > s.a) ? "text-lima" : "text-white/35")}>
+                <span key={j} className={clsx("font-display font-bold tabular", estrecho ? "text-4xl" : "text-6xl", j === e.setActual && !e.terminado ? "text-white" : (l === "A" ? s.a > s.b : s.b > s.a) ? "text-lima" : "text-white/35")}>
                   {l === "A" ? s.a : s.b}
                 </span>
               ))}
@@ -168,17 +173,17 @@ function Marcador({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marca
                 key={`${e.texto[i]}-${m.puntos.length}`}
                 initial={{ scale: 0.85, opacity: 0.5 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className={clsx("rounded-3xl py-3 font-display text-8xl font-bold tabular", e.terminado ? "text-white/30" : "bg-blanco/10 text-lima")}
+                className={clsx("rounded-3xl py-3 font-display font-bold tabular", estrecho ? "text-5xl" : "text-8xl", e.terminado ? "text-white/30" : "bg-blanco/10 text-lima")}
               >
-                {e.terminado ? gana ? <Trophy className="mx-auto size-20 text-lima" /> : "" : e.texto[i]}
+                {e.terminado ? gana ? <Trophy className={clsx("mx-auto text-lima", estrecho ? "size-12" : "size-20")} /> : "" : e.texto[i]}
               </motion.span>
             </div>
           );
         })}
-        <div className="flex h-12 items-center justify-center">
+        <div className="flex min-h-12 items-center justify-center">
           <AnimatePresence mode="wait">
             {aviso && (
-              <motion.span key={aviso} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: [1, 1.06, 1], opacity: 1 }} transition={{ scale: { repeat: Infinity, duration: 1.4 } }} className="rounded-full bg-lima px-8 py-2 font-display text-2xl font-bold tracking-[0.2em] text-marino-2">
+              <motion.span key={aviso} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: [1, 1.06, 1], opacity: 1 }} transition={{ scale: { repeat: Infinity, duration: 1.4 } }} className={clsx("rounded-full bg-lima py-2 text-center font-display font-bold text-marino-2", estrecho ? "px-5 text-lg tracking-wider" : "px-8 text-2xl tracking-[0.2em]")}>
                 {aviso}
               </motion.span>
             )}
@@ -186,7 +191,7 @@ function Marcador({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marca
         </div>
       </div>
 
-      <div className="grid grid-cols-[1.4fr_repeat(3,minmax(0,1fr))] gap-4">
+      <div className={clsx("grid gap-4", estrecho ? "grid-cols-2" : "grid-cols-[1.4fr_repeat(3,minmax(0,1fr))]")}>
         <div className="glass rounded-[1.5rem] p-4">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/40">Últimos puntos</p>
           <div className="mt-3 flex gap-1.5">
@@ -196,7 +201,7 @@ function Marcador({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marca
           </div>
           {e.racha.puntos >= 3 && !e.terminado && (
             <p className="mt-2 text-base text-white/60">
-              Racha de {e.racha.puntos} puntos · {nombreDupla(torneo, dupla(torneo, e.racha.lado === "A" ? p.duplaA : p.duplaB))}
+              Racha de {e.racha.puntos} puntos · {nombresCompletosDupla(torneo, dupla(torneo, e.racha.lado === "A" ? p.duplaA : p.duplaB)).join(" / ")}
             </p>
           )}
         </div>
@@ -220,7 +225,7 @@ function Marcador({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marca
 
 function Relato({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: MarcadorVivo }) {
   const e = useMemo(() => calcularMarcador(m), [m]);
-  const lado = (l: Lado) => nombreDupla(torneo, dupla(torneo, l === "A" ? p.duplaA : p.duplaB));
+  const lado = (l: Lado) => nombresCompletosDupla(torneo, dupla(torneo, l === "A" ? p.duplaA : p.duplaB)).join(" / ");
   const lista = e.jugados.slice(-7).reverse();
   const url = typeof window !== "undefined" ? `${location.origin}/torneos/${torneo.id}/partido/${encodeURIComponent(p.id)}` : "";
   return (

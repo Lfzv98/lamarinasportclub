@@ -3,7 +3,7 @@
 import clsx from "clsx";
 import { useEffect, useState } from "react";
 import { calcularMarcador, setsFinales, type EstadoMarcador } from "@/lib/torneo/marcador";
-import { dupla, nombreDupla } from "@/lib/torneo/torneo";
+import { dupla, nombreDupla, nombresCompletosDupla } from "@/lib/torneo/torneo";
 import { useMarcador, useTorneos } from "@/lib/torneosStore";
 import type { MarcadorVivo, PartidoTorneo, Torneo } from "@/types/torneo";
 
@@ -22,23 +22,32 @@ export function estadoDe(m?: MarcadorVivo): EstadoMarcador | null {
 }
 
 /** Marcador compacto para tarjetas: sets, games y puntos del game en curso. */
-export function MarcadorMini({ torneo, p, grande = false }: { torneo: Torneo; p: PartidoTorneo; grande?: boolean }) {
+/** `completo`: nombre y apellido de cada jugador en su propia línea, sin abreviar (TV). */
+export function MarcadorMini({ torneo, p, grande = false, completo = false }: { torneo: Torneo; p: PartidoTorneo; grande?: boolean; completo?: boolean }) {
   const m = useMarcador(p.id);
   const e = estadoDe(m);
-  const lados = [
-    { lado: "A" as const, nombre: nombreDupla(torneo, dupla(torneo, p.duplaA)) },
-    { lado: "B" as const, nombre: nombreDupla(torneo, dupla(torneo, p.duplaB)) },
-  ];
+  const lados = (["A", "B"] as const).map((lado) => {
+    const d = dupla(torneo, lado === "A" ? p.duplaA : p.duplaB);
+    return { lado, nombre: nombreDupla(torneo, d), completos: nombresCompletosDupla(torneo, d) };
+  });
   const sets = e ? setsFinales(e) : (p.resultado?.sets ?? []);
   return (
     <div className="space-y-1.5">
-      {lados.map(({ lado, nombre }, i) => {
+      {lados.map(({ lado, nombre, completos }, i) => {
         const k = lado === "A" ? "a" : "b";
         const saca = e && !e.terminado && e.equipoSaca === lado;
         return (
           <div key={lado} className="flex items-center gap-2">
             <span className={clsx("size-2 shrink-0 rounded-full", saca ? "bg-lima shadow-[0_0_8px_rgba(207,243,91,0.9)]" : "bg-transparent")} />
-            <span className={clsx("min-w-0 flex-1 truncate font-semibold", grande ? "text-lg" : "text-sm")}>{nombre}</span>
+            {completo ? (
+              <span className={clsx("min-w-0 flex-1 break-words font-semibold leading-tight", grande ? "text-lg" : "text-sm")}>
+                {completos.map((n, j) => (
+                  <span key={j} className="block">{n}</span>
+                ))}
+              </span>
+            ) : (
+              <span className={clsx("min-w-0 flex-1 truncate font-semibold", grande ? "text-lg" : "text-sm")}>{nombre}</span>
+            )}
             {sets.map((s, j) => (
               <span key={j} className={clsx("w-5 text-center font-display tabular", grande ? "text-lg" : "text-sm", j === (e?.setActual ?? -1) && !e?.terminado ? "font-bold text-white" : "text-white/50")}>
                 {s[k]}

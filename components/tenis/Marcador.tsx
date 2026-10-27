@@ -57,8 +57,8 @@ export function MarcadorTenis({ torneo: t, partido: p, tam = "normal", compacto 
         <span className={clsx("flex shrink-0 items-center justify-center", tv ? "w-10" : "w-5")}>
           <AnimatePresence>{saca && <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}><PelotaTenis className={tv ? "size-8" : "size-4"} /></motion.span>}</AnimatePresence>
         </span>
-        <span className={clsx("min-w-0 flex-1 truncate font-display font-semibold", tv ? "text-5xl" : "text-base")}>
-          {compacto ? nombreCompacto(t, iid) : nombreInscrito(t, iid, t.modalidad === "DOBLES")}
+        <span className={clsx("min-w-0 flex-1 font-display font-semibold", tv ? "break-words text-5xl leading-tight" : "truncate text-base")}>
+          {compacto ? nombreCompacto(t, iid) : nombreInscrito(t, iid, !tv && t.modalidad === "DOBLES")}
           {ins?.siembra ? <span className={clsx("ml-2 font-sans font-medium text-white/40", tv ? "text-3xl" : "text-xs")}>[{ins.siembra}]</span> : null}
           {ganador === lado && <span className={clsx("ml-2", tv ? "text-4xl" : "text-sm")}>🏆</span>}
         </span>
@@ -118,7 +118,7 @@ export function MarcadorTenis({ torneo: t, partido: p, tam = "normal", compacto 
             style={{ color: "#0f1a2e" }}
           >
             {TEXTO_AVISO[v.aviso.tipo]}
-            {v.aviso.para !== null && <span className="opacity-60">· {nombreInscrito(t, v.aviso.para === 0 ? p.a : p.b, true)}</span>}
+            {v.aviso.para !== null && <span className="opacity-60">· {nombreInscrito(t, v.aviso.para === 0 ? p.a : p.b, !tv)}</span>}
           </motion.div>
         )}
       </AnimatePresence>

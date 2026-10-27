@@ -7,13 +7,32 @@
  * - Un partido de llave va después de los partidos de los que sale cada lado (+ descanso).
  * - Las categorías avanzan parejas: se intercalan jornada por jornada.
  * - Semis y finales el último día (opcional) y en las pistas principales.
+ * - La categoría estelar (la de más nivel) va de noche en la pista principal; el resto deja libre
+ *   esa pista de noche mientras puede.
+ * - Las duplas rotan de pista: entre las pistas libres se elige la que menos usaron.
  * - Lo ya jugado, en juego o fijado a mano no se mueve.
  *
  * El tiempo se maneja en minutos absolutos: díaÍndice * 1440 + minutos del día.
  */
-import type { PartidoTorneo, Programacion, Torneo } from "@/types/torneo";
+import type { CategoriaEnTorneo, PartidoTorneo, Programacion, Torneo } from "@/types/torneo";
 import { aHora, aMinutos } from "../horarios.ts";
+import { NIVELES_TORNEO } from "./categorias.ts";
 import { categoria, faseReglas } from "./torneo.ts";
+
+/** Hora desde la que se juega la categoría estelar si no se elige otra. */
+export const ESTELAR_DESDE = "19:00";
+
+/** Categorías estelares: las elegidas o, en automático, las de más nivel (1ra, o un "Open"). */
+export function categoriasEstelares(t: Pick<Torneo, "categorias" | "horarioEstelar">): string[] {
+  if (t.horarioEstelar === null) return [];
+  if (t.horarioEstelar?.categorias) return t.horarioEstelar.categorias;
+  const rango = (c: CategoriaEnTorneo) =>
+    /open/i.test(c.categoria.nombre ?? "") ? NIVELES_TORNEO.length : c.categoria.tipo === "NIVEL" && c.categoria.nivel ? NIVELES_TORNEO.indexOf(c.categoria.nivel) : -1;
+  const max = Math.max(-1, ...t.categorias.map(rango));
+  // Solo tiene sentido si hay otras categorías por debajo.
+  if (max < 0 || t.categorias.every((c) => rango(c) === max)) return [];
+  return t.categorias.filter((c) => rango(c) === max).map((c) => c.categoria.id);
+}
 
 const PASO = 15;
 const DIA = 1440;
@@ -161,6 +180,26 @@ export function programarTorneo(t: Torneo, opts: OpcionesProgramacion = {}): Res
   const nuevas = new Map<string, Programacion>();
   let minutosSinLugar = 0;
 
+  // Categoría estelar de noche en la pista principal (la primera de la sede principal).
+  const estelares = new Set(categoriasEstelares(t));
+  const principal = canchas[0]?.numero;
+  const noche = aMinutos(t.horarioEstelar?.desde ?? ESTELAR_DESDE);
+  const esNoche = (ini: number) => ini - Math.floor(ini / DIA) * DIA >= noche;
+  // La estelar se ubica primero (todas sus rondas): así toma las noches antes que el resto.
+  if (estelares.size) aProgramar.sort((a, b) => Number(estelares.has(b.categoriaId)) - Number(estelares.has(a.categoriaId)));
+  /** La final de la estelar cierra el torneo: el último turno del día, en la pista principal. */
+  const esGranFinal = (p: PartidoTorneo) => estelares.has(p.categoriaId) && esFinalDeLlave(p) && !p.tercerPuesto && !porId.get(p.id)?.cuadro?.startsWith("CONS") && !cats.some((c) => c.cuadro!.partidos.some((x) => [x.origenA, x.origenB].some((o) => (o.tipo === "GANADOR" || o.tipo === "PERDEDOR") && o.partidoId === p.id)));
+
+  // Rotación: cuántas veces jugó cada dupla en cada pista.
+  const usoPista = new Map<string, number>();
+  const uso = (dupla: string | null, pista: number) => (dupla ? (usoPista.get(`${dupla}|${pista}`) ?? 0) : 0);
+  for (const c of cats)
+    for (const p of c.cuadro!.partidos) {
+      const n = p.pistaReal ?? p.programacion?.pista;
+      if (p.bye || n == null || (p.estado === "PENDIENTE" && !(p.programacion?.fijo && !p.suspendido))) continue;
+      for (const d of [p.duplaA, p.duplaB]) if (d) usoPista.set(`${d}|${n}`, uso(d, n) + 1);
+    }
+
   for (const p of aProgramar) {
     const dur = duracion(p);
     const dep = finDependencias(p);
@@ -170,35 +209,62 @@ export function programarTorneo(t: Torneo, opts: OpcionesProgramacion = {}): Res
       continue;
     }
     let minimo = Math.max(desde, dep > -Infinity ? dep + t.descansoMin : -Infinity);
+    // Las jornadas de un grupo van en orden: la J2 no empieza antes de que arranque la J1.
+    if (p.fase === "GRUPOS")
+      for (const x of gruposDe.get(`${p.categoriaId}|${p.grupoId}`) ?? []) {
+        const f = x.ronda < p.ronda ? finDe.get(x.id) : undefined;
+        if (f !== undefined && Number.isFinite(f)) minimo = Math.max(minimo, f - duracion(x));
+      }
     if (t.finalesUltimoDia && esFinalDeLlave(p) && ventanas[ultimoDia]) minimo = Math.max(minimo, ventanas[ultimoDia].ini);
     const jug = [...jugadoresDe(p.categoriaId, p.duplaA), ...jugadoresDe(p.categoriaId, p.duplaB)];
     const indisp = [...noDisponible(p.categoriaId, p.duplaA), ...noDisponible(p.categoriaId, p.duplaB)];
     // Pistas en orden de prioridad: la principal primero (ahí caen las finales).
     const ordenPistas = canchas.map((c) => c.numero);
+    const estelar = estelares.has(p.categoriaId);
+    const final = esFinalDeLlave(p);
+    const libre = (n: number, ini: number, fin: number) => {
+      if (choca(ocupPista.get(n)!, ini, fin)) return false;
+      const sede = sedeDe.get(n) ?? "";
+      return !jug.some((j) => (ocupJugador.get(j) ?? []).some((x) => {
+        const r = descansoEntre(x.sede ?? "", sede);
+        return ini < x.fin + r && x.ini - r < fin;
+      }));
+    };
+    /** Entre las pistas libres: la principal para finales y la estelar; si no, la que menos usaron estas duplas. */
+    const elegirPista = (candidatas: number[]) =>
+      final || estelar || candidatas.length < 2
+        ? candidatas[0]
+        : [...candidatas].sort((a, b) => uso(p.duplaA, a) + uso(p.duplaB, a) - (uso(p.duplaA, b) + uso(p.duplaB, b)) || ordenPistas.indexOf(a) - ordenPistas.indexOf(b))[0];
 
-    let elegido: { ini: number; pista: number } | null = null;
-    for (const v of ventanas) {
-      if (elegido) break;
-      let ini = Math.max(v.ini, Math.ceil(minimo / PASO) * PASO);
-      // alinear al paso desde el inicio del día
-      if (ini > v.ini) ini = v.ini + Math.ceil((ini - v.ini) / PASO) * PASO;
-      for (; ini + dur <= v.fin; ini += PASO) {
-        const fin = ini + dur;
-        if (choca(indisp, ini, fin)) continue;
-        const pista = ordenPistas.find((n) => {
-          if (choca(ocupPista.get(n)!, ini, fin)) return false;
-          const sede = sedeDe.get(n) ?? "";
-          return !jug.some((j) => (ocupJugador.get(j) ?? []).some((x) => {
-            const r = descansoEntre(x.sede ?? "", sede);
-            return ini < x.fin + r && x.ini - r < fin;
-          }));
-        });
-        if (pista !== undefined) {
-          elegido = { ini, pista };
-          break;
+    /** Primer hueco que cumple `admite` (pista y hora); con `ultimo`, el último hueco del primer día que tenga. */
+    const buscar = (admite: (n: number, ini: number) => boolean, ultimo = false): { ini: number; pista: number } | null => {
+      for (const v of ventanas) {
+        let ini = Math.max(v.ini, Math.ceil(minimo / PASO) * PASO);
+        // alinear al paso desde el inicio del día
+        if (ini > v.ini) ini = v.ini + Math.ceil((ini - v.ini) / PASO) * PASO;
+        let hallado: { ini: number; pista: number } | null = null;
+        for (; ini + dur <= v.fin; ini += PASO) {
+          const fin = ini + dur;
+          if (choca(indisp, ini, fin)) continue;
+          const pista = elegirPista(ordenPistas.filter((n) => admite(n, ini) && libre(n, ini, fin)));
+          if (pista === undefined) continue;
+          hallado = { ini, pista };
+          if (!ultimo) break;
         }
+        if (hallado) return hallado;
       }
-    }
+      return null;
+    };
+
+    const elegido = esGranFinal(p)
+      ? (buscar((n) => n === principal, true) ?? buscar(() => true, true))
+      : estelar
+        ? // Estelar: de noche (en la principal si está libre); si no cabe, cuando se pueda.
+          (buscar((_, ini) => esNoche(ini)) ?? buscar(() => true))
+      : estelares.size && !final
+        ? // El resto deja la pista principal libre de noche mientras haya lugar.
+          (buscar((n, ini) => n !== principal || !esNoche(ini)) ?? buscar(() => true))
+        : buscar(() => true);
     if (!elegido) {
       sinLugar.push(p.id);
       minutosSinLugar += dur;
@@ -207,6 +273,7 @@ export function programarTorneo(t: Torneo, opts: OpcionesProgramacion = {}): Res
     }
     const iv = { ini: elegido.ini, fin: elegido.ini + dur, sede: sedeDe.get(elegido.pista) ?? "" };
     ocupPista.get(elegido.pista)!.push(iv);
+    for (const d of [p.duplaA, p.duplaB]) if (d) usoPista.set(`${d}|${elegido.pista}`, uso(d, elegido.pista) + 1);
     ocupar(jug, iv);
     finDe.set(p.id, iv.fin);
     const d = Math.floor(elegido.ini / DIA);
