@@ -504,7 +504,7 @@ export function moverPartido(t: Torneo, partidoId: string, prog: { fecha: string
 
 export function configurarTorneo(
   t: Torneo,
-  cambios: Partial<Pick<Torneo, "nombre" | "dias" | "canchas" | "descansoMin" | "toleranciaWO" | "finalesUltimoDia" | "bloqueos" | "criterios" | "sedes" | "patrocinadores" | "validarFvp">>,
+  cambios: Partial<Pick<Torneo, "nombre" | "dias" | "canchas" | "descansoMin" | "toleranciaWO" | "finalesUltimoDia" | "bloqueos" | "criterios" | "sedes" | "patrocinadores" | "validarFvp" | "inscripcion">>,
 ): Torneo {
   const out = { ...t, ...cambios };
   return cambios.criterios ? recalcularTodo(tocar(out, "Criterios de desempate actualizados.")) : tocar(out);

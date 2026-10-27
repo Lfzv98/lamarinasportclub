@@ -63,7 +63,7 @@ export function DatosPrueba({ onCambio }: { onCambio?: () => void }) {
           </span>
           <p className="text-sm text-white/60">
             Para enseñar la app: crea 3 americanos, un torneo de hoy con
-            partidos en juego{TENIS_ACTIVO ? ", 2 torneos de tenis (cancha dura y arcilla)" : ""} y 6
+            partidos en juego, la Copa Navidad con inscripciones online abiertas{TENIS_ACTIVO ? ", 2 torneos de tenis (cancha dura y arcilla)" : ""} y 6
             árbitros de ejemplo (código{" "}
             <b className="text-white/85">1234</b>). Si no hay PIN de árbitros,
             queda el <b className="text-white/85">2468</b>. Se borra con un

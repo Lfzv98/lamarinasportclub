@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Flag, Shuffle, Trophy } from "lucide-react";
+import { ArrowRight, Flag, Shuffle, Ticket, Trophy } from "lucide-react";
 import { InstallButton } from "@/components/InstallButton";
 import { Logo } from "@/components/Logo";
 import { MenuApp } from "@/components/MenuApp";
@@ -22,6 +22,7 @@ export default function Home() {
   const americanosVivos = eventos.filter((e) => e.estado === "EN_CURSO").length;
   const torneosVivos = torneos.filter((t) => t.estado === "EN_JUEGO").length;
   const torneosProximos = torneos.filter((t) => t.estado !== "FINALIZADO").length;
+  const conInscripcion = torneos.filter((t) => t.inscripcion?.abierta && t.estado === "INSCRIPCION" && (!t.inscripcion.cierre || t.inscripcion.cierre >= new Date(Date.now() - 4 * 3600_000).toISOString().slice(0, 10)));
   const partidosEnJuego = torneos.reduce((n, t) => n + t.categorias.reduce((m, c) => m + (c.cuadro?.partidos.filter((p) => p.estado === "EN_JUEGO").length ?? 0), 0), 0);
 
   const puertas = [
@@ -78,6 +79,22 @@ export default function Home() {
         <div className="mx-auto max-w-5xl px-4 pt-6 sm:px-6">
           <p className="label !text-neon">PadelReserve · La Marina Sport Club</p>
           <h1 className="font-display text-3xl font-bold tracking-tight sm:text-5xl">¿Qué jugamos hoy?</h1>
+
+          {conInscripcion.map((t) => (
+            <motion.div key={t.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+              <Link href={`/inscripcion/${t.id}`} className="seleccion group mt-5 flex items-center gap-4 rounded-[1.75rem] border p-4 transition active:scale-[0.99] sm:p-5">
+                <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-lima text-marino-2">
+                  <Ticket className="size-6" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-lima">Inscripciones abiertas</span>
+                  <span className="block truncate font-display text-lg font-bold text-blanco sm:text-xl">{t.nombre}</span>
+                </span>
+                <span className="hidden text-sm font-semibold text-blanco/80 group-hover:text-lima min-[400px]:block">Inscríbete</span>
+                <ArrowRight className="size-5 shrink-0 text-lima transition group-hover:translate-x-1" />
+              </Link>
+            </motion.div>
+          ))}
 
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {puertas.map((p, i) => (

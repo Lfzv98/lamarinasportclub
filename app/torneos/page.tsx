@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, CalendarDays, ChevronRight, KeyRound, Layers, ListChecks, Plus, Users } from "lucide-react";
+import { ArrowLeft, CalendarDays, ChevronRight, KeyRound, Layers, ListChecks, Plus, Ticket, Users } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { StaffChip } from "@/components/StaffGate";
 import { EstadoTorneoBadge, rangoFechas } from "@/components/torneo/TorneoShell";
@@ -125,6 +125,11 @@ function TorneoCard({ torneo: t, index }: { torneo: Torneo; index: number }) {
           </div>
         )}
       </Link>
+      {t.inscripcion?.abierta && t.estado === "INSCRIPCION" && (
+        <Link href={`/inscripcion/${t.id}`} className="btn-neon mt-2 flex w-full !rounded-2xl !py-2.5 text-sm">
+          <Ticket className="size-4" /> Inscripciones abiertas · Inscribirme
+        </Link>
+      )}
     </motion.div>
   );
 }

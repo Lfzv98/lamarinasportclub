@@ -147,7 +147,7 @@ export interface TorneosRepository {
   obtenerMarcador(id: string): Promise<MarcadorVivo | null>;
   guardarMarcador(m: MarcadorVivo): Promise<MarcadorVivo>;
   /** Datos sueltos de un torneo o americano (registro de árbitros, fotos): tabla `eventos_extras`. */
-  /** Lista sin `data` para las fotos (solo id y versión); con `data` para el registro de árbitros. */
+  /** Lista sin `data` para las fotos (solo id y versión); con `data` para el registro de árbitros y las inscripciones. */
   listarExtras(torneoId: string, tipo: string): Promise<ExtraTorneo[]>;
   obtenerExtra(id: string): Promise<ExtraTorneo | null>;
   guardarExtra(x: ExtraTorneo): Promise<ExtraTorneo>;
@@ -214,6 +214,9 @@ const demoTorneos: TorneosRepository = {
   },
 };
 
+/** Tipos de `eventos_extras` que se listan con `data` (los demás, como las fotos, solo con id y versión). */
+const TIPOS_CON_DATA = new Set(["arbitros", "tenis", "inscripcion"]);
+
 function supabaseTorneos(url: string, key: string): TorneosRepository {
   const raiz = `${url.replace(/\/$/, "")}/rest/v1/`;
   const tablaT = process.env.SUPABASE_TORNEOS_TABLE ?? "torneos";
@@ -253,7 +256,7 @@ function supabaseTorneos(url: string, key: string): TorneosRepository {
     async listarExtras(torneoId, tipo) {
       const filas = await pedir<{ id: string; evento_id: string; tipo: string; data: unknown; actualizado_en: string }[]>(
         tablaX,
-        `?select=id,evento_id,tipo,actualizado_en${tipo === "arbitros" || tipo === "tenis" ? ",data" : ""}&evento_id=eq.${encodeURIComponent(torneoId)}&tipo=eq.${encodeURIComponent(tipo)}`,
+        `?select=id,evento_id,tipo,actualizado_en${TIPOS_CON_DATA.has(tipo) ? ",data" : ""}&evento_id=eq.${encodeURIComponent(torneoId)}&tipo=eq.${encodeURIComponent(tipo)}`,
       );
       return filas.map((f) => ({ id: f.id, torneoId: f.evento_id, tipo: f.tipo, data: f.data ?? null, actualizadoEn: f.actualizado_en }));
     },

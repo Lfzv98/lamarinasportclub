@@ -1,5 +1,6 @@
 /** Validación de payloads de torneos y marcadores que llegan a la API (lista vacía = válido). */
 import type { MarcadorVivo, Torneo } from "@/types/torneo";
+import { validarConfigInscripcion } from "../inscripcion.ts";
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 const HORA = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -45,6 +46,7 @@ export function validarTorneo(x: unknown): string[] {
     else if (t.patrocinadores.some((p) => !texto(p?.nombre, 80) || (p.logo != null && (typeof p.logo !== "string" || !p.logo.startsWith("data:image/") || p.logo.length > 150_000))))
       err("Cada patrocinador necesita nombre y, si tiene logo, una imagen de hasta ~100 KB.");
   }
+  for (const m of validarConfigInscripcion(t.inscripcion)) err(m);
   if (typeof t.actualizadoEn !== "string") err("actualizadoEn es obligatorio.");
   return errores;
 }
