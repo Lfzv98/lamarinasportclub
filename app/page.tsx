@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Flag, Shuffle, Ticket, Trophy } from "lucide-react";
+import { ArrowRight, Flag, Settings, Shuffle, Ticket, Trophy } from "lucide-react";
 import { InstallButton } from "@/components/InstallButton";
 import { Logo } from "@/components/Logo";
 import { MenuApp } from "@/components/MenuApp";
@@ -63,6 +63,9 @@ export default function Home() {
         <header className="relative mx-auto flex max-w-5xl items-center justify-end gap-2 px-4 py-3 sm:px-6">
           <InstallButton />
           <StaffChip />
+          <Link href="/club" className="btn-ghost !p-2.5" aria-label="Ajustes (staff)" title="Ajustes (staff)">
+            <Settings className="size-5" />
+          </Link>
           <MenuApp />
         </header>
         <motion.div
@@ -95,6 +98,15 @@ export default function Home() {
               </Link>
             </motion.div>
           ))}
+          {!conInscripcion.length && (
+            <Link href="/inscripciones" className="glass group mt-5 flex items-center gap-3 rounded-[1.75rem] p-4 transition hover:border-neon/40 active:scale-[0.99]">
+              <Ticket className="size-5 shrink-0 text-neon" />
+              <span className="min-w-0 flex-1 text-sm text-white/70">
+                <span className="font-semibold text-white">Inscripciones a torneos</span> · Mira cuándo abre la próxima
+              </span>
+              <ArrowRight className="size-4 shrink-0 text-white/40 transition group-hover:translate-x-1 group-hover:text-neon" />
+            </Link>
+          )}
 
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {puertas.map((p, i) => (

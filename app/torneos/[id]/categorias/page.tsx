@@ -166,48 +166,50 @@ function PanelCategoria({ torneo, cat }: { torneo: Torneo; cat: CategoriaEnTorne
                   {d.cabezaSerie ? <Crown className="size-4" /> : i + 1}
                 </span>
                 <FotosInscrito torneo={torneo} d={d} jugadores={[a, b]} />
-                <div className="min-w-0 flex-1">
+                <div className="min-w-[9rem] flex-1">
                   <p className="truncate font-semibold">{nombreJugador(a)} / {nombreJugador(b)}</p>
                   <p className="text-xs text-white/45">
                     {fuera ? (d.estado === "RETIRADA" ? "Retirada" : "Descalificada") : d.puntos != null ? `${d.puntos} pts ranking` : "Sin puntos de ranking"}
                     {d.cabezaSerie ? ` · Cabeza de serie ${d.cabezaSerie}` : ""}
                   </p>
                 </div>
-                {!sorteada && (
-                  <>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      className="input !w-20 !px-2 !py-1.5 text-center text-sm"
-                      placeholder="pts"
-                      value={d.puntos ?? ""}
-                      onChange={(e) => guardar(editarDupla(torneo, cat.categoria.id, d.id, { puntos: e.target.value === "" ? undefined : Number(e.target.value) }))}
-                      aria-label="Puntos de ranking"
-                    />
+                <div className="ml-auto flex items-center gap-2">
+                  {!sorteada && (
+                    <>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        className="input !w-20 !px-2 !py-1.5 text-center text-sm"
+                        placeholder="pts"
+                        value={d.puntos ?? ""}
+                        onChange={(e) => guardar(editarDupla(torneo, cat.categoria.id, d.id, { puntos: e.target.value === "" ? undefined : Number(e.target.value) }))}
+                        aria-label="Puntos de ranking"
+                      />
+                      <button
+                        className={clsx("btn-ghost !p-2", d.cabezaSerie && "!text-lima")}
+                        title="Cabeza de serie"
+                        onClick={() => {
+                          const usados = cat.duplas.map((x) => x.cabezaSerie ?? 0);
+                          guardar(editarDupla(torneo, cat.categoria.id, d.id, { cabezaSerie: d.cabezaSerie ? null : Math.max(0, ...usados) + 1 }));
+                        }}
+                      >
+                        <Crown className="size-4" />
+                      </button>
+                    </>
+                  )}
+                  {!fuera && (
                     <button
-                      className={clsx("btn-ghost !p-2", d.cabezaSerie && "!text-lima")}
-                      title="Cabeza de serie"
+                      className="btn-ghost !p-2 text-coral"
+                      title={sorteada ? "Retirar dupla (sus partidos pendientes pasan a W.O.)" : "Quitar"}
                       onClick={() => {
-                        const usados = cat.duplas.map((x) => x.cabezaSerie ?? 0);
-                        guardar(editarDupla(torneo, cat.categoria.id, d.id, { cabezaSerie: d.cabezaSerie ? null : Math.max(0, ...usados) + 1 }));
+                        if (sorteada && !confirm(`¿Retirar a ${nombreDupla(torneo, d)}? Sus partidos pendientes pasan a W.O.`)) return;
+                        guardar(quitarDupla(torneo, cat.categoria.id, d.id));
                       }}
                     >
-                      <Crown className="size-4" />
+                      <Trash2 className="size-4" />
                     </button>
-                  </>
-                )}
-                {!fuera && (
-                  <button
-                    className="btn-ghost !p-2 text-coral"
-                    title={sorteada ? "Retirar dupla (sus partidos pendientes pasan a W.O.)" : "Quitar"}
-                    onClick={() => {
-                      if (sorteada && !confirm(`¿Retirar a ${nombreDupla(torneo, d)}? Sus partidos pendientes pasan a W.O.`)) return;
-                      guardar(quitarDupla(torneo, cat.categoria.id, d.id));
-                    }}
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
-                )}
+                  )}
+                </div>
                 {!fuera && torneo.validarFvp !== false && d.fvp && (
                   <div className="-mt-1 w-full pl-11">
                     <EstadoFvpChip v={d.fvp} onClick={() => setRevisar(d)} />
