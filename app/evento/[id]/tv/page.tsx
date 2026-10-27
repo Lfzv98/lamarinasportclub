@@ -15,12 +15,12 @@ import { PistaLabel } from "@/components/PistaLabel";
 import { QR } from "@/components/QR";
 import { QRPopup, useUrlRanking } from "@/components/QRPopup";
 import { useReloj } from "@/hooks/useReloj";
-import { Escenario, Reloj, useCursorOculto, useFullscreenYWakeLock, useVertical } from "@/components/Pantalla";
+import { ANCHO_ESTRECHO, Escenario, Reloj, useCursorOculto, useFullscreenYWakeLock, useLienzo, useVertical } from "@/components/Pantalla";
 import { categoriaLabel } from "@/lib/categories";
 import { horaRonda } from "@/lib/horarios";
 import { calcularTabla, ganador, nombreCompleto, nombresCompletosDeFila } from "@/lib/scoring";
 import { useAmericanos, useEvento } from "@/lib/store";
-import type { EventoAmericano, Partido } from "@/types/americano";
+import type { EventoAmericano, FilaPosicion, Partido } from "@/types/americano";
 
 const FILAS_POR_PAGINA = 10;
 const SEGUNDOS_POR_PAGINA = 12;
@@ -40,35 +40,41 @@ export default function ModoTVPage() {
 }
 
 function TV({ evento }: { evento: EventoAmericano }) {
-  const { full, alternar } = useFullscreenYWakeLock();
+  const { full, alternar, puede } = useFullscreenYWakeLock();
   const vertical = useVertical();
-  const filasPorPagina = vertical ? 8 : FILAS_POR_PAGINA;
+  const lienzo = useLienzo(vertical);
+  const estrecho = lienzo.ancho < ANCHO_ESTRECHO;
   const cursorOculto = useCursorOculto();
   const tabla = useMemo(() => calcularTabla(evento), [evento]);
+  // Con partidos jugados, los 3 primeros van en el podio y la tabla sigue desde el 4º.
+  const conPodio = tabla.filas.some((f) => f.pj > 0) && tabla.filas.length > 3;
+  const podio = conPodio ? tabla.filas.slice(0, 3) : [];
+  const resto = conPodio ? tabla.filas.slice(3) : tabla.filas;
+  const filasPorPagina = conPodio ? (vertical ? 4 : 6) : vertical ? 8 : FILAS_POR_PAGINA;
   const ronda = evento.rondas.find((r) => r.numero === evento.rondaActual);
   const conReloj = evento.cronometro !== false;
   const reloj = useReloj(evento.estado !== "FINALIZADO" && conReloj ? ronda : undefined, evento.duracionRondaMin);
 
   // Paginación automática del ranking cuando hay muchos jugadores.
-  const paginas = Math.max(1, Math.ceil(tabla.filas.length / filasPorPagina));
+  const paginas = Math.max(1, Math.ceil(resto.length / filasPorPagina));
   const [pagina, setPagina] = useState(0);
   useEffect(() => {
     if (paginas <= 1) return setPagina(0);
     const t = setInterval(() => setPagina((p) => (p + 1) % paginas), SEGUNDOS_POR_PAGINA * 1000);
     return () => clearInterval(t);
   }, [paginas]);
-  const tablaPagina = { ...tabla, filas: tabla.filas.slice(pagina * filasPorPagina, (pagina + 1) * filasPorPagina) };
+  const tablaPagina = { ...tabla, filas: resto.slice(pagina * filasPorPagina, (pagina + 1) * filasPorPagina) };
 
   const terminado = evento.estado === "FINALIZADO";
   const campeon = tabla.filas[0];
   const espera = ronda ? enEspera(evento, ronda) : [];
 
   return (
-    <Escenario oculto={cursorOculto} vertical={vertical}>
-      <header className="flex items-center gap-6">
+    <Escenario oculto={cursorOculto} lienzo={lienzo}>
+      <header className="flex flex-wrap items-center gap-x-6 gap-y-4">
         <Logo className="!h-14" />
         <div className="h-12 w-px bg-white/10" />
-        <div className="min-w-0 flex-1">
+        <div className="min-w-[18rem] flex-1">
           <h1 className="truncate font-display text-3xl font-bold xl:text-4xl">{evento.nombre}</h1>
           <p className="text-lg text-white/50">
             {categoriaLabel(evento.categoria)} · {evento.pistas} pistas
@@ -80,34 +86,28 @@ function TV({ evento }: { evento: EventoAmericano }) {
           <Link href={`/evento/${evento.id}`} className="btn-ghost !p-3" aria-label="Salir del modo TV">
             <ArrowLeft className="size-5" />
           </Link>
-          <button className="btn-ghost !p-3" onClick={alternar} aria-label="Pantalla completa">
-            {full ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
-          </button>
+          {puede && (
+            <button className="btn-ghost !p-3" onClick={alternar} aria-label="Pantalla completa">
+              {full ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
+            </button>
+          )}
         </div>
       </header>
 
       <AnimatePresence mode="wait">
         {terminado && campeon ? (
-          <motion.section key="campeon" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className={clsx("grid flex-1 items-center gap-10", vertical ? "grid-cols-1 content-center" : "grid-cols-[1fr_1.3fr]")}>
+          <motion.section key="campeon" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className={clsx("grid flex-1 items-center gap-10", vertical || estrecho ? "grid-cols-1 content-center" : "grid-cols-[1fr_1.3fr]")}>
             <div className="flex flex-col items-center text-center">
               <motion.div animate={{ rotate: [0, -8, 8, 0] }} transition={{ repeat: Infinity, duration: 3 }}>
                 <Trophy className="size-28 text-neon drop-shadow-[0_0_40px_rgba(127,227,2,0.6)]" />
               </motion.div>
-              <p className="mt-6 text-2xl font-semibold uppercase tracking-[0.3em] text-white/50">Campeón</p>
-              <div className="mt-6">
-                <AvatarPareja nombres={nombresCompletosDeFila(evento, campeon)} fotos={campeon.fotoUrls} size={120} />
-              </div>
-              <div className="mt-6 space-y-1 font-display text-5xl font-bold leading-tight">
-                {nombresCompletosDeFila(evento, campeon).map((n, i) => (
-                  <p key={i}>{n}</p>
-                ))}
-              </div>
-              <p className="mt-2 font-display text-4xl font-bold text-neon">{campeon.puntos} pts</p>
+              <p className="mt-6 text-2xl font-semibold uppercase tracking-[0.3em] text-white/50">{tabla.filas.length > 1 ? "Podio" : "Campeón"}</p>
+              <PodioTV evento={evento} filas={tabla.filas.slice(0, 3)} grande className="mt-8 w-full" />
             </div>
-            <Leaderboard tabla={{ ...tabla, filas: tabla.filas.slice(0, filasPorPagina) }} nombresPorFila={(f) => nombresCompletosDeFila(evento, f)} modoTV />
+            <Leaderboard tabla={{ ...tabla, filas: tabla.filas.slice(0, filasPorPagina) }} nombresPorFila={(f) => nombresCompletosDeFila(evento, f)} modoTV estrecho={estrecho} />
           </motion.section>
         ) : (
-          <motion.section key="vivo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={clsx("grid min-h-0 flex-1 gap-8", vertical ? "grid-cols-1 grid-rows-[minmax(0,1.1fr)_minmax(0,1fr)]" : "grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]")}>
+          <motion.section key="vivo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={clsx("grid min-h-0 flex-1 gap-8", lienzo.desplaza && (vertical || estrecho) ? "grid-cols-1" : vertical ? "grid-cols-1 grid-rows-[minmax(0,1.1fr)_minmax(0,1fr)]" : "grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]")}>
             <div className="flex min-h-0 flex-col gap-6">
               <div className="glass flex items-center gap-8 rounded-[2rem] p-6">
                 {conReloj ? (
@@ -124,7 +124,7 @@ function TV({ evento }: { evento: EventoAmericano }) {
                   {ronda && conReloj && <p className="mt-2 text-xl text-white/50">Inicio {horaRonda(evento, ronda.numero)}</p>}
                 </div>
               </div>
-              <div className={clsx("grid min-h-0 flex-1 auto-rows-fr gap-4", (ronda?.partidos.length ?? 0) > 2 ? "grid-cols-2" : "grid-cols-1")}>
+              <div className={clsx("grid min-h-0 flex-1 gap-4", !lienzo.desplaza && "auto-rows-fr", (ronda?.partidos.length ?? 0) > 2 && !estrecho ? "grid-cols-2" : "grid-cols-1")}>
                 {ronda?.partidos.map((p) => <PistaTV key={p.id} partido={p} evento={evento} compacto={(ronda?.partidos.length ?? 0) > 4} />)}
               </div>
               {espera.length > 0 && (
@@ -154,9 +154,10 @@ function TV({ evento }: { evento: EventoAmericano }) {
                   </div>
                 )}
               </div>
+              {conPodio && <PodioTV evento={evento} filas={podio} className="mb-5" />}
               <AnimatePresence mode="wait">
                 <motion.div key={pagina} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}>
-                  <Leaderboard tabla={tablaPagina} nombresPorFila={(f) => nombresCompletosDeFila(evento, f)} modoTV />
+                  <Leaderboard tabla={tablaPagina} nombresPorFila={(f) => nombresCompletosDeFila(evento, f)} modoTV estrecho={estrecho} />
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -167,11 +168,36 @@ function TV({ evento }: { evento: EventoAmericano }) {
   );
 }
 
-/**
- * Lienzo fijo de 1920×1080 escalado para llenar cualquier pantalla (proyector
- * 720p, TV Full HD o 4K, monitor vertical) sin que cambie el diseño.
- */
-/** Pantalla en vertical (celular, tablet o TV girada): el lienzo pasa a 1080×1920 y todo va en una columna. */
+/** Podio de los 3 primeros, igual que el ranking que abre el QR: 2º, 1º y 3º, con nombre y apellido completos. */
+function PodioTV({ evento, filas, grande = false, className }: { evento: EventoAmericano; filas: FilaPosicion[]; grande?: boolean; className?: string }) {
+  const orden = [filas[1], filas[0], filas[2]].map((f, i) => f && { f, lugar: [2, 1, 3][i] }).filter(Boolean) as { f: FilaPosicion; lugar: number }[];
+  const alturas: Record<number, string> = grande ? { 1: "h-44", 2: "h-32", 3: "h-24" } : { 1: "h-24", 2: "h-16", 3: "h-12" };
+  return (
+    <div className={clsx("grid grid-cols-3 items-end gap-4", className)}>
+      {orden.map(({ f, lugar }) => (
+        <motion.div key={f.entidadId} layout initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: lugar === 1 ? 0.2 : 0.05 * lugar, type: "spring", stiffness: 200, damping: 20 }} className="flex min-w-0 flex-col items-center text-center">
+          <AvatarPareja nombres={nombresCompletosDeFila(evento, f)} fotos={f.fotoUrls} size={grande ? (lugar === 1 ? 104 : 84) : lugar === 1 ? 64 : 52} />
+          <div className={clsx("mt-3 w-full break-words font-semibold leading-tight", grande ? "text-2xl" : "text-xl")}>
+            {nombresCompletosDeFila(evento, f).map((n, i) => (
+              <p key={i}>{n}</p>
+            ))}
+          </div>
+          <p className={clsx("mt-1 font-display font-bold tabular text-neon", grande ? "text-4xl" : "text-2xl")}>{f.puntos} pts</p>
+          <div
+            className={clsx(
+              "mt-2 flex w-full items-start justify-center rounded-t-3xl pt-2 font-display font-black",
+              grande ? "text-6xl" : "text-4xl",
+              alturas[lugar],
+              lugar === 1 ? "bg-gradient-to-b from-neon to-neon/20 text-noche" : "bg-gradient-to-b from-white/15 to-white/[0.02] text-white/80",
+            )}
+          >
+            {f.posicion}
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
 
 function PistaTV({ partido, evento, compacto = false }: { partido: Partido; evento: EventoAmericano; compacto?: boolean }) {
   const porId = new Map(evento.jugadores.map((j) => [j.id, j]));

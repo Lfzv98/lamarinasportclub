@@ -5,7 +5,7 @@ import Link from "next/link";
 import { use } from "react";
 import { ArrowLeft, CloudRain, Maximize, Megaphone, Minimize, Radio } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { Escenario, Reloj, useCursorOculto, useFullscreenYWakeLock, useVertical } from "@/components/Pantalla";
+import { ANCHO_ESTRECHO, Escenario, Reloj, useCursorOculto, useFullscreenYWakeLock, useLienzo, useVertical } from "@/components/Pantalla";
 import { QR } from "@/components/QR";
 import { TorneoShellMinimo } from "@/components/torneo/minimo";
 import { FranjaPatrocinadores } from "@/components/torneo/Patrocinadores";
@@ -26,9 +26,11 @@ export default function TorneoTVPage({ params }: { params: Promise<{ id: string 
 
 function TV({ torneo }: { torneo: Torneo }) {
   useMarcadoresEnVivo(torneo.id, 2000);
-  const { full, alternar } = useFullscreenYWakeLock();
+  const { full, alternar, puede } = useFullscreenYWakeLock();
   const oculto = useCursorOculto();
   const vertical = useVertical();
+  const lienzo = useLienzo(vertical);
+  const estrecho = lienzo.ancho < ANCHO_ESTRECHO;
   const pistas = estadoPistas(torneo);
   const proximos = partidosListos(torneo).filter((p) => !pistas.some((c) => c.llamado?.id === p.id)).slice(0, 6);
   const recientes = torneo.categorias
@@ -40,23 +42,25 @@ function TV({ torneo }: { torneo: Torneo }) {
   const cat = (id: string) => nombreCorto(categoria(torneo, id)!.categoria);
 
   return (
-    <Escenario oculto={oculto} vertical={vertical}>
+    <Escenario oculto={oculto} lienzo={lienzo}>
       <header className="flex items-center gap-6">
         <Logo className="!h-14" />
         <div className="h-12 w-px bg-white/10" />
-        <h1 className="min-w-0 flex-1 truncate font-display text-4xl font-bold">{torneo.nombre}</h1>
+        <h1 className={clsx("min-w-0 flex-1 font-display font-bold", estrecho ? "text-3xl leading-tight" : "truncate text-4xl")}>{torneo.nombre}</h1>
         <Reloj />
         <div className={clsx("flex gap-2 transition-opacity", oculto && "opacity-0")}>
           <Link href={`/torneos/${torneo.id}`} className="btn-ghost !p-3" aria-label="Salir">
             <ArrowLeft className="size-5" />
           </Link>
-          <button className="btn-ghost !p-3" onClick={alternar} aria-label="Pantalla completa">
-            {full ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
-          </button>
+          {puede && (
+            <button className="btn-ghost !p-3" onClick={alternar} aria-label="Pantalla completa">
+              {full ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
+            </button>
+          )}
         </div>
       </header>
-      <div className={clsx("grid min-h-0 flex-1 gap-6", vertical ? "grid-cols-1" : "grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]")}>
-        <div className="grid min-h-0 auto-rows-fr grid-cols-2 gap-5">
+      <div className={clsx("grid min-h-0 flex-1 gap-6", vertical || estrecho ? "grid-cols-1" : "grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]")}>
+        <div className={clsx("grid min-h-0 gap-5", estrecho ? "grid-cols-1" : "grid-cols-2", !lienzo.desplaza && "auto-rows-fr")}>
           {pistas.map((c) => (
             <div key={c.numero} className={clsx("glass flex min-h-0 flex-col rounded-[2rem] p-6", c.enJuego && "!border-neon/40")}>
               <div className="flex items-center gap-3">
@@ -100,10 +104,10 @@ function TV({ torneo }: { torneo: Torneo }) {
             </div>
           ))}
           <div className="glass flex items-center gap-6 rounded-[2rem] p-6">
-            <div className="rounded-2xl bg-blanco p-3">
+            <div className="shrink-0 rounded-2xl bg-blanco p-3">
               <QR texto={url} size={150} />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="font-display text-2xl font-bold">Sigue el torneo</p>
               <p className="mt-1 text-lg text-white/55">Cuadros, horarios y tus estadísticas</p>
             </div>
@@ -112,7 +116,7 @@ function TV({ torneo }: { torneo: Torneo }) {
         <div className="flex min-h-0 flex-col gap-5">
           <div className="glass min-h-0 flex-1 overflow-hidden rounded-[2rem] p-6">
             <p className="font-display text-2xl font-bold">Próximos partidos</p>
-            <ul className="mt-4 space-y-3">
+            <ul className="mt-4 space-y-3 [mask-image:linear-gradient(to_bottom,black_85%,transparent)]">
               {proximos.map((p) => (
                 <li key={p.id} className="flex items-center gap-4 rounded-2xl bg-white/[0.04] px-4 py-3">
                   <span className="w-16 font-display text-xl font-bold text-lima">{p.programacion?.hora ?? "--"}</span>

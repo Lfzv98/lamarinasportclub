@@ -73,12 +73,14 @@ function Delta({ v, grande }: { v?: number; grande?: boolean }) {
 
 const COLS = "grid-cols-[1.75rem_minmax(0,1fr)_repeat(3,1.6rem)_2.1rem_2.3rem] sm:grid-cols-[2.75rem_minmax(0,1fr)_repeat(6,3rem)_3.5rem]";
 const COLS_TV = "grid-cols-[4rem_minmax(0,1fr)_repeat(6,5rem)_6rem]";
+const COLS_TV_ESTRECHO = "grid-cols-[3rem_minmax(0,1fr)_repeat(6,3.25rem)_4rem]";
 
 /** Tabla de posiciones con animación de cambio de posición (layout animations). */
-export function Leaderboard({ tabla, nombresPorFila, modoTV = false, limite }: { tabla: TablaPosiciones; nombresPorFila: (f: FilaPosicion) => string[]; modoTV?: boolean; limite?: number }) {
+/** `estrecho`: modo TV en una pantalla angosta (celular), con columnas más justas. */
+export function Leaderboard({ tabla, nombresPorFila, modoTV = false, estrecho = false, limite }: { tabla: TablaPosiciones; nombresPorFila: (f: FilaPosicion) => string[]; modoTV?: boolean; estrecho?: boolean; limite?: number }) {
   const cambios = useCambios(tabla.filas);
   const filas = limite ? tabla.filas.slice(0, limite) : tabla.filas;
-  const cols = modoTV ? COLS_TV : COLS;
+  const cols = modoTV ? (estrecho ? COLS_TV_ESTRECHO : COLS_TV) : COLS;
   const th = clsx("text-center font-semibold uppercase tracking-wider text-white/40", modoTV ? "text-base" : "text-[10px] sm:text-[11px]");
 
   return (

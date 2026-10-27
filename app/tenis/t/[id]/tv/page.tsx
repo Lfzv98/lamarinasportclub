@@ -42,7 +42,7 @@ function useEscala(ancho: number, alto: number) {
 }
 
 function TV({ torneo: t }: { torneo: TorneoTenis }) {
-  const { full, alternar } = useFullscreenYWakeLock();
+  const { full, alternar, puede } = useFullscreenYWakeLock();
   const oculto = useCursorOculto();
   const escala = useEscala(1920, 1080);
   const d = SUPERFICIES[t.superficie];
@@ -75,9 +75,11 @@ function TV({ torneo: t }: { torneo: TorneoTenis }) {
               <Link href={`/tenis/t/${t.id}`} className="btn-ghost !p-3" aria-label="Salir">
                 <ArrowLeft className="size-5" />
               </Link>
-              <button className="btn-ghost !p-3" onClick={alternar} aria-label="Pantalla completa">
-                {full ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
-              </button>
+              {puede && (
+                <button className="btn-ghost !p-3" onClick={alternar} aria-label="Pantalla completa">
+                  {full ? <Minimize className="size-5" /> : <Maximize className="size-5" />}
+                </button>
+              )}
             </div>
           </header>
 
