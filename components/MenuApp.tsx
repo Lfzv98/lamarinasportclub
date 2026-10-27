@@ -22,6 +22,7 @@ import {
   Settings,
   ShieldCheck,
   Shuffle,
+  Ticket,
   Trophy,
   X,
   type LucideIcon,
@@ -47,6 +48,7 @@ const SECCIONES: { titulo: string; items: Item[] }[] = [
       { href: "/torneos", titulo: "Torneos", sub: "Categorías, llaves y programación", Icono: Trophy },
       ...(TENIS_ACTIVO ? [{ href: "/tenis", titulo: "Tenis", sub: "Cancha dura y arcilla", Icono: CircleDot }] : []),
       { href: "/arbitro", titulo: "Árbitros", sub: "La tablet de cada pista", Icono: Flag },
+      { href: "/inscripciones", titulo: "Inscripciones", sub: "Torneos con la inscripción abierta", Icono: Ticket },
     ],
   },
   {
@@ -55,6 +57,7 @@ const SECCIONES: { titulo: string; items: Item[] }[] = [
       { href: "/setup", titulo: "Nuevo americano", Icono: Plus, staff: true },
       { href: "/torneos/nuevo", titulo: "Nuevo torneo de pádel", Icono: Plus, staff: true },
       ...(TENIS_ACTIVO ? [{ href: "/tenis/nuevo", titulo: "Nuevo torneo de tenis", Icono: Plus, staff: true }] : []),
+      { href: "/inscripciones#staff", titulo: "Panel de inscripciones", sub: "Verificar pagos y pasar duplas al torneo", Icono: Ticket, staff: true },
       { href: "/torneos/ranking", titulo: "Ranking FVP", sub: "Lista de atletas federados", Icono: Medal, staff: true },
       { href: "/manual", titulo: "Manual de la app", Icono: BookOpen },
     ],
