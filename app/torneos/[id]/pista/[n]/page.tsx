@@ -16,7 +16,7 @@ import { useFotoDupla, useFotosTorneo } from "@/lib/fotos";
 import { nombreCategoria } from "@/lib/torneo/categorias";
 import { atencionEnCurso, calcularMarcador, cambioDeLadoEnCurso, descansoReglamentario, relatoPublico, setsFinales, type Lado } from "@/lib/torneo/marcador";
 import { estadoPistas, limiteWO } from "@/lib/torneo/programacion";
-import { categoria, dupla, nombreDupla, nombreJugador } from "@/lib/torneo/torneo";
+import { categoria, dupla, nombreJugador, nombresCompletosDupla } from "@/lib/torneo/torneo";
 import { useMarcador } from "@/lib/torneosStore";
 import type { MarcadorVivo, PartidoTorneo, Torneo } from "@/types/torneo";
 
@@ -147,16 +147,13 @@ function Marcador({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marca
               <div className="flex min-w-0 items-center gap-5">
                 <span className={clsx("h-20 w-2 shrink-0 rounded-full", l === "A" ? "bg-lima" : "bg-cielo")} />
                 <CaraDupla torneo={torneo} duplaId={l === "A" ? p.duplaA : p.duplaB} ids={ids} alto={96} />
-                <div className="min-w-0">
-                  <p className="truncate font-display text-5xl font-bold">{nombreDupla(torneo, dupla(torneo, l === "A" ? p.duplaA : p.duplaB))}</p>
-                  <p className="mt-1 flex items-center gap-3 text-xl text-white/55">
-                    {ids.map((id) => (
-                      <span key={id} className={clsx("flex items-center gap-2", !e.terminado && e.sacador === id && "font-bold text-lima")}>
-                        {!e.terminado && e.sacador === id && <span className="size-3.5 rounded-full bg-lima shadow-[0_0_14px_rgba(207,243,91,0.9)]" />}
-                        {jug(id)?.nombre}
-                      </span>
-                    ))}
-                  </p>
+                <div className="min-w-0 space-y-1">
+                  {ids.map((id) => (
+                    <p key={id} className={clsx("flex items-center gap-3 break-words font-display text-4xl font-bold leading-tight", !e.terminado && e.sacador === id && "text-lima")}>
+                      {!e.terminado && e.sacador === id && <span className="size-4 shrink-0 rounded-full bg-lima shadow-[0_0_14px_rgba(207,243,91,0.9)]" />}
+                      <span className="min-w-0">{nombreJugador(jug(id))}</span>
+                    </p>
+                  ))}
                 </div>
               </div>
               {sets.map((s, j) => (
@@ -196,7 +193,7 @@ function Marcador({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marca
           </div>
           {e.racha.puntos >= 3 && !e.terminado && (
             <p className="mt-2 text-base text-white/60">
-              Racha de {e.racha.puntos} puntos · {nombreDupla(torneo, dupla(torneo, e.racha.lado === "A" ? p.duplaA : p.duplaB))}
+              Racha de {e.racha.puntos} puntos · {nombresCompletosDupla(torneo, dupla(torneo, e.racha.lado === "A" ? p.duplaA : p.duplaB)).join(" / ")}
             </p>
           )}
         </div>
@@ -220,7 +217,7 @@ function Marcador({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: Marca
 
 function Relato({ torneo, p, m }: { torneo: Torneo; p: PartidoTorneo; m: MarcadorVivo }) {
   const e = useMemo(() => calcularMarcador(m), [m]);
-  const lado = (l: Lado) => nombreDupla(torneo, dupla(torneo, l === "A" ? p.duplaA : p.duplaB));
+  const lado = (l: Lado) => nombresCompletosDupla(torneo, dupla(torneo, l === "A" ? p.duplaA : p.duplaB)).join(" / ");
   const lista = e.jugados.slice(-7).reverse();
   const url = typeof window !== "undefined" ? `${location.origin}/torneos/${torneo.id}/partido/${encodeURIComponent(p.id)}` : "";
   return (

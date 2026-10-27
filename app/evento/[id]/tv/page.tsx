@@ -18,7 +18,7 @@ import { useReloj } from "@/hooks/useReloj";
 import { Escenario, Reloj, useCursorOculto, useFullscreenYWakeLock, useVertical } from "@/components/Pantalla";
 import { categoriaLabel } from "@/lib/categories";
 import { horaRonda } from "@/lib/horarios";
-import { calcularTabla, ganador, nombresDeFila } from "@/lib/scoring";
+import { calcularTabla, ganador, nombreCompleto, nombresCompletosDeFila } from "@/lib/scoring";
 import { useAmericanos, useEvento } from "@/lib/store";
 import type { EventoAmericano, Partido } from "@/types/americano";
 
@@ -95,12 +95,16 @@ function TV({ evento }: { evento: EventoAmericano }) {
               </motion.div>
               <p className="mt-6 text-2xl font-semibold uppercase tracking-[0.3em] text-white/50">Campeón</p>
               <div className="mt-6">
-                <AvatarPareja nombres={nombresDeFila(evento, campeon)} fotos={campeon.fotoUrls} size={120} />
+                <AvatarPareja nombres={nombresCompletosDeFila(evento, campeon)} fotos={campeon.fotoUrls} size={120} />
               </div>
-              <p className="mt-6 font-display text-6xl font-bold">{campeon.nombre}</p>
+              <div className="mt-6 space-y-1 font-display text-5xl font-bold leading-tight">
+                {nombresCompletosDeFila(evento, campeon).map((n, i) => (
+                  <p key={i}>{n}</p>
+                ))}
+              </div>
               <p className="mt-2 font-display text-4xl font-bold text-neon">{campeon.puntos} pts</p>
             </div>
-            <Leaderboard tabla={{ ...tabla, filas: tabla.filas.slice(0, filasPorPagina) }} nombresPorFila={(f) => nombresDeFila(evento, f)} modoTV />
+            <Leaderboard tabla={{ ...tabla, filas: tabla.filas.slice(0, filasPorPagina) }} nombresPorFila={(f) => nombresCompletosDeFila(evento, f)} modoTV />
           </motion.section>
         ) : (
           <motion.section key="vivo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={clsx("grid min-h-0 flex-1 gap-8", vertical ? "grid-cols-1 grid-rows-[minmax(0,1.1fr)_minmax(0,1fr)]" : "grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]")}>
@@ -131,7 +135,7 @@ function TV({ evento }: { evento: EventoAmericano }) {
                   <div className="flex min-w-0 flex-wrap gap-x-6 gap-y-2">
                     {espera.map((e) => (
                       <span key={e.id} className="flex items-center gap-2 text-xl">
-                        <span className="font-semibold text-white/90">{e.nombre}</span>
+                        <span className="font-semibold text-white/90">{e.completo}</span>
                         {e.vuelve && <span className="text-base text-white/40">→ R{e.vuelve}</span>}
                       </span>
                     ))}
@@ -152,7 +156,7 @@ function TV({ evento }: { evento: EventoAmericano }) {
               </div>
               <AnimatePresence mode="wait">
                 <motion.div key={pagina} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}>
-                  <Leaderboard tabla={tablaPagina} nombresPorFila={(f) => nombresDeFila(evento, f)} modoTV />
+                  <Leaderboard tabla={tablaPagina} nombresPorFila={(f) => nombresCompletosDeFila(evento, f)} modoTV />
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -175,14 +179,14 @@ function PistaTV({ partido, evento, compacto = false }: { partido: Partido; even
   const g = res ? ganador(evento.puntuacion, res) : null;
   const lado = (l: "A" | "B") => {
     const par = l === "A" ? partido.parejaA : partido.parejaB;
-    const nombres = par.jugadorIds.map((id) => porId.get(id)?.nombre ?? "?");
+    const nombres = par.jugadorIds.map((id) => nombreCompleto(porId.get(id)));
     const gana = g === (l === "A" ? 1 : -1);
     return (
       <div className={clsx("flex items-center gap-4", res && !gana && "opacity-50")}>
         <AvatarPareja nombres={nombres} fotos={par.jugadorIds.map((id) => porId.get(id)?.fotoUrl)} size={compacto ? 38 : 52} />
         <div className="min-w-0 flex-1">
           {nombres.map((n, i) => (
-            <p key={i} className={clsx("truncate font-semibold leading-tight", compacto ? "text-lg" : "text-2xl")}>
+            <p key={i} className={clsx("break-words font-semibold leading-tight", compacto ? "text-lg" : "text-2xl")}>
               {n}
             </p>
           ))}

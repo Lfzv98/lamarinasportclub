@@ -107,6 +107,15 @@ export function nombreDupla(t: Torneo, d?: Dupla | null): string {
   }).join(" / ");
 }
 
+/** Nombre y apellido completos de cada jugador de la dupla, sin abreviar (para la TV). */
+export function nombresCompletosDupla(t: Torneo, d?: Dupla | null): string[] {
+  if (!d) return ["Por definir"];
+  return d.jugadorIds.map((id) => {
+    const j = jugador(t, id);
+    return j ? nombreJugador(j) : "?";
+  });
+}
+
 export function dupla(t: Torneo, id?: string | null): Dupla | undefined {
   if (!id) return undefined;
   for (const c of t.categorias) {

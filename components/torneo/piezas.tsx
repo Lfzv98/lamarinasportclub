@@ -12,7 +12,7 @@ import { duplasActivas } from "@/lib/torneo/cuadro";
 import { nombrePista, pistaCorta } from "@/lib/torneo/imprevistos";
 import { esSuperTie } from "@/lib/torneo/marcador";
 import { ganadorDe, resultadoRetiro, textoSets, validarResultadoTorneo } from "@/lib/torneo/tabla";
-import { borrarResultado, categoria, dupla, efectoCorreccion, estadoCategoria, moverPartido, nombreDupla, reglasDe, textoResultado } from "@/lib/torneo/torneo";
+import { borrarResultado, categoria, dupla, efectoCorreccion, estadoCategoria, moverPartido, nombreDupla, nombresCompletosDupla, reglasDe, textoResultado } from "@/lib/torneo/torneo";
 import type { AccionPartido } from "@/lib/torneo/arbitraje";
 import { useEsMesa } from "@/lib/arbitro";
 import { useEsStaff } from "@/lib/store";
@@ -84,6 +84,12 @@ function LineaDupla({ nombre, sets, gana, bye, invertir }: { nombre: string; set
       ))}
     </div>
   );
+}
+
+/** Una línea por jugador con nombre y apellido completos; si la dupla aún no se sabe, de dónde sale (TV). */
+export function lineasOrigen(t: Torneo, p: PartidoTorneo, lado: "A" | "B"): string[] {
+  const d = lado === "A" ? p.duplaA : p.duplaB;
+  return d ? nombresCompletosDupla(t, dupla(t, d)) : [textoOrigen(t, p, lado)];
 }
 
 export function textoOrigen(t: Torneo, p: PartidoTorneo, lado: "A" | "B"): string {
