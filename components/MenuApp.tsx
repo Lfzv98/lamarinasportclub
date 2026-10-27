@@ -56,7 +56,7 @@ const SECCIONES: { titulo: string; items: Item[] }[] = [
       { href: "/torneos/nuevo", titulo: "Nuevo torneo de pádel", Icono: Plus, staff: true },
       ...(TENIS_ACTIVO ? [{ href: "/tenis/nuevo", titulo: "Nuevo torneo de tenis", Icono: Plus, staff: true }] : []),
       { href: "/torneos/ranking", titulo: "Ranking FVP", sub: "Lista de atletas federados", Icono: Medal, staff: true },
-      { href: "/manual", titulo: "Manual del staff", Icono: BookOpen },
+      { href: "/manual", titulo: "Manual de la app", Icono: BookOpen },
     ],
   },
   {

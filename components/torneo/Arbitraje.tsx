@@ -11,6 +11,7 @@ import { esArbitroDe, listarArbitros, useArbitro, useArbitroStore, type ArbitroL
 import { sonar, vibrar } from "@/lib/feedback";
 import { useAmericanos, useEsStaff } from "@/lib/store";
 import { useListaTorneos, useTorneos } from "@/lib/torneosStore";
+import { fechaHoraLocal } from "@/lib/torneo/programacion";
 
 const ULTIMO = "lamarina-arbitro-ultimo";
 
@@ -31,7 +32,7 @@ function guardarUltimo(id: string) {
 
 /** Torneos que se pueden arbitrar: los que no terminaron. */
 export function useTorneosConArbitros() {
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = fechaHoraLocal(Date.now()).fecha;
   return useListaTorneos().filter((t) => t.estado !== "FINALIZADO" && (t.dias.at(-1)?.fecha ?? hoy) >= hoy);
 }
 

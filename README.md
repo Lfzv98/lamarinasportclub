@@ -29,6 +29,8 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 | `/torneos/:id/tv` | Modo TV del torneo: todas las pistas, próximos, resultados y patrocinadores |
 | `/torneos/:id/estadisticas` | Rankings y ficha por jugador; resumen para el club (staff) |
 | `/torneos/:id/ajustes` | Días, pistas, desempates, patrocinadores, historial y eliminar (staff) |
+| `/manual` | Manual de la app de la A a la Z como libro digital (americanos, torneos, árbitros, pantallas, jugadores, dueño), con capturas |
+| `/manual/imprimir` | El mismo manual hoja por hoja en A5, para imprimir o guardar como PDF |
 
 | `/tenis` | Tenis: dos puertas, **Cancha dura** (hard court) y **Arcilla** (clay court), y los partidos en cancha ahora |
 | `/tenis/:superficie` | `dura` o `arcilla`: torneos, partidos en vivo y consejos de esa superficie, con su color |

@@ -650,7 +650,7 @@
   align-items: baseline;
   gap: 0.7em;
   width: 100%;
-  padding: 0.65em 0;
+  padding: 0.42em 0;
   border: 0;
   border-bottom: 1px solid var(--ml-linea);
   background: none;
@@ -666,13 +666,13 @@
   font-family: var(--ml-display);
   font-weight: 700;
   color: var(--ml-verde);
-  width: 1.2em;
+  width: 1.4em;
 }
 .ml-indice-t {
   flex: 1;
   font-family: var(--ml-display);
   font-weight: 600;
-  font-size: 1.05em;
+  font-size: 0.98em;
   transition: color 0.15s;
 }
 .ml-indice-p {
@@ -828,4 +828,42 @@
   .ml-libro {
     transition: none;
   }
+}
+
+/* ---------- Versión para imprimir (/manual/imprimir) ---------- */
+.ml-impreso {
+  height: auto;
+  overflow: visible;
+  display: block;
+  padding: 0;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+.ml-hoja-impresa {
+  position: relative;
+  width: 148mm;
+  height: 210mm;
+  margin: 0 auto;
+  overflow: hidden;
+  break-after: page;
+}
+.ml-impreso .ml-izq,
+.ml-impreso .ml-der {
+  border-radius: 0;
+  box-shadow: none;
+}
+@media screen {
+  .ml-hoja-impresa {
+    margin: 1rem auto;
+  }
+}
+@page {
+  size: 148mm 210mm;
+  margin: 0;
+}
+.ml-impreso .ml-solo-pantalla {
+  display: none;
+}
+.ml-hoja-impresa:last-child {
+  break-after: auto;
 }
