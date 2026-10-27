@@ -36,14 +36,14 @@ function guardarPrefs(datos: { p: number; fs: number; sonido: boolean }) {
 const paginaDe = (modo: Modo, cur: number) => (modo === "doble" ? Math.max(0, 2 * cur - 1) : cur);
 const hojaDe = (modo: Modo, p: number) => (modo === "doble" ? Math.ceil(p / 2) : p);
 
-function Cara({ pagina, numero, lado, onIr }: { pagina: Pagina; numero: number; lado: "izq" | "der"; onIr: (p: number) => void }) {
+export function Cara({ pagina, numero, lado, onIr }: { pagina: Pagina; numero: number; lado: "izq" | "der"; onIr: (p: number) => void }) {
   if (pagina.tipo === "tapa" || pagina.tipo === "contratapa")
     return <div className={`ml-pagina ml-p-${pagina.tipo} ml-${lado}`}>{pagina.cuerpo}</div>;
   return (
     <div className={`ml-pagina ml-${lado}${pagina.tipo === "apertura" ? " ml-p-apertura" : ""}`}>
       <div className="ml-corrido">
         <span>{pagina.seccion}</span>
-        <span>Manual del staff</span>
+        <span>Manual La Marina</span>
       </div>
       <div className="ml-contenido">
         {pagina.cuerpo ?? (
@@ -61,7 +61,7 @@ function Cara({ pagina, numero, lado, onIr }: { pagina: Pagina; numero: number; 
                 </li>
               ))}
             </ol>
-            <p className="ml-chico">Toca un capítulo para ir directo a esa página.</p>
+            <p className="ml-chico ml-solo-pantalla">Toca un capítulo para ir directo a esa página.</p>
           </>
         )}
       </div>
@@ -340,8 +340,8 @@ export function Libro() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/icons/isotipo-256.png" alt="" className="ml-barra-logo" />
         <div className="ml-barra-titulo">
-          <b>Manual del staff</b>
-          <span>La Marina Americanos</span>
+          <b>Manual La Marina</b>
+          <span>Americanos, torneos y árbitros</span>
         </div>
         <button
           type="button"

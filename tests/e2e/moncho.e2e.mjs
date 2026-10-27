@@ -86,7 +86,12 @@ ok(await p.locator("text=Masculino Suma 9").count() > 0, "categoría Masculino S
 await siguiente();
 await p.locator("button:has-text('Dupla fija')").first().click(); await espera(200);
 await siguiente();
-await p.locator("text=Rellenar con duplas demo").click(); await espera();
+// 6 duplas 5ta + 4ta (suman 9) escritas a mano.
+for (const [a, b] of [["Ana Uno", "Bea Uno"], ["Carla Dos", "Diana Dos"], ["Elena Tres", "Flor Tres"], ["Gaby Cuatro", "Hilda Cuatro"], ["Inés Cinco", "Juana Cinco"], ["Karla Seis", "Lola Seis"]]) {
+  await p.locator("input[placeholder='Jugador 1']").fill(a); await p.locator("input[placeholder='Jugador 2']").fill(b);
+  await p.getByLabel("Categoría del jugador 1").selectOption("5TA"); await p.getByLabel("Categoría del jugador 2").selectOption("4TA");
+  await p.getByRole("button", { name: "Dupla", exact: true }).click(); await espera(250);
+}
 await p.locator("input[placeholder='Jugador 1']").fill("Fuerte Uno"); await p.locator("input[placeholder='Jugador 2']").fill("Fuerte Dos");
 await p.getByLabel("Categoría del jugador 1").selectOption("3RA"); await p.getByLabel("Categoría del jugador 2").selectOption("4TA");
 await p.getByRole("button", { name: "Dupla", exact: true }).click(); await espera();

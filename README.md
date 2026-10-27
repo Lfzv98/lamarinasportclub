@@ -8,7 +8,8 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 
 | Ruta | Qué hace |
 | --- | --- |
-| `/` | Inicio: tres entradas, **Americanos**, **Torneos** y **Árbitros** |
+| `/` | Inicio: tres entradas, **Americanos**, **Torneos** y **Árbitros** (y **Tenis** solo si el club lo tiene encendido) |
+| Menú (☰ arriba a la derecha) | Todas las secciones: Americanos, Torneos, Árbitros, Nuevo americano/torneo de pádel (Tenis y Nuevo torneo de tenis solo en clubes con tenis), Ranking FVP, Manual y Ajustes (Datos de prueba, Mi club, Árbitros del club, Claves). Lo del staff lleva candado y pide el mismo PIN del staff |
 | `/arbitro` | Panel del árbitro (tablet): se registra una sola vez en el club (nombre, teléfono, PIN de árbitros y un código propio de 4 dígitos) y sirve para todos los torneos, luego entra tocando su nombre y su código. Ve su turno y su pista, llama, empieza, anota y toma las fotos de las duplas |
 | `/americanos` | Eventos activos e historial, acceso rápido a Modo TV |
 | `/setup` | Asistente de 5 pasos: categoría, formato y puntuación, pistas y horario, jugadores, resumen con sorteo |
@@ -30,6 +31,17 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 | `/inscripcion/:id` | **Inscripción online** (pública): portada del torneo, cupos por categoría, formulario paso a paso de la dupla (datos, talla, lado, alergias, reglamento), pago con datos para copiar, referencia y foto del comprobante, código para consultar el estado y ayuda por WhatsApp |
 | `/torneos/:id/inscripciones` | Inscripciones online (staff): verificar pagos, confirmar (la dupla entra a Inscritos con su chequeo FVP) o rechazar con motivo, tallas de franelas, alergias, QR del enlace y Excel |
 | `/torneos/:id/ajustes` | Días, pistas, desempates, patrocinadores, historial y eliminar (staff) |
+| `/manual` | Manual de la app de la A a la Z como libro digital (americanos, torneos, árbitros, pantallas, jugadores, dueño), con capturas |
+| `/manual/imprimir` | El mismo manual hoja por hoja en A5, para imprimir o guardar como PDF |
+
+| `/tenis` | Tenis: dos puertas, **Cancha dura** (hard court) y **Arcilla** (clay court), y los partidos en cancha ahora |
+| `/tenis/:superficie` | `dura` o `arcilla`: torneos, partidos en vivo y consejos de esa superficie, con su color |
+| `/tenis/nuevo` | (staff) Torneo con cuadro, liga o partido rápido; singles o dobles; formato ITF; pega la lista con `(1)`, `(2)` para las cabezas de serie |
+| `/tenis/t/:id` | Cuadro (o tabla de la liga), partidos e inscritos; llamar a cancha, anotar, W.O. o retiro |
+| `/tenis/t/:id/p/:partido` | Partido para el público: marcador vivo, cancha con quién saca, gráfico de impulso y estadísticas |
+| `/tenis/t/:id/p/:partido/anotar` | Anotador (staff o árbitro): sorteo con moneda, orden de saque, faltas y doble falta, ace, reloj de 25 s, cambios de lado y descansos ITF, canto en voz alta y revisión de marca en arcilla |
+| `/tenis/t/:id/tv` | Modo TV de tenis con el color de la superficie |
+| `/tenis/jugadores` | Ranking de jugadores con su récord en cancha dura y en arcilla |
 
 ## Reglas soportadas
 
@@ -47,12 +59,23 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 - **Imprevistos:** suspender pistas por lluvia (el partido en juego guarda su marcador y se reanuda), reanudar, sumar una sede de apoyo con su horario y tiempo de traslado, agregar un día. Todo reprograma solo.
 - **Anotador punto a punto:** punto de oro, tie-break y súper tie-break, orden de saque, faltas, aces, winners y errores por jugador y golpe; estadísticas por jugador al instante.
 - **Reglamento FIP (rev. 2021):** puntuación con ventaja o punto de oro (en mixto resta el del mismo sexo), mini set a 4 con tie-break 4-4, tie-break decisivo a 10 o a 7, tercer set sin tie-break; cambios de lado en games impares y cada 6 puntos del tie-break; cada dupla elige quién saca al empezar cada set; descansos de 20 s, 90 s y 120 s (sin descanso tras el primer game); W.O. a los 10 min de la hora prevista (o 5 min después de que terminó el partido anterior en la pista); peloteo de 0, 3 o 5 min al reanudar una suspensión; atención médica de 3 min una vez por jugador y accidente de hasta 15 min; tabla de penalizaciones (advertencia, pérdida de punto, descalificación) acumulada por dupla. El orden de desempate en grupos no lo fija el reglamento de juego: se configura por torneo.
-- **Categorías verificadas con el ranking FVP:** la app lee cada día la lista oficial de la Federación Venezolana de Pádel y cruza a cada jugador por cédula. Nadie se inscribe por debajo de su categoría; lo dudoso queda "por verificar" y frena el sorteo hasta que el staff lo revise o autorice una excepción con motivo. Lista, búsqueda y carga manual en `/torneos/ranking`.
+- **Categorías verificadas con el ranking FVP:** la app lee cada día la lista oficial de la Federación Venezolana de Pádel y cruza a cada jugador por cédula. Nadie se inscribe por debajo de su categoría; lo dudoso queda "por verificar" y frena el sorteo hasta que el staff lo revise o autorice una excepción con motivo. Los jugadores que no están en la lista (no federados) se inscriben con **Inscribir igual (excepción del staff)**, que ya trae el motivo escrito y queda firmada; si el ranking no contesta en 8 s, la dupla se inscribe igual como "por verificar". Lista, búsqueda y carga manual en `/torneos/ranking`.
 - **Inscripción online:** cada torneo puede abrir su página pública de inscripción (Ajustes → Inscripción online: precio, cierre, qué incluye, premios, métodos de pago, WhatsApp, reglamento y categorías abiertas). El formulario valida la rama, la edad en Master/Junior, los cupos, que nadie se inscriba dos veces y que nadie juegue por debajo de su categoría FVP (quien no aparece en la lista igual se inscribe y el staff lo revisa). Las inscripciones se guardan aparte del torneo (`eventos_extras`, tipo `inscripcion`) porque traen datos personales; al confirmar el pago la dupla entra al torneo como si el staff la hubiera cargado.
 - **Clave de participantes:** una por torneo, vence al terminar el último día; el staff la ve y cambia en Ajustes. Cambiarla deja fuera a quien entró con la anterior.
 - **Árbitros:** rol aparte del staff. El club tiene un solo PIN de árbitros, que el staff crea y cambia en Ajustes (página protegida con el PIN del staff). Sirve para que cada árbitro se registre una vez en el plantel del club; después entra con su nombre y su código en todos los torneos y únicamente puede llamar, empezar y anotar partidos: no abre cuadros, horarios ni ajustes. Cambiar el PIN cierra las sesiones abiertas. Cada árbitro se registra con nombre, apellido, teléfono y un código propio (guardado solo como HMAC), así cada punto queda firmado con su nombre y no hay "yo no fui". El staff asigna turnos por pista y franja (o los reparte solo) y ve cuántos partidos y puntos anotó cada uno.
 - **Fotos de duplas y jugadores:** el árbitro (o el staff) fotografía a cada dupla en la pista; la foto sale junto a sus nombres en el anotador, la TV de la pista y la página del partido. En Americanos ("Jugadores y fotos") y en Inscritos de Torneos el staff puede fotografiar a cada jugador; su cara sale en cuadros, ranking y TV. Se comprimen en el dispositivo (≤400 KB).
 - **Tres públicos:** la tablet del árbitro anota; las pantallas de TV muestran marcador y relato público; las estadísticas de cada atleta solo se ven con la clave del torneo.
+
+## Tenis
+
+> **Apagado por defecto.** La Marina no tiene tenis: esta sección es para ofrecer el sistema en clubes de Caracas. Se enciende con `NEXT_PUBLIC_TENIS=1` en el despliegue de ese club (`lib/tenis/activo.ts`). Apagado no sale en el inicio ni en el menú, `/tenis` da 404, `/api/tenis` no responde y los datos de prueba no cargan tenis.
+
+- **Superficies:** cancha dura (azul) y arcilla (terracota), cada una con su look, su cancha dibujada a escala y sus consejos. En arcilla el anotador permite **revisar la marca** y al terminar recuerda pasar la rastra.
+- **Reglas ITF** (`lib/tenis/marcador.ts`): 15-30-40 con ventaja o sin ventaja (punto decisivo); sets a 6 con tie-break a 7; formatos Clásico, Súper tie-break (tercer set a 10), Sets cortos (a 4), Pro set (a 8) y Grand Slam (mejor de 5, tie-break a 10 en 6-6 del quinto). Saque que rota por juego (en dobles entre los cuatro), en el tie-break 1 y luego 2; cambios de lado en juegos impares (sin descanso tras el primero, 90 s), 120 s entre sets y cada 6 puntos del tie-break.
+- **Cuadros** (`lib/tenis/torneo.ts`): eliminación con cabezas de serie en sus líneas y byes para los mejores, liga todos contra todos con tabla, o partido único. El ganador avanza solo.
+- **Estadísticas:** aces, dobles faltas, % de primer saque, puntos ganados con 1º y 2º saque, quiebres, winners y errores, rachas y gráfico de impulso.
+- **Permisos:** solo el staff crea torneos y partidos (sin límite); los árbitros del club solo anotan y llaman partidos; el público ve todo.
+- **Datos:** `/api/tenis` (GET público, POST staff o árbitro). Por ahora cada torneo es una fila de `eventos_extras` (`evento_id = 'tenis'`, `tipo = 'tenis'`), así no hace falta una tabla nueva.
 
 ## Permisos
 

@@ -12,7 +12,11 @@ import { useEsStaff } from "@/lib/store";
 import { useTorneo, useTorneos } from "@/lib/torneosStore";
 import type { Torneo } from "@/types/torneo";
 
-export const fechaCorta = (f: string) => new Date(`${f}T12:00:00`).toLocaleDateString("es", { weekday: "short", day: "numeric", month: "short" });
+/** "Sáb, 31 oct": día con mayúscula y mes en minúscula, igual en toda la app. */
+export const fechaCorta = (f: string) => {
+  const s = new Date(`${f}T12:00:00`).toLocaleDateString("es", { weekday: "short", day: "numeric", month: "short" });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
 
 export function rangoFechas(t: Pick<Torneo, "dias">): string {
   if (!t.dias.length) return "Sin fechas";

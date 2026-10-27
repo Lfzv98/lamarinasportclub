@@ -81,7 +81,7 @@ function supabaseRepository(url: string, key: string): AmericanosRepository {
   return {
     modo: "SUPABASE",
     async listar() {
-      const filas = await pedir<{ data: EventoAmericano }[]>("?select=data&order=actualizado_en.desc");
+      const filas = await todasLasPaginas((desde) => pedir<{ data: EventoAmericano }[]>(`?select=data&order=actualizado_en.desc,id.asc&limit=${PAGINA}&offset=${desde}`));
       return filas.map((f) => f.data);
     },
     async obtener(id) {
@@ -113,6 +113,20 @@ function supabaseRepository(url: string, key: string): AmericanosRepository {
       return club;
     },
   };
+}
+
+/**
+ * Supabase (PostgREST) devuelve como mucho 1000 filas por consulta: se pide por páginas
+ * para que el club pueda tener todos los eventos y torneos que quiera, sin tope.
+ */
+const PAGINA = 1000;
+async function todasLasPaginas<T>(pagina: (desde: number) => Promise<T[]>): Promise<T[]> {
+  const out: T[] = [];
+  for (let desde = 0; ; desde += PAGINA) {
+    const filas = await pagina(desde);
+    out.push(...filas);
+    if (filas.length < PAGINA) return out;
+  }
 }
 
 export function getRepository(): AmericanosRepository {
@@ -201,7 +215,7 @@ const demoTorneos: TorneosRepository = {
 };
 
 /** Tipos de `eventos_extras` que se listan con `data` (los demás, como las fotos, solo con id y versión). */
-const TIPOS_CON_DATA = new Set(["arbitros", "inscripcion"]);
+const TIPOS_CON_DATA = new Set(["arbitros", "tenis", "inscripcion"]);
 
 function supabaseTorneos(url: string, key: string): TorneosRepository {
   const raiz = `${url.replace(/\/$/, "")}/rest/v1/`;
@@ -219,7 +233,7 @@ function supabaseTorneos(url: string, key: string): TorneosRepository {
   return {
     modo: "SUPABASE",
     async listar() {
-      return (await pedir<{ data: Torneo }[]>(tablaT, "?select=data&order=actualizado_en.desc")).map((f) => f.data);
+      return (await todasLasPaginas((desde) => pedir<{ data: Torneo }[]>(tablaT, `?select=data&order=actualizado_en.desc,id.asc&limit=${PAGINA}&offset=${desde}`))).map((f) => f.data);
     },
     async obtener(id) {
       return (await pedir<{ data: Torneo }[]>(tablaT, `?select=data&id=eq.${encodeURIComponent(id)}`))[0]?.data ?? null;
@@ -230,7 +244,7 @@ function supabaseTorneos(url: string, key: string): TorneosRepository {
     },
     async listarMarcadores(torneoId) {
       const filtro = torneoId ? `&torneo_id=eq.${encodeURIComponent(torneoId)}` : "";
-      return (await pedir<{ data: MarcadorVivo }[]>(tablaM, `?select=data${filtro}`)).map((f) => f.data);
+      return (await todasLasPaginas((desde) => pedir<{ data: MarcadorVivo }[]>(tablaM, `?select=data${filtro}&order=id.asc&limit=${PAGINA}&offset=${desde}`))).map((f) => f.data);
     },
     async obtenerMarcador(id) {
       return (await pedir<{ data: MarcadorVivo }[]>(tablaM, `?select=data&id=eq.${encodeURIComponent(id)}`))[0]?.data ?? null;

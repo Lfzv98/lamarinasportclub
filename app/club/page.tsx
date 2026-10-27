@@ -3,11 +3,12 @@
 import clsx from "clsx";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, AtSign, Copy, MapPin, MessageCircle, Plus, Save, Sun, Trash2, Warehouse } from "lucide-react";
+import { ArrowLeft, AtSign, Copy, Flag, FlaskConical, KeyRound, MapPin, MessageCircle, Plus, Save, Sun, Trash2, Warehouse } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { ArbitrosClub } from "@/components/ArbitrosClub";
 import { DatosPrueba } from "@/components/DatosPrueba";
+import { MenuApp } from "@/components/MenuApp";
 import { ClavesTorneos } from "@/components/torneo/ClavesTorneos";
 import { StaffGate } from "@/components/StaffGate";
 import { Stepper } from "@/components/ui/Stepper";
@@ -36,6 +37,14 @@ function Club() {
     if (hidratado) setBorrador(club);
   }, [hidratado, club]);
 
+  // Llegó desde el menú a una sección (#datos-prueba, #arbitros, #claves): la muestra.
+  useEffect(() => {
+    const id = decodeURIComponent(location.hash.slice(1));
+    if (!id) return;
+    const t = setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 350);
+    return () => clearTimeout(t);
+  }, []);
+
   const setDia = (d: number, h: Partial<HorarioDia>) => setBorrador((b) => ({ ...b, dias: b.dias.map((x, i) => (i === d ? { ...x, ...h } : x)) }));
   const setPista = (n: number, h: Partial<PistaClub>) => setBorrador((b) => ({ ...b, pistas: b.pistas.map((x) => (x.numero === n ? { ...x, ...h } : x)) }));
   const setContacto = (h: Partial<ContactoClub>) => setBorrador((b) => ({ ...b, contacto: { ...b.contacto, ...h } }));
@@ -48,11 +57,22 @@ function Club() {
           <ArrowLeft className="size-5" />
         </Link>
         <Logo compacto />
-        <span className="w-10" />
+        <MenuApp />
       </header>
 
-      <h1 className="mt-6 font-display text-3xl font-bold tracking-tight">Mi club</h1>
-      <p className="mt-2 text-white/50">Pistas, horarios y contacto de {borrador.nombre}. Todo lo que configures aquí se usa al crear eventos.</p>
+      <h1 className="mt-6 font-display text-3xl font-bold tracking-tight">Ajustes</h1>
+      <p className="mt-2 text-white/50">Solo staff. Pistas, horarios y contacto de {borrador.nombre}, claves de torneos, árbitros del club y datos de prueba.</p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <a href="#datos-prueba" className="chip hover:border-neon/40 hover:text-white">
+          <FlaskConical className="size-3" /> Datos de prueba
+        </a>
+        <a href="#arbitros" className="chip hover:border-neon/40 hover:text-white">
+          <Flag className="size-3" /> Árbitros del club
+        </a>
+        <a href="#claves" className="chip hover:border-neon/40 hover:text-white">
+          <KeyRound className="size-3" /> Claves de torneos
+        </a>
+      </div>
 
       <h2 className="label mt-10">Pistas</h2>
       <ul className="space-y-2">

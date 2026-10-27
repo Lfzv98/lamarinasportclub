@@ -5,6 +5,9 @@ import type { MarcadorVivo, Torneo } from "@/types/torneo";
 import { leerPlantel, guardarPlantel, type ArbitroGuardado } from "./arbitros";
 import { borrarDemoInscripcion, cargarDemoInscripcion } from "./demoInscripcion";
 import { getRepository, getTorneosRepository } from "./repository";
+import { guardarTenis, listarTenis } from "./tenis";
+import { torneosDemoTenis } from "@/lib/tenis/demo";
+import { TENIS_ACTIVO } from "@/lib/tenis/activo";
 
 /**
  * Datos de prueba para enseñar la app (botón en Ajustes): dos americanos en juego y uno terminado,
@@ -33,7 +36,9 @@ function correr<T>(x: T, dias: number, ids: Map<string, string>): T {
   return JSON.parse(json) as T;
 }
 
-export async function cargarDemo(): Promise<{ americanos: number; torneos: number; arbitros: number }> {
+export async function cargarDemo(): Promise<{ americanos: number; torneos: number; arbitros: number; tenis: number }> {
+  // Volver a cargar reemplaza los de prueba anteriores: así no se duplican si se toca dos veces.
+  await borrarDemo();
   const dias = Math.round((new Date(`${hoyClub()}T12:00:00Z`).getTime() - new Date(`${DIA_BASE}T12:00:00Z`).getTime()) / 86_400_000);
   const ahora = new Date().toISOString();
   const marca = Date.now().toString(36);
@@ -47,8 +52,10 @@ export async function cargarDemo(): Promise<{ americanos: number; torneos: numbe
   const p = await leerPlantel();
   const nuevos = datos.extras.flatMap((x) => x.data.arbitros).filter((a) => !p.arbitros.some((y) => y.id === a.id));
   await guardarPlantel({ pin: p.pin ?? datos.extras[0]?.data.pin ?? null, arbitros: [...p.arbitros, ...(nuevos as ArbitroGuardado[])] });
+  const tenis = TENIS_ACTIVO ? torneosDemoTenis(`${PREFIJO}${marca}-`, hoyClub()) : [];
+  for (const t of tenis) await guardarTenis(t);
   // + la Copa Navidad con la inscripción online abierta.
-  return { americanos: datos.eventos.length, torneos: datos.torneos.length + 1, arbitros: nuevos.length };
+  return { americanos: datos.eventos.length, torneos: datos.torneos.length + 1, arbitros: nuevos.length, tenis: tenis.length };
 }
 
 /** Quita lo que cargó `cargarDemo` (borrado lógico, así los otros dispositivos también lo sueltan). */
@@ -60,6 +67,7 @@ export async function borrarDemo(): Promise<void> {
   const demo = (await tr.listar()).filter((t) => t.id.startsWith(PREFIJO));
   for (const t of demo) if (!t.eliminado) await tr.guardar({ ...t, eliminado: true, actualizadoEn: ahora });
   await borrarDemoInscripcion(demo.map((t) => t.id));
+  if (TENIS_ACTIVO) for (const t of await listarTenis()) if (t.id.startsWith(PREFIJO) && !t.eliminado) await guardarTenis({ ...t, eliminado: true, actualizadoEn: ahora });
   const p = await leerPlantel();
   await guardarPlantel({ ...p, arbitros: p.arbitros.filter((a) => !ARBITROS_DEMO.includes(a.id)) });
 }

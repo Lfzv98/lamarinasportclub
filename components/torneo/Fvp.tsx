@@ -45,10 +45,24 @@ export function EstadoFvpChip({ v, onClick }: { v?: VerificacionFvp | null; onCl
 }
 
 /** Línea bajo la cédula de un jugador: lo que dice el ranking. */
-export function AtletaFvpLinea({ cedula, atleta, listo, nivel }: { cedula: string; atleta: AtletaFvp | null; listo: boolean; nivel?: NivelTorneo }) {
+export function AtletaFvpLinea({
+  cedula,
+  atleta,
+  listo,
+  nivel,
+  sinLista,
+}: {
+  cedula: string;
+  atleta: AtletaFvp | null;
+  listo: boolean;
+  nivel?: NivelTorneo;
+  /** No hay lista cargada o el ranking no contestó: no se puede decir si está o no. */
+  sinLista?: boolean;
+}) {
   if (!claveCedula(cedula)) return cedula.trim() ? <p className="mt-1 text-xs text-white/40">Cédula incompleta.</p> : null;
   if (!listo) return <p className="mt-1 text-xs text-white/40">Buscando en el ranking FVP…</p>;
-  if (!atleta) return <p className="mt-1 text-xs text-amber-300">{formatoCedula(cedula)} no aparece en la lista FVP.</p>;
+  if (sinLista) return <p className="mt-1 text-xs text-white/40">{formatoCedula(cedula)} · sin lista FVP para comparar: queda por verificar.</p>;
+  if (!atleta) return <p className="mt-1 text-xs text-amber-300">{formatoCedula(cedula)} no aparece en la lista FVP. Puedes inscribirlo igual con la excepción del staff.</p>;
   if (!atleta.categoria)
     return (
       <p className="mt-1 text-xs text-amber-300">
@@ -65,13 +79,41 @@ export function AtletaFvpLinea({ cedula, atleta, listo, nivel }: { cedula: strin
   );
 }
 
+/** Motivo que se propone al autorizar a quien no está en la lista (no federado o recién inscrito en la FVP). */
+export const MOTIVO_FUERA_DE_LISTA = "Fuera de la lista FVP (no federado o recién inscrito)";
+
+/** Motivo propuesto según el estado: los bloqueos (categoría FVP más alta) piden que el staff lo escriba. */
+export const motivoSugerido = (v?: VerificacionFvp | null) => (v?.estado === "POR_VERIFICAR" ? MOTIVO_FUERA_DE_LISTA : "");
+
 /** Interruptor + motivo para autorizar una dupla bloqueada o sin verificar. */
-export function ExcepcionFvp({ activa, motivo, onActiva, onMotivo }: { activa: boolean; motivo: string; onActiva: (v: boolean) => void; onMotivo: (m: string) => void }) {
+export function ExcepcionFvp({
+  activa,
+  motivo,
+  onActiva,
+  onMotivo,
+  sugerencia = "",
+}: {
+  activa: boolean;
+  motivo: string;
+  onActiva: (v: boolean) => void;
+  onMotivo: (m: string) => void;
+  sugerencia?: string;
+}) {
   return (
-    <div className="glass rounded-2xl p-3">
+    <div className={clsx("glass rounded-2xl p-3 transition", activa && "ring-1 ring-cielo/40")}>
       <label className="flex items-center justify-between gap-3 text-sm">
-        <span>Autorizar excepción del staff</span>
-        <Switch activo={activa} onChange={onActiva} etiqueta="Autorizar excepción" />
+        <span>
+          Inscribir igual (excepción del staff)
+          <span className="block text-xs text-white/45">Para jugadores fuera de la lista FVP o no federados. Queda firmada con tu nombre.</span>
+        </span>
+        <Switch
+          activo={activa}
+          onChange={(v) => {
+            onActiva(v);
+            if (v && !motivo.trim() && sugerencia) onMotivo(sugerencia);
+          }}
+          etiqueta="Autorizar excepción"
+        />
       </label>
       {activa && (
         <input className="input mt-2 !py-2 text-sm" placeholder="Motivo (queda registrado con tu nombre)" value={motivo} onChange={(e) => onMotivo(e.target.value)} maxLength={160} />
@@ -119,12 +161,12 @@ function Revisar({ torneo, cat, dupla, onClose }: { torneo: Torneo; cat: Categor
         <div key={j.id} className="glass rounded-2xl p-3">
           <p className="mb-2 text-sm font-semibold">{nombreJugador(j)}</p>
           <input className="input !py-2.5" placeholder="Cédula (V-12345678)" inputMode="text" value={cedulas[i]} onChange={(e) => setCedulas((c) => c.map((x, k) => (k === i ? e.target.value : x)))} />
-          <AtletaFvpLinea cedula={cedulas[i]} atleta={fvp.buscar?.(cedulas[i]) ?? null} listo={fvp.listo} nivel={cat.categoria.nivel} />
+          <AtletaFvpLinea cedula={cedulas[i]} atleta={fvp.buscar?.(cedulas[i]) ?? null} listo={fvp.listo} nivel={cat.categoria.nivel} sinLista={!fvp.buscar} />
         </div>
       ))}
-      {v?.nota && v.estado !== "VERIFICADA" && <p className={clsx("text-sm", v.estado === "BLOQUEADA" ? "text-coral" : "text-amber-300")}>{v.nota}</p>}
+      {v?.nota && v.estado !== "VERIFICADA" && fvp.resumen?.cargado !== false && <p className={clsx("text-sm", v.estado === "BLOQUEADA" ? "text-coral" : "text-amber-300")}>{v.nota}</p>}
       {fvp.resumen && !fvp.resumen.cargado && <p className="text-xs text-white/45">Aún no hay lista FVP cargada. Cárgala en Torneos → Ranking FVP.</p>}
-      {v?.estado !== "VERIFICADA" && <ExcepcionFvp activa={excepcion} motivo={motivo} onActiva={setExcepcion} onMotivo={setMotivo} />}
+      {v?.estado !== "VERIFICADA" && <ExcepcionFvp activa={excepcion} motivo={motivo} onActiva={setExcepcion} onMotivo={setMotivo} sugerencia={motivoSugerido(v)} />}
       <button className="btn-neon w-full" onClick={aplicar} disabled={!fvp.listo}>
         {excepcion ? "Autorizar" : v?.estado === "VERIFICADA" ? "Marcar verificada" : "Guardar cédulas"}
       </button>
