@@ -62,6 +62,14 @@ function horasALaFoto(t: Torneo, ms: number): Torneo {
   return { ...t, categorias: t.categorias.map((c) => (c.cuadro ? { ...c, cuadro: { ...c.cuadro, partidos: c.cuadro.partidos.map(correrProg) } } : c)) };
 }
 
+/**
+ * "Ahora" para `programarTorneo` en el servidor: la programación lee la hora local del equipo, y el
+ * servidor (Vercel) corre en UTC. Se corre para que esa hora local sea la del club (UTC-4).
+ */
+function ahoraEnElClub(): string {
+  return new Date(Date.now() + (new Date().getTimezoneOffset() - 240) * 60_000).toISOString();
+}
+
 export async function cargarDemo(): Promise<{ americanos: number; torneos: number; arbitros: number; tenis: number }> {
   // Volver a cargar reemplaza los de prueba anteriores: así no se duplican si se toca dos veces.
   await borrarDemo();
@@ -75,7 +83,7 @@ export async function cargarDemo(): Promise<{ americanos: number; torneos: numbe
   const ms = Date.now() - INSTANTE_BASE;
   for (const t of datos.torneos) {
     const corrido = horasALaFoto(correr(t, dias, ids, ms), ms - dias * 86_400_000);
-    await tr.guardar({ ...programarTorneo(corrido, { desde: ahora }).torneo, actualizadoEn: ahora });
+    await tr.guardar({ ...programarTorneo(corrido, { desde: ahoraEnElClub() }).torneo, actualizadoEn: ahora });
   }
   for (const m of datos.marcadores) await tr.guardarMarcador(correr(m, dias, ids, ms));
   await cargarDemoInscripcion(`${PREFIJO}${marca}-`, hoyClub());
