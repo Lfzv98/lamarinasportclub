@@ -200,7 +200,34 @@ export interface PartidoTorneo {
    * al reanudarse, sigue con el mismo marcador.
    */
   suspendido?: { en: string; motivo: string; marcador?: string } | null;
+  /**
+   * Revisión de mesa técnica. El resultado que cierra el árbitro de pista cuenta en el cuadro
+   * al instante y queda POR_REVISAR hasta que el árbitro principal (o el staff) lo da por bueno
+   * o lo corrige. Sin revisión = resultado cargado por el staff o anterior a esta función.
+   */
+  revision?: RevisionResultado | null;
+  /** Cambio de horario de un partido ya publicado (por atraso, lluvia o a mano): para avisar a los jugadores. */
+  cambioHorario?: { antes: Pick<Programacion, "fecha" | "hora" | "pista">; en: string; avisado?: boolean } | null;
   actualizadoEn?: string;
+}
+
+export interface CorreccionResultado {
+  en: string;
+  por: string;
+  /** Resultado antes y después, en texto ("6-3 6-4"). */
+  antes: string;
+  despues: string;
+  motivo: string;
+}
+
+export interface RevisionResultado {
+  estado: "POR_REVISAR" | "VISTO";
+  /** Quién cerró el resultado (árbitro de pista). */
+  cargadoPor?: string;
+  /** Quién lo revisó. */
+  por?: string;
+  en: string;
+  correcciones?: CorreccionResultado[];
 }
 
 export interface CriterioDesempate {
@@ -304,6 +331,12 @@ export interface Torneo {
   toleranciaWO: number;
   /** Semifinales y finales el último día. */
   finalesUltimoDia: boolean;
+  /**
+   * Categoría estelar de noche en la pista principal (costumbre en Venezuela: la máxima categoría
+   * se juega de noche en la Pista 1). Sin definir = automático (la categoría de más nivel, desde las
+   * 19:00); null = apagado.
+   */
+  horarioEstelar?: { categorias?: string[] | null; desde: string } | null;
   bloqueos: BloqueHorario[];
   criterios: CriterioDesempate[];
   /** Validar las categorías por nivel con el ranking FVP (por defecto sí). */
@@ -458,5 +491,7 @@ export interface ArbitroRegistrado {
   /** Solo lo ve el staff. */
   telefono?: string;
   activo: boolean;
+  /** Árbitro principal (mesa técnica): revisa y corrige resultados y llama partidos a pista. */
+  principal?: boolean;
   registradoEn: string;
 }

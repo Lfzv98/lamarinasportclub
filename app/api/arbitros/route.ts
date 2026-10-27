@@ -30,15 +30,19 @@ export const GET = manejar(async (req: Request) => {
   return NextResponse.json({ abierto: !!p.pin, arbitros: p.pin ? p.arbitros.filter((a) => a.activo).map(arbitroPublico) : [] });
 });
 
-/** PATCH /api/arbitros { id, activo } (staff) → pausa o reactiva a un árbitro. */
+/**
+ * PATCH /api/arbitros { id, activo?, principal? } (staff) → pausa o reactiva a un árbitro, o lo
+ * marca como árbitro principal (mesa técnica: revisa y corrige resultados).
+ */
 export const PATCH = manejar(async (req: Request) => {
   if (!sesionDe(req)) throw new ErrorApi(401, "Solo el staff.");
-  const b = (await leerJson(req)) as { id?: unknown; activo?: unknown } | null;
-  if (typeof b?.id !== "string" || typeof b?.activo !== "boolean") throw new ErrorApi(400, "Envía { id, activo }.");
+  const b = (await leerJson(req)) as { id?: unknown; activo?: unknown; principal?: unknown } | null;
+  if (typeof b?.id !== "string" || (typeof b?.activo !== "boolean" && typeof b?.principal !== "boolean")) throw new ErrorApi(400, "Envía { id, activo } o { id, principal }.");
   const p = await leerPlantel();
   const a = p.arbitros.find((x) => x.id === b.id);
   if (!a) throw new ErrorApi(404, "Árbitro no encontrado.");
-  a.activo = b.activo;
+  if (typeof b.activo === "boolean") a.activo = b.activo;
+  if (typeof b.principal === "boolean") a.principal = b.principal;
   a.actualizadoEn = new Date().toISOString();
   await guardarPlantel(p);
   return NextResponse.json({ arbitro: arbitroStaff(a) });

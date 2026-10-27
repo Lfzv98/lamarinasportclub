@@ -11,6 +11,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { useArbitroStore } from "@/lib/arbitro";
 import { useAmericanos } from "@/lib/store";
 import { fusionarTenis } from "@/lib/tenis/torneo";
+import { TENIS_ACTIVO } from "@/lib/tenis/activo";
 import type { ApiTenisRespuesta, PartidoTenis, TorneoTenis } from "@/types/tenis";
 
 interface EstadoTenis {
@@ -141,7 +142,7 @@ canal?.addEventListener("message", (ev: MessageEvent) => {
   useTenis.setState((s) => ({ torneos: unir(s.torneos, [t]) }));
 });
 
-if (typeof window !== "undefined") window.addEventListener("online", () => useTenis.getState().sincronizar());
+if (typeof window !== "undefined" && TENIS_ACTIVO) window.addEventListener("online", () => useTenis.getState().sincronizar());
 
 export function useTorneoTenis(id: string) {
   return useTenis((s) => (s.torneos[id]?.eliminado ? undefined : s.torneos[id]));

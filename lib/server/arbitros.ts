@@ -82,7 +82,7 @@ export function conSesion(res: NextResponse, p: PlantelArbitros & { pin: string 
   return res;
 }
 
-export const sesionPublica = (a: ArbitroGuardado) => ({ id: a.id, nombre: nombreArbitro(a) });
+export const sesionPublica = (a: ArbitroGuardado) => ({ id: a.id, nombre: nombreArbitro(a), principal: !!a.principal });
 
 /** PIN de árbitros nuevo: 4 dígitos con el generador criptográfico. */
 export function pinNuevo(): string {

@@ -14,7 +14,8 @@ import { toast } from "@/components/ui/Toaster";
 import { vibrar } from "@/lib/feedback";
 import { aMinutos } from "@/lib/horarios";
 import { nombrePista } from "@/lib/torneo/imprevistos";
-import { fechaHoraLocal, programarTorneo } from "@/lib/torneo/programacion";
+import { categoriasEstelares, ESTELAR_DESDE, fechaHoraLocal, programarTorneo } from "@/lib/torneo/programacion";
+import { nombreCorto } from "@/lib/torneo/categorias";
 import { NOMBRE_CRITERIO } from "@/lib/torneo/tabla";
 import { configurarTorneo, eliminarTorneo, nuevoId, todosLosPartidos } from "@/lib/torneo/torneo";
 import { useTorneos } from "@/lib/torneosStore";
@@ -58,6 +59,7 @@ function Ajustes({ torneo }: { torneo: Torneo }) {
     descansoMin: torneo.descansoMin,
     toleranciaWO: torneo.toleranciaWO,
     finalesUltimoDia: torneo.finalesUltimoDia,
+    horarioEstelar: torneo.horarioEstelar,
     canchas: torneo.canchas.map((c) => ({ ...c })),
     criterios: torneo.criterios.map((c) => ({ ...c })),
     patrocinadores: (torneo.patrocinadores ?? []).map((p) => ({ ...p })),
@@ -74,7 +76,10 @@ function Ajustes({ torneo }: { torneo: Torneo }) {
     JSON.stringify(b.dias) !== JSON.stringify(torneo.dias) ||
     JSON.stringify(b.canchas.map((c) => c.activa)) !== JSON.stringify(torneo.canchas.map((c) => c.activa)) ||
     b.descansoMin !== torneo.descansoMin ||
-    b.finalesUltimoDia !== torneo.finalesUltimoDia;
+    b.finalesUltimoDia !== torneo.finalesUltimoDia ||
+    JSON.stringify(b.horarioEstelar ?? "auto") !== JSON.stringify(torneo.horarioEstelar ?? "auto");
+  const estelaresAuto = categoriasEstelares({ categorias: torneo.categorias, horarioEstelar: undefined });
+  const estelarElegida = b.horarioEstelar === null ? "" : (b.horarioEstelar?.categorias?.[0] ?? estelaresAuto[0] ?? "");
 
   const guardarTodo = () => {
     let t = configurarTorneo(torneo, { ...b, nombre: b.nombre.trim() || torneo.nombre, dias: [...b.dias].sort((x, y) => x.fecha.localeCompare(y.fecha)) });
@@ -136,6 +141,47 @@ function Ajustes({ torneo }: { torneo: Torneo }) {
             <p className="text-xs text-white/50">En la pista principal de La Marina</p>
           </div>
           <Interruptor valor={b.finalesUltimoDia} onChange={(v) => setB({ ...b, finalesUltimoDia: v })} etiqueta="Finales el último día" />
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+          <div className="min-w-0 flex-1 basis-[14rem]">
+            <p className="font-semibold">Categoría estelar de noche</p>
+            <p className="text-xs text-white/50">Se juega de noche en {nombrePista(torneo, torneo.canchas.find((c) => c.activa)?.numero)} y su final cierra el torneo. El resto deja libre esa pista de noche.</p>
+          </div>
+          <div className="flex gap-2">
+            <select
+              className="input !w-auto !py-2"
+              aria-label="Categoría estelar"
+              value={estelarElegida}
+              onChange={(e) =>
+                setB({
+                  ...b,
+                  horarioEstelar: !e.target.value
+                    ? null
+                    : e.target.value === estelaresAuto[0] && !b.horarioEstelar?.desde
+                      ? undefined
+                      : { categorias: [e.target.value], desde: b.horarioEstelar?.desde ?? ESTELAR_DESDE },
+                })
+              }
+            >
+              <option value="">Ninguna</option>
+              {torneo.categorias.map((c) => (
+                <option key={c.categoria.id} value={c.categoria.id}>
+                  {nombreCorto(c.categoria)}
+                  {c.categoria.id === estelaresAuto[0] ? " (la de más nivel)" : ""}
+                </option>
+              ))}
+            </select>
+            {b.horarioEstelar !== null && estelarElegida && (
+              <input
+                type="time"
+                step={900}
+                aria-label="Desde qué hora"
+                className="input !w-auto !py-2"
+                value={b.horarioEstelar?.desde ?? ESTELAR_DESDE}
+                onChange={(e) => setB({ ...b, horarioEstelar: { categorias: [estelarElegida], desde: e.target.value || ESTELAR_DESDE } })}
+              />
+            )}
+          </div>
         </div>
       </div>
 

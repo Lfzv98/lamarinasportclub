@@ -4,7 +4,8 @@ import clsx from "clsx";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, CalendarClock, Camera, CloudRain, Flag, LogOut, Megaphone, Play, Tv, UserX } from "lucide-react";
+import { ArrowLeft, CalendarClock, Camera, ChevronRight, ClipboardCheck, CloudRain, Flag, LogOut, Megaphone, Play, Tv, UserX } from "lucide-react";
+import { EstadoConexion } from "@/components/torneo/Conexion";
 import { useEffect, useMemo, useState } from "react";
 import { FotoDupla, TomarFoto } from "@/components/Foto";
 import { Logo } from "@/components/Logo";
@@ -52,7 +53,7 @@ export default function ArbitroPage() {
     const hoy = relojClub(Date.now()).fecha;
     const conTurno = arbitro ? enCurso.filter((t) => turnosDe(t, arbitro.id).some((x) => x.fecha === hoy)) : [];
     const id = elegido ?? (conTurno.length === 1 ? conTurno[0].id : enCurso.length === 1 ? enCurso[0].id : null);
-    if (id) return <Panel torneoId={id} nombre={arbitro?.nombre ?? "Staff"} arbitroId={arbitro?.id} alCambiar={enCurso.length > 1 ? () => setElegido(null) : undefined} />;
+    if (id) return <Panel torneoId={id} nombre={arbitro?.nombre ?? "Staff"} arbitroId={arbitro?.id} principal={!!arbitro?.principal} alCambiar={enCurso.length > 1 ? () => setElegido(null) : undefined} />;
   }
 
   return (
@@ -105,7 +106,7 @@ export default function ArbitroPage() {
   );
 }
 
-function Panel({ torneoId, nombre, arbitroId, alCambiar }: { torneoId: string; nombre: string; arbitroId?: string; alCambiar?: () => void }) {
+function Panel({ torneoId, nombre, arbitroId, principal, alCambiar }: { torneoId: string; nombre: string; arbitroId?: string; principal?: boolean; alCambiar?: () => void }) {
   const torneo = useTorneo(torneoId);
   const salir = useArbitroStore((s) => s.salir);
   const ahora = useAhora(1000);
@@ -181,6 +182,19 @@ function Panel({ torneoId, nombre, arbitroId, alCambiar }: { torneoId: string; n
         ) : null}
       </header>
 
+      <EstadoConexion className="mt-2 self-start" />
+      {principal && (
+        <Link href={`/torneos/${torneo.id}/mesa`} className="seleccion sobre-marca mt-3 flex items-center gap-3 rounded-2xl border px-4 py-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-lima text-marino-2">
+            <ClipboardCheck className="size-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold text-lima">Abrir mesa técnica</span>
+            <span className="block text-xs text-white/60">Eres el árbitro principal: revisas los resultados que llegan de cada pista.</span>
+          </span>
+          <ChevronRight className="size-5 text-lima" />
+        </Link>
+      )}
       {arbitroId && (
         <button onClick={() => setVerTurnos(true)} className="glass mt-3 flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition hover:border-neon/40">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-lima/15 text-lima">

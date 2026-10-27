@@ -9,9 +9,9 @@
  */
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { fusionarTorneos } from "@/lib/torneo/torneo";
+import { fusionarTorneos, marcarCambiosHorario } from "@/lib/torneo/torneo";
 import { aplicarAccion, type AccionPartido } from "@/lib/torneo/arbitraje";
-import { useArbitroStore } from "@/lib/arbitro";
+import { esMesaAhora, useArbitroStore } from "@/lib/arbitro";
 import { useAmericanos } from "@/lib/store";
 import type { ApiMarcadoresRespuesta, ApiTorneosRespuesta, MarcadorVivo, Torneo } from "@/types/torneo";
 
@@ -217,7 +217,9 @@ export const useTorneos = create<EstadoTorneos>()(
         }
       },
 
-      guardar(t) {
+      guardar(nuevo) {
+        // Partidos publicados que cambiaron de hora: quedan marcados para avisar a los jugadores.
+        const t = marcarCambiosHorario(get().torneos[nuevo.id], nuevo);
         set((s) => ({ torneos: { ...s.torneos, [t.id]: t }, pendientes: s.pendientes.includes(t.id) ? s.pendientes : [...s.pendientes, t.id] }));
         canal?.postMessage({ tipo: "torneo", torneo: t });
         subir(`t:${t.id}`, 400, () => {
@@ -247,8 +249,9 @@ export const useTorneos = create<EstadoTorneos>()(
       async accionPartido(torneoId, partidoId, accion) {
         const t = get().torneos[torneoId];
         if (!t || t.bloqueado) return "Torneo no disponible en este dispositivo.";
-        const nombre = useAmericanos.getState().staff?.nombre ?? (useArbitroStore.getState().arbitro ? `Árbitro ${useArbitroStore.getState().arbitro!.nombre}` : undefined);
-        const local = aplicarAccion(t, partidoId, accion, nombre);
+        const a = useArbitroStore.getState().arbitro;
+        const nombre = useAmericanos.getState().staff?.nombre ?? (a ? `${a.principal ? "Árbitro principal" : "Árbitro"} ${a.nombre}` : undefined);
+        const local = aplicarAccion(t, partidoId, accion, nombre, esMesaAhora() ? "MESA" : "PISTA");
         set((s) => ({ torneos: { ...s.torneos, [torneoId]: local } }));
         canal?.postMessage({ tipo: "torneo", torneo: local });
         const pendiente: AccionPendiente = { torneoId, partidoId, accion, en: new Date().toISOString() };
