@@ -73,6 +73,20 @@ ok(await p.locator("text=FVP 5ta · JUGADOR QUINTA 2").count() > 0, "muestra la 
 await p.getByRole("button", { name: "Inscribir y otra" }).click();
 await p.waitForTimeout(400);
 
+// Jugadores que no están en la lista FVP: el staff los inscribe igual con la excepción (motivo ya propuesto).
+await nombres.nth(0).fill("Jose"); await apellidos.nth(0).fill("Perez"); await cedulas.nth(0).fill("23489765");
+await nombres.nth(1).fill("Pedro"); await apellidos.nth(1).fill("Sanchez"); await cedulas.nth(1).fill("V-26009115");
+await p.waitForTimeout(1500);
+ok(await p.locator("text=no aparece en la lista FVP. Puedes inscribirlo igual").count() === 2, "avisa que no están en la lista y que se puede inscribir igual");
+await p.getByRole("switch", { name: "Autorizar excepción" }).click();
+await p.waitForTimeout(200);
+ok((await p.getByPlaceholder(/Motivo/).inputValue()).startsWith("Fuera de la lista FVP"), "propone el motivo solo");
+ok(!(await p.getByRole("button", { name: "Inscribir", exact: true }).last().isDisabled()), "fuera de la lista FVP: se inscribe con la excepción");
+ok(await p.locator("text=no frena el sorteo").count() > 0, "explica que la excepción no frena el sorteo");
+await p.screenshot({ path: `${out}/fvp-fuera-de-lista.png` });
+await p.getByRole("button", { name: "Inscribir y otra" }).click();
+await p.waitForTimeout(400);
+
 await nombres.nth(0).fill("Sin"); await apellidos.nth(0).fill("Cedula");
 await nombres.nth(1).fill("Jugador"); await apellidos.nth(1).fill("Cuatro"); await cedulas.nth(1).fill("V-30000004");
 await p.waitForTimeout(1200);

@@ -5,6 +5,8 @@ import { FlaskConical, Trash2 } from "lucide-react";
 import { toast } from "@/components/ui/Toaster";
 import { vibrar } from "@/lib/feedback";
 import { useAmericanos } from "@/lib/store";
+import { TENIS_ACTIVO } from "@/lib/tenis/activo";
+import { useTenis } from "@/lib/tenisStore";
 import { useTorneos } from "@/lib/torneosStore";
 
 /**
@@ -35,6 +37,7 @@ export function DatosPrueba({ onCambio }: { onCambio?: () => void }) {
       await Promise.all([
         useAmericanos.getState().sincronizar(),
         useTorneos.getState().sincronizar(),
+        TENIS_ACTIVO ? useTenis.getState().sincronizar() : null,
       ]);
       onCambio?.();
       vibrar(20);
@@ -51,7 +54,7 @@ export function DatosPrueba({ onCambio }: { onCambio?: () => void }) {
   }
 
   return (
-    <section className="mt-10">
+    <section id="datos-prueba" className="mt-10 scroll-mt-6">
       <h2 className="label">Datos de prueba</h2>
       <div className="glass space-y-4 rounded-[2rem] p-5">
         <div className="flex items-start gap-3">
@@ -60,7 +63,8 @@ export function DatosPrueba({ onCambio }: { onCambio?: () => void }) {
           </span>
           <p className="text-sm text-white/60">
             Para enseñar la app: crea 3 americanos, un torneo de hoy con
-            partidos en juego y 6 árbitros de ejemplo (código{" "}
+            partidos en juego{TENIS_ACTIVO ? ", 2 torneos de tenis (cancha dura y arcilla)" : ""} y 6
+            árbitros de ejemplo (código{" "}
             <b className="text-white/85">1234</b>). Si no hay PIN de árbitros,
             queda el <b className="text-white/85">2468</b>. Se borra con un
             toque y no toca lo tuyo. Si los cargas otra vez, empiezan de cero.
