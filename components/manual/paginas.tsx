@@ -117,7 +117,7 @@ const CONTENIDO: Pagina[] = [
       <h2>Hola, equipo.</h2>
       <p>
         Este libro explica la app de La Marina de punta a punta: americanos, torneos, árbitros, pantallas de TV y lo que ve cada
-        jugador. Está escrito para leerlo en la pista, con el celular en la mano.
+        jugador, incluida la inscripción online. Está escrito para leerlo en la pista, con el celular en la mano.
       </p>
       <p>No hace falta leerlo entero. Busca en el índice lo que necesitas hoy.</p>
       <h3>Cómo leer este libro</h3>
@@ -700,7 +700,7 @@ const CONTENIDO: Pagina[] = [
           </>,
         ]}
       />
-      <p className="ml-chico">Puntos de ranking (opcional): ordenan quién es cabeza de serie.</p>
+      <p className="ml-chico">Puntos de ranking (opcional): ordenan quién es cabeza de serie. Las duplas que se inscriben solas por la web entran desde Inscripciones online (capítulo 6).</p>
     </ConCaptura>,
   ),
   pagina(
@@ -797,9 +797,236 @@ const CONTENIDO: Pagina[] = [
     </ConCaptura>,
   ),
 
-  // 6 · Torneos: día de juego
+  // 6 · Inscripción online
   capitulo(
     "6",
+    "Inscripción online",
+    "Cada dupla se inscribe sola desde el celular. El staff verifica el pago.",
+    <ConCaptura src="insc-portada" alt="Página de inscripción de la Copa Navidad">
+      <p>Cada torneo puede tener su propia página de inscripción, sin cuenta y sin clave.</p>
+      <ul className="ml-lista">
+        <li>
+          Se llega por el aviso <B>Inscripciones abiertas</B> del inicio o de Torneos, o por el enlace y el QR que comparte el staff.
+        </li>
+        <li>Muestra fecha, sede, precio, qué incluye, premios y los cupos que quedan.</li>
+      </ul>
+      <ol className="ml-ruta">
+        <li>
+          <b>Se inscriben</b>
+          <span>Los dos jugadores.</span>
+        </li>
+        <li>
+          <b>Pagan</b>
+          <span>Ahora o después.</span>
+        </li>
+        <li>
+          <b>El staff confirma</b>
+          <span>Y entran a Inscritos.</span>
+        </li>
+      </ol>
+    </ConCaptura>,
+  ),
+  pagina(
+    "Inscripción online",
+    <ConCaptura src="insc-categoria" alt="Paso 1: elegir la categoría con los cupos">
+      <h2>Paso 1: la categoría</h2>
+      <p>
+        Toca <B>Inscribir mi dupla</B> y elige la categoría.
+      </p>
+      <ul className="ml-lista">
+        <li>Cada categoría dice cuántos cupos quedan. Si se llenó, dice «Cupos agotados» y no se puede elegir.</li>
+        <li>Arriba, la barra muestra en qué paso vas: categoría, jugador 1, jugador 2, reglamento y pago.</li>
+      </ul>
+      <Nota titulo="Sin apuro" tono="cielo">
+        Lo que escriben se guarda en el teléfono. Si se cierra la página, al volver sigue ahí.
+      </Nota>
+    </ConCaptura>,
+  ),
+  pagina(
+    "Inscripción online",
+    <ConCaptura src="insc-jugador" alt="Datos del jugador 1">
+      <h2>Pasos 2 y 3: los jugadores</h2>
+      <p>Primero «Tus datos» y después «Tu compañero/a»:</p>
+      <ul className="ml-lista">
+        <li>Nombre, apellido, cédula, correo y teléfono (WhatsApp).</li>
+        <li>Lado de juego y, si el torneo la pide, talla de franela.</li>
+        <li>Alergias, para la comida del torneo.</li>
+        <li>
+          <b>Tu nivel y torneos</b> es opcional: ayuda a sembrar el cuadro.
+        </li>
+      </ul>
+      <p className="ml-chico">Si falta un dato o está mal escrito, el campo se marca en rojo y dice qué corregir.</p>
+    </ConCaptura>,
+  ),
+  pagina(
+    "Inscripción online",
+    <ConCaptura src="insc-fvp" alt="Aviso: es 4ta en el ranking FVP y no puede jugar 5ta">
+      <h2>El chequeo FVP</h2>
+      <p>Al escribir la cédula, la app la busca en el ranking FVP:</p>
+      <ul className="ml-lista">
+        <li>
+          <b>En verde:</b> está en la lista y puede jugar esa categoría.
+        </li>
+        <li>
+          <b>En rojo:</b> su categoría FVP es más alta. No deja seguir: hay que volver al paso 1 y elegir otra.
+        </li>
+        <li>
+          <b>«No apareces en la lista FVP»:</b> igual se inscribe y el staff revisa su nivel.
+        </li>
+      </ul>
+      <Nota titulo="Otras reglas">
+        Mixto pide un hombre y una mujer. Master y Junior piden fecha de nacimiento. Nadie puede estar dos veces en la misma categoría.
+      </Nota>
+    </ConCaptura>,
+  ),
+  pagina(
+    "Inscripción online",
+    <ConCaptura src="insc-reglamento" alt="Paso 4: revisión de los datos y el reglamento">
+      <h2>Paso 4: revisar y aceptar</h2>
+      <ul className="ml-lista">
+        <li>Un resumen de la categoría y los dos jugadores. Tocando un bloque se vuelve a ese paso para corregirlo.</li>
+        <li>Las reglas del torneo: partidos garantizados, formato, tolerancia para W.O. y franela.</li>
+        <li>
+          Para seguir, marcan «Los dos leímos y aceptamos el reglamento».
+        </li>
+      </ul>
+    </ConCaptura>,
+  ),
+  pagina(
+    "Inscripción online",
+    <ConCaptura src="insc-pago" alt="Paso 5: pago con Pago Móvil y datos para copiar">
+      <h2>Paso 5: el pago</h2>
+      <Pasos
+        items={[
+          <>Eligen cómo pagar entre los métodos que activó el club: Pago Móvil, transferencia, Zelle, Binance o efectivo.</>,
+          <>
+            Copian los datos con <B>Copiar</B> y pagan desde su banco.
+          </>,
+          <>Escriben la referencia y, si quieren, suben la foto del comprobante.</>,
+          <>
+            <B>Inscribir dupla</B>.
+          </>,
+        ]}
+      />
+      <p className="ml-chico">¿Pagan después? Se inscriben igual: el cupo queda reservado hasta que el staff reciba el pago.</p>
+    </ConCaptura>,
+  ),
+  pagina(
+    "Inscripción online",
+    <ConCaptura src="insc-listo" alt="Dupla inscrita con su código LM">
+      <h2>Listo: el código</h2>
+      <p>
+        Al terminar reciben un código como <b>LM-FGGE</b>. Tocándolo se copia.
+      </p>
+      <ul className="ml-lista">
+        <li>
+          <B>Avisar por WhatsApp</B> manda al club el código y el comprobante.
+        </li>
+        <li>
+          <B>Inscribir otra dupla</B> empieza un formulario nuevo.
+        </li>
+      </ul>
+      <Nota titulo="Guárdalo">Con el código se consulta cómo va la inscripción.</Nota>
+    </ConCaptura>,
+  ),
+  pagina(
+    "Inscripción online",
+    <ConCaptura src="insc-consulta" alt="Mi inscripción con el estado Pago por verificar">
+      <h2>¿Cómo va mi inscripción?</h2>
+      <p>
+        En la página del torneo, <B>Mi inscripción</B> arriba a la derecha. Escriben el código (o tocan uno guardado en ese teléfono).
+      </p>
+      <ul className="ml-lista">
+        <li>
+          <b>Pago por verificar:</b> el staff está revisando el pago.
+        </li>
+        <li>
+          <b>Sin pago:</b> el cupo está reservado, falta pagar.
+        </li>
+        <li>
+          <b>Confirmada:</b> ya están en el torneo.
+        </li>
+        <li>
+          <b>Rechazada:</b> con el motivo que escribió el staff.
+        </li>
+      </ul>
+    </ConCaptura>,
+  ),
+  pagina(
+    "Inscripción online",
+    <ConCaptura src="insc-aviso-inscritos" alt="Inscritos con el aviso Inscripciones online, 5 por revisar">
+      <h2>Para el staff: dónde llegan</h2>
+      <p>
+        En el torneo, <B>Inscritos</B> muestra arriba <B>Inscripciones online</B> con cuántas hay por revisar. Tócalo para abrir el
+        panel.
+      </p>
+      <p>
+        Las duplas que llegan por la web <b>no entran solas al cuadro</b>: entran a Inscritos cuando el staff las confirma.
+      </p>
+    </ConCaptura>,
+  ),
+  pagina(
+    "Inscripción online",
+    <ConCaptura src="insc-panel" alt="Panel Inscripciones online con enlace, QR y contadores">
+      <h2>El panel</h2>
+      <ul className="ml-lista">
+        <li>
+          <b>Enlace de inscripción</b> con su QR: <B>Abrir página</B> o <B>Compartir</B> por WhatsApp.
+        </li>
+        <li>Por verificar, sin pago, confirmadas, lo cobrado y lo que falta por cobrar.</li>
+        <li>
+          <B>Tallas y alergias</B>: las franelas a encargar y quién tiene alergias.
+        </li>
+        <li>
+          <B>Excel (CSV)</B> descarga todas las inscripciones.
+        </li>
+        <li>Abajo, la lista con filtros y buscador por nombre, cédula o código.</li>
+      </ul>
+    </ConCaptura>,
+  ),
+  pagina(
+    "Inscripción online",
+    <ConCaptura src="insc-detalle" alt="Detalle de una inscripción con pago, jugadores y Confirmar e inscribir">
+      <h2>Revisar y confirmar</h2>
+      <p>Toca una inscripción: ves el pago, la referencia, el comprobante y los datos de cada jugador con su WhatsApp y correo.</p>
+      <ul className="ml-lista">
+        <li>
+          <B>Confirmar e inscribir</B>: el pago llegó. La dupla entra a Inscritos con el mismo chequeo FVP que una carga a mano.
+        </li>
+        <li>
+          <B>Sin pago</B>: el pago no llegó. Queda reservada.
+        </li>
+        <li>
+          <B>✕</B> rechaza. Pide un motivo, que la dupla ve con su código.
+        </li>
+      </ul>
+      <p className="ml-chico">Si la categoría ya se sorteó, avisa: al confirmar hay que volver a sortear para que entre al cuadro.</p>
+    </ConCaptura>,
+  ),
+  pagina(
+    "Inscripción online",
+    <ConCaptura src="insc-ajustes" alt="Ajustes del torneo, sección Inscripción online">
+      <h2>Abrir y configurar</h2>
+      <p>
+        En el torneo, ⚙ <B>Ajustes</B> → <b>Inscripción online</b>:
+      </p>
+      <ul className="ml-lista">
+        <li>
+          El interruptor «Recibir inscripciones por la web» la abre o la cierra.
+        </li>
+        <li>Precio por dupla, cierre de inscripciones, frase, presentación, premios y qué incluye.</li>
+        <li>Talla sí o no, categorías abiertas y su cupo.</li>
+        <li>Métodos de pago con sus datos, WhatsApp, Instagram y reglamento.</li>
+      </ul>
+      <p>
+        Al final, <B>Guardar ajustes</B>.
+      </p>
+    </ConCaptura>,
+  ),
+
+  // 7 · Torneos: día de juego
+  capitulo(
+    "7",
     "Torneos: día de juego",
     "Llamar, anotar, reprogramar y cerrar.",
     <ConCaptura src="to-envivo" alt="En vivo: partidos jugados, pistas y atraso">
@@ -827,7 +1054,7 @@ const CONTENIDO: Pagina[] = [
           <>
             <B>Llamar a pista</B>: el partido queda «Llamado» y sale en la TV.
           </>,
-          <>El árbitro de esa pista lo empieza y lo anota en su tablet (capítulo 7).</>,
+          <>El árbitro de esa pista lo empieza y lo anota en su tablet (capítulo 8).</>,
           <>Si no hay árbitro, el staff toca el partido → «Anotar punto a punto», o carga el resultado final con sets.</>,
           <>Al terminar, el ganador avanza solo en el cuadro y la pista llama al siguiente.</>,
         ]}
@@ -836,7 +1063,7 @@ const CONTENIDO: Pagina[] = [
         Toca el partido en Cuadros o Horarios y vuelve a guardar el resultado. Queda en el historial.
       </Nota>
       <Nota titulo="El modo TV de cada pista" tono="cielo">
-        El ícono de pantalla en la tarjeta abre la TV de esa pista (capítulo 8).
+        El ícono de pantalla en la tarjeta abre la TV de esa pista (capítulo 9).
       </Nota>
     </>,
   ),
@@ -941,9 +1168,9 @@ const CONTENIDO: Pagina[] = [
     </ConCaptura>,
   ),
 
-  // 7 · Árbitros
+  // 8 · Árbitros
   capitulo(
-    "7",
+    "8",
     "Árbitros",
     "La tablet de cada pista: un toque por punto.",
     <ConCaptura src="arb-quien" alt="Pantalla ¿Quién eres? con los árbitros del club">
@@ -1080,9 +1307,9 @@ const CONTENIDO: Pagina[] = [
     </ConCaptura>,
   ),
 
-  // 8 · Pantallas
+  // 9 · Pantallas
   capitulo(
-    "8",
+    "9",
     "Las pantallas del club",
     "La tele del bar y la pantalla de cada pista.",
     <>
@@ -1110,9 +1337,9 @@ const CONTENIDO: Pagina[] = [
     </>,
   ),
 
-  // 9 · Jugadores y público
+  // 10 · Jugadores y público
   capitulo(
-    "9",
+    "10",
     "Para jugadores y público",
     "Lo que ve quien no es del staff.",
     <ConCaptura src="pub-evento" alt="Cuadro del americano en modo espectador">
@@ -1173,9 +1400,9 @@ const CONTENIDO: Pagina[] = [
     </ConCaptura>,
   ),
 
-  // 10 · Dueño
+  // 11 · Dueño
   capitulo(
-    "10",
+    "11",
     "Para el dueño",
     "Cómo va el club, en una pantalla.",
     <ConCaptura src="to-resumen" alt="Resumen para el club en Stats">
@@ -1218,9 +1445,9 @@ const CONTENIDO: Pagina[] = [
     </>,
   ),
 
-  // 11 · Sin señal
+  // 12 · Sin señal
   capitulo(
-    "11",
+    "12",
     "Sin señal y otros imprevistos",
     "La app sigue funcionando aunque se corte internet.",
     <>
@@ -1272,9 +1499,9 @@ const CONTENIDO: Pagina[] = [
     </>,
   ),
 
-  // 12 · FAQ
+  // 13 · FAQ
   capitulo(
-    "12",
+    "13",
     "Preguntas frecuentes",
     "Lo que más se pregunta en la pista.",
     <dl className="ml-faq">
@@ -1304,16 +1531,13 @@ const CONTENIDO: Pagina[] = [
     </dl>,
   ),
 
-  // 13 · Lo que viene
+  // 14 · Lo que viene
   capitulo(
-    "13",
+    "14",
     "Lo que viene",
     "Lo que todavía no hace la app.",
     <>
       <ul className="ml-lista">
-        <li>
-          <b>Inscripción online:</b> hoy inscribe el staff. Está en camino una página para que cada jugador se inscriba solo.
-        </li>
         <li>
           <b>Base de datos del club:</b> Juan conecta la app con PadelReserve (Supabase). Mientras tanto corre en modo de prueba, en la memoria del servidor.
         </li>

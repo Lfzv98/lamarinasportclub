@@ -75,6 +75,8 @@ export function Formulario({ data, onListo }: { data: ApiInscripcionPublica; onL
   const [errorServidor, setErrorServidor] = useState<string[] | null>(null);
   const [comprobante, setComprobante] = useState<string | null>(null);
   const [web, setWeb] = useState("");
+  // Si el ranking FVP dice que el jugador no puede jugar esta categoría, no se avanza.
+  const [fvpBloquea, setFvpBloquea] = useState<string | null>(null);
   const arriba = useRef<HTMLDivElement>(null);
   const cargado = useRef(false);
 
@@ -108,6 +110,7 @@ export function Formulario({ data, onListo }: { data: ApiInscripcionPublica; onL
   const mover = (a: number) => {
     setPaso(a);
     setErrores({});
+    setFvpBloquea(null);
     requestAnimationFrame(() => arriba.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
@@ -123,10 +126,12 @@ export function Formulario({ data, onListo }: { data: ApiInscripcionPublica; onL
         if (otra.cedula && otra.cedula === j.cedula) e.cedula = "Es la misma cédula del jugador 1.";
         if (cat?.rama === "MIXTO" && j.genero && otra.genero === j.genero) e.genero = "En Mixto la dupla es un hombre y una mujer.";
       }
+      if (fvpBloquea && !e.cedula) e.fvp = fvpBloquea;
     }
     if (paso === 3 && !b.acepta) e.acepta = "Para inscribirse, los dos deben aceptar el reglamento.";
     setErrores(e);
     if (Object.keys(e).length) vibrar([20, 40, 20]);
+    if (e.fvp) arriba.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     return !Object.keys(e).length;
   };
 
@@ -216,6 +221,7 @@ export function Formulario({ data, onListo }: { data: ApiInscripcionPublica; onL
               errores={errores}
               pideTalla={cfg.pideTalla}
               generoFijo={generoFijo}
+              onFvp={setFvpBloquea}
             />
           )}
           {paso === 3 && <PasoReglamento b={b} cat={cat!} cfg={data.config!} acepta={b.acepta} setAcepta={(v) => {
@@ -407,6 +413,7 @@ function PasoJugador({
   errores,
   pideTalla,
   generoFijo,
+  onFvp,
 }: {
   n: 1 | 2;
   torneoId: string;
@@ -416,8 +423,11 @@ function PasoJugador({
   errores: Record<string, string>;
   pideTalla: boolean;
   generoFijo: "M" | "F" | null;
+  onFvp: (bloquea: string | null) => void;
 }) {
   const fvp = useFvp(torneoId, j.cedula, cat.id);
+  const bloquea = fvp.r?.valida && fvp.r.encontrado && fvp.r.puede === false ? `Eres ${fvp.r.categoria} en el ranking FVP: no puedes jugar ${cat.nombre}.` : null;
+  useEffect(() => onFvp(bloquea), [bloquea, onFvp]);
   const t = (k: keyof JugadorInscripcion) => ({
     value: (j[k] as string | undefined) ?? "",
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => set({ [k]: e.target.value }),
@@ -442,7 +452,7 @@ function PasoJugador({
           </Campo>
         </div>
         <Campo etiqueta="Cédula de identidad" error={errores.cedula} ayuda={<FvpBadge {...fvp} categoria={cat.nombre} />}>
-          {(id) => <Entrada id={id} icono={IdCard} placeholder="V-18.456.789" inputMode="text" autoCapitalize="characters" invalido={!!errores.cedula} {...t("cedula")} />}
+          {(id) => <Entrada id={id} icono={IdCard} placeholder="V-18.456.789" inputMode="text" autoCapitalize="characters" invalido={!!errores.cedula || !!errores.fvp} {...t("cedula")} />}
         </Campo>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Campo etiqueta="Correo" error={errores.correo}>
