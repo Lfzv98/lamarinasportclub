@@ -18,7 +18,14 @@ for (const [nombre, viewport] of [["celular", { width: 390, height: 844 }], ["de
   const boton = (et) => p.locator(`button[aria-label^='${et}:']`);
   const dialogo = p.getByRole("dialog");
   await p.goto(`${U}/setup?paso=2`, { waitUntil: "networkidle" }); await espera(1000);
-  await p.locator("text=Rellenar con jugadores demo").click(); await espera();
+  // 8 jugadores escritos a mano (separados por coma); en Mixto, 4 mujeres y 4 hombres.
+  const uno = p.locator("input[aria-label='Agregar jugador']");
+  if (await uno.count()) { await uno.fill("Ana Uno, Bea Dos, Carla Tres, Diana Cuatro, Elena Cinco, Flor Seis, Gaby Siete, Hilda Ocho"); await uno.press("Enter"); }
+  else {
+    await p.locator("input[aria-label='Agregar mujer']").fill("Ana Uno, Bea Dos, Carla Tres, Diana Cuatro"); await p.locator("input[aria-label='Agregar mujer']").press("Enter");
+    await p.locator("input[aria-label='Agregar hombre']").fill("Luis Uno, Pedro Dos, Juan Tres, José Cuatro"); await p.locator("input[aria-label='Agregar hombre']").press("Enter");
+  }
+  await espera();
   await p.locator("footer button:has-text('Siguiente')").click(); await espera(1000);
   ok(await boton("Fecha").count() === 1 && (await boton("Inicio").count()) === 1 && (await boton("Fin").count()) === 1, `${nombre}: botones Fecha, Inicio y Fin`);
   await p.screenshot({ path: `${out}/horario-${nombre}.png`, fullPage: true });

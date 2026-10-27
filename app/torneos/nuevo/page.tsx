@@ -173,7 +173,7 @@ function NuevoTorneo() {
         <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
           {dias.map((d) => (
             <li key={d.fecha} className="glass flex items-center gap-3 rounded-2xl p-3">
-              <span className="w-24 shrink-0 font-semibold capitalize">{fechaCorta(d.fecha)}</span>
+              <span className="w-24 shrink-0 font-semibold">{fechaCorta(d.fecha)}</span>
               <input
                 type="time"
                 step={900}

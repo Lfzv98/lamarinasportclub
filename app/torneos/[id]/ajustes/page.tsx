@@ -142,7 +142,7 @@ function Ajustes({ torneo }: { torneo: Torneo }) {
         {b.dias.map((d, i) => (
           <li key={i} className="glass flex flex-wrap items-center gap-2 rounded-2xl p-3">
             <input type="date" className="input !w-auto !py-2 text-sm [color-scheme:dark]" value={d.fecha} onChange={(e) => e.target.value && setDia(i, { fecha: e.target.value })} disabled={conJuego.has(d.fecha)} />
-            <span className="text-sm capitalize text-white/50">{fechaCorta(d.fecha)}</span>
+            <span className="text-sm text-white/50">{fechaCorta(d.fecha)}</span>
             <div className="ml-auto flex items-center gap-2">
               <input type="time" step={1800} className="input !w-auto !px-3 !py-2 text-sm [color-scheme:dark]" value={d.inicio} onChange={(e) => setDia(i, { inicio: e.target.value })} />
               <span className="text-white/30">–</span>

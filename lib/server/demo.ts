@@ -36,6 +36,8 @@ function correr<T>(x: T, dias: number, ids: Map<string, string>): T {
 }
 
 export async function cargarDemo(): Promise<{ americanos: number; torneos: number; arbitros: number; tenis: number }> {
+  // Volver a cargar reemplaza los de prueba anteriores: así no se duplican si se toca dos veces.
+  await borrarDemo();
   const dias = Math.round((new Date(`${hoyClub()}T12:00:00Z`).getTime() - new Date(`${DIA_BASE}T12:00:00Z`).getTime()) / 86_400_000);
   const ahora = new Date().toISOString();
   const marca = Date.now().toString(36);

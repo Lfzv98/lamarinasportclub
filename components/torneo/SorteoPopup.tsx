@@ -10,12 +10,19 @@ import { Switch } from "@/components/ui/Switch";
 import { toast } from "@/components/ui/Toaster";
 import { sonar, vibrar } from "@/lib/feedback";
 import { nombreCategoria } from "@/lib/torneo/categorias";
-import { duplasActivas, proponerFormato, resumenFormato } from "@/lib/torneo/cuadro";
+import { duplasActivas, proponerFormato, resumenFormato, tamanosGrupos } from "@/lib/torneo/cuadro";
 import { programarTorneo } from "@/lib/torneo/programacion";
 import { categoria, nombreDupla, publicarCategoria, sortearCategoria } from "@/lib/torneo/torneo";
 import { useAmericanos } from "@/lib/store";
 import { useTorneos } from "@/lib/torneosStore";
 import type { ConfigCuadro, FormatoCuadro, Origen, Torneo } from "@/types/torneo";
+
+/** "3 grupos de 4", "4 grupos de 3 y 4": lo que de verdad sale con n duplas y ese tamaño. */
+function textoGrupos(n: number, t: 3 | 4): string {
+  const g = tamanosGrupos(n, t);
+  const min = Math.min(...g), max = Math.max(...g);
+  return `${g.length} grupo${g.length === 1 ? "" : "s"} de ${min === max ? min : `${min} y ${max}`}`;
+}
 
 const FORMATOS: { id: FormatoCuadro; label: string }[] = [
   { id: "GRUPOS_LLAVE", label: "Grupos + llave" },
@@ -136,7 +143,11 @@ export function SorteoPopup({ torneo, categoriaId, abierto, onClose }: { torneo:
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <p className="mb-1 text-xs text-white/50">Duplas por grupo</p>
-                  <Segmented opciones={[{ id: "3", label: "Grupos de 3" }, { id: "4", label: "Grupos de 4" }]} valor={String(config.tamanoGrupo)} onChange={(v) => set({ tamanoGrupo: Number(v) as 3 | 4 })} />
+                  {textoGrupos(n, 3) === textoGrupos(n, 4) ? (
+                    <p className="rounded-2xl bg-white/5 px-4 py-2.5 text-sm font-semibold text-white/80">{textoGrupos(n, 3)}</p>
+                  ) : (
+                    <Segmented opciones={[{ id: "3", label: textoGrupos(n, 3) }, { id: "4", label: textoGrupos(n, 4) }]} valor={String(config.tamanoGrupo)} onChange={(v) => set({ tamanoGrupo: Number(v) as 3 | 4 })} />
+                  )}
                 </div>
                 <div>
                   <p className="mb-1 text-xs text-white/50">Pasan por grupo</p>

@@ -67,7 +67,7 @@ export function DatosPrueba({ onCambio }: { onCambio?: () => void }) {
             árbitros de ejemplo (código{" "}
             <b className="text-white/85">1234</b>). Si no hay PIN de árbitros,
             queda el <b className="text-white/85">2468</b>. Se borra con un
-            toque y no toca lo tuyo.
+            toque y no toca lo tuyo. Si los cargas otra vez, empiezan de cero.
           </p>
         </div>
         <div className="grid gap-2 sm:grid-cols-2">

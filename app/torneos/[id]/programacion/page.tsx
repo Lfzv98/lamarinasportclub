@@ -9,7 +9,7 @@ import { MatchCard, ResultadoHoja } from "@/components/torneo/piezas";
 import { nombrePista } from "@/lib/torneo/imprevistos";
 import { fechaCorta, TorneoShell } from "@/components/torneo/TorneoShell";
 import { nombreCorto } from "@/lib/torneo/categorias";
-import { atrasoMinutos, programarTorneo } from "@/lib/torneo/programacion";
+import { atrasoMinutos, fechaHoraLocal, programarTorneo } from "@/lib/torneo/programacion";
 import { categoria, dupla, nombreJugador } from "@/lib/torneo/torneo";
 import { useEsStaff } from "@/lib/store";
 import { useTorneos } from "@/lib/torneosStore";
@@ -23,7 +23,7 @@ export default function ProgramacionPage({ params }: { params: Promise<{ id: str
 function Programacion({ torneo }: { torneo: Torneo }) {
   const esStaff = useEsStaff();
   const guardar = useTorneos((s) => s.guardar);
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = fechaHoraLocal(Date.now()).fecha;
   const [dia, setDia] = useState(torneo.dias.find((d) => d.fecha >= hoy)?.fecha ?? torneo.dias[0]?.fecha ?? "");
   const [buscar, setBuscar] = useState("");
   const [abierto, setAbierto] = useState<string | null>(null);
@@ -41,6 +41,12 @@ function Programacion({ torneo }: { torneo: Torneo }) {
     return ids.some((id) => nombreJugador(torneo.jugadores.find((j) => j.id === id)).toLowerCase().includes(q));
   };
   const delDia = partidos.filter((p) => p.programacion?.fecha === dia && coincide(p));
+  // "¿Cuándo juego?": si el nombre juega otros días, se ofrecen esos días.
+  const otrosDias = q
+    ? torneo.dias
+        .map((d) => ({ fecha: d.fecha, n: partidos.filter((p) => p.programacion?.fecha === d.fecha && coincide(p)).length }))
+        .filter((d) => d.fecha !== dia && d.n > 0)
+    : [];
   const horas = [...new Set(delDia.map((p) => p.programacion!.hora))].sort();
   const pistas = torneo.canchas.filter((c) => c.activa);
   const atraso = atrasoMinutos(torneo);
@@ -66,7 +72,7 @@ function Programacion({ torneo }: { torneo: Torneo }) {
                 onClick={() => setDia(d.fecha)}
                 className={clsx("shrink-0 rounded-xl border px-3 py-2 text-left text-sm transition", d.fecha === dia ? "seleccion sobre-marca" : "border-white/10")}
               >
-                <span className={clsx("block font-semibold capitalize", d.fecha === dia && "text-lima")}>{fechaCorta(d.fecha)}</span>
+                <span className={clsx("block font-semibold", d.fecha === dia && "text-lima")}>{fechaCorta(d.fecha)}</span>
                 <span className="block text-[11px] text-white/50">
                   {d.inicio}–{d.fin} · {n} partidos
                 </span>
@@ -94,6 +100,16 @@ function Programacion({ torneo }: { torneo: Torneo }) {
           <Search className="size-4 text-white/40" />
           <input className="min-w-0 flex-1 bg-transparent py-2.5 text-sm outline-none placeholder:text-white/35" placeholder="¿Cuándo juego? Busca tu nombre" value={buscar} onChange={(e) => setBuscar(e.target.value)} />
         </label>
+        {otrosDias.length > 0 && (
+          <span className="flex flex-wrap items-center gap-2 text-xs text-white/55">
+            También juega:
+            {otrosDias.map((d) => (
+              <button key={d.fecha} className="chip text-neon" onClick={() => setDia(d.fecha)}>
+                {fechaCorta(d.fecha)} · {d.n}
+              </button>
+            ))}
+          </span>
+        )}
         {atraso >= 10 && (
           <span className="chip border-coral/30 bg-coral/10 text-coral">
             <Clock className="size-3" /> Atraso de {atraso} min
@@ -111,7 +127,7 @@ function Programacion({ torneo }: { torneo: Torneo }) {
       {horas.length === 0 ? (
         <div className="glass mt-6 flex flex-col items-center gap-2 rounded-3xl p-10 text-center text-white/55">
           <CalendarClock className="size-8 text-neon" />
-          {q ? "No hay partidos con ese nombre este día." : "No hay partidos programados este día."}
+          {q ? (otrosDias.length ? "Ese nombre no juega este día: toca uno de los días de arriba." : "No hay partidos con ese nombre.") : "No hay partidos programados este día."}
         </div>
       ) : (
         <div className="mt-5 space-y-4">
