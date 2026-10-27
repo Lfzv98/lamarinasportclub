@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Flag, Shuffle, Ticket, Trophy } from "lucide-react";
+import { ArrowRight, Flag, Settings, Shuffle, Ticket, Trophy } from "lucide-react";
 import { InstallButton } from "@/components/InstallButton";
 import { Logo } from "@/components/Logo";
 import { MenuApp } from "@/components/MenuApp";
@@ -63,6 +63,9 @@ export default function Home() {
         <header className="relative mx-auto flex max-w-5xl items-center justify-end gap-2 px-4 py-3 sm:px-6">
           <InstallButton />
           <StaffChip />
+          <Link href="/club" className="btn-ghost !p-2.5" aria-label="Ajustes (staff)" title="Ajustes (staff)">
+            <Settings className="size-5" />
+          </Link>
           <MenuApp />
         </header>
         <motion.div

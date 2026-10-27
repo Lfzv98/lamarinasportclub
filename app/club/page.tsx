@@ -61,10 +61,10 @@ function Club() {
       </header>
 
       <h1 className="mt-6 font-display text-3xl font-bold tracking-tight">Ajustes</h1>
-      <p className="mt-2 text-white/50">Solo staff. Pistas, horarios y contacto de {borrador.nombre}, claves de torneos, árbitros del club y datos de prueba.</p>
+      <p className="mt-2 text-white/50">Solo staff. Pistas, horarios y contacto de {borrador.nombre}, claves de torneos, árbitros del club y modo prueba.</p>
       <div className="mt-4 flex flex-wrap gap-2">
         <a href="#datos-prueba" className="chip hover:border-neon/40 hover:text-white">
-          <FlaskConical className="size-3" /> Datos de prueba
+          <FlaskConical className="size-3" /> Modo prueba
         </a>
         <a href="#arbitros" className="chip hover:border-neon/40 hover:text-white">
           <Flag className="size-3" /> Árbitros del club
@@ -73,6 +73,8 @@ function Club() {
           <KeyRound className="size-3" /> Claves de torneos
         </a>
       </div>
+
+      <DatosPrueba onCambio={() => setDemo((n) => n + 1)} />
 
       <h2 className="label mt-10">Pistas</h2>
       <ul className="space-y-2">
@@ -201,7 +203,6 @@ function Club() {
 
       <ArbitrosClub key={demo} />
 
-      <DatosPrueba onCambio={() => setDemo((n) => n + 1)} />
 
       <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-white/5 bg-fondo/85 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur-xl">
         <div className="mx-auto max-w-2xl px-4 sm:px-6">
