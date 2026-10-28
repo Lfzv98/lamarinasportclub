@@ -64,6 +64,8 @@ export interface Pareja {
   nombre?: string;
   /** Dupla fija retirada a mitad del evento. */
   retirada?: boolean;
+  /** Foto de la dupla (opcional, solo dupla fija). Si falta, la UI muestra la de cada jugador. */
+  fotoUrl?: string | null;
 }
 
 export interface SetScore {
@@ -146,6 +148,8 @@ export interface FilaPosicion {
   entidadId: string;
   nombre: string;
   fotoUrls: (string | null | undefined)[];
+  /** Foto de la dupla (dupla fija): reemplaza a las de cada jugador. */
+  fotoDupla?: string | null;
   posicion: number;
   pj: number;
   pg: number;
@@ -206,6 +210,15 @@ export interface ContactoClub {
   web?: string;
 }
 
+/** Valla publicitaria del Modo TV de americanos (como las vallas LED de un estadio). */
+export interface Valla {
+  id: string;
+  /** Marca (se muestra si no hay imagen). */
+  nombre: string;
+  /** URL de la imagen subida en Ajustes (/api/club/vallas/:id?v=). */
+  img?: string | null;
+}
+
 /** Configuración del club. `dias` va indexado como Date#getDay(): 0 = domingo … 6 = sábado. */
 export interface ConfigClub {
   nombre: string;
@@ -214,6 +227,8 @@ export interface ConfigClub {
   minutosEntreRondas: number;
   pistas: PistaClub[];
   contacto: ContactoClub;
+  /** Hasta 6 vallas publicitarias para el Modo TV de americanos. */
+  vallas?: Valla[];
   actualizadoEn: string;
 }
 

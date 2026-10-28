@@ -4,7 +4,7 @@ import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import { Camera, Mars, RotateCcw, UserMinus, UserPlus, Venus, X } from "lucide-react";
 import { useState } from "react";
-import { Avatar } from "@/components/Avatar";
+import { Avatar, AvatarPareja } from "@/components/Avatar";
 import { TomarFoto } from "@/components/Foto";
 import { toast } from "@/components/ui/Toaster";
 import {
@@ -21,7 +21,7 @@ import { vibrar } from "@/lib/feedback";
 import { subirFoto } from "@/lib/fotos";
 import { partidosPorRonda } from "@/lib/rotation";
 import { nivelParaSuma } from "@/lib/categories";
-import type { EventoAmericano, Genero, Jugador } from "@/types/americano";
+import type { EventoAmericano, Genero, Jugador, Pareja } from "@/types/americano";
 
 /**
  * Cambios de plantel a mitad del evento: retirar a alguien (lesión, se tuvo que
@@ -133,12 +133,7 @@ export function PlantelSheet({
               {dupla
                 ? evento.parejas.map((p) => (
                     <li key={p.id} className={clsx("glass flex items-center gap-3 rounded-2xl px-3 py-2", p.retirada && "opacity-45")}>
-                      <span className="flex -space-x-2">
-                        {p.jugadorIds.map((id) => {
-                          const j = porId.get(id);
-                          return j ? <FotoJugador key={id} evento={evento} j={j} onCambio={onCambio} /> : <Avatar key={id} nombre="?" size={30} />;
-                        })}
-                      </span>
+                      <FotoPareja evento={evento} p={p} nombres={p.jugadorIds.map((id) => porId.get(id)?.nombre ?? "?")} fotos={p.jugadorIds.map((id) => porId.get(id)?.fotoUrl)} onCambio={onCambio} />
                       <span className="flex-1 truncate text-sm font-medium">{p.nombre}</span>
                       {p.retirada ? (
                         <span className="chip">Retirada</span>
@@ -193,6 +188,28 @@ export function PlantelSheet({
         </>
       )}
     </AnimatePresence>
+  );
+}
+
+/** Dupla fija: una sola foto de los dos juntos (sale en el cuadro, el ranking y la TV). */
+function FotoPareja({ evento, p, nombres, fotos, onCambio }: { evento: EventoAmericano; p: Pareja; nombres: string[]; fotos: (string | null | undefined)[]; onCambio: (fn: (e: EventoAmericano) => EventoAmericano, mensaje: string) => void }) {
+  return (
+    <TomarFoto
+      className="relative shrink-0 rounded-full"
+      etiqueta={`Foto de ${p.nombre ?? "la dupla"}`}
+      onFoto={async (img) => {
+        const r = await subirFoto(evento.id, "dupla", p.id, img);
+        if (!r.url) return toast(r.error!, "error");
+        onCambio((e) => ({ ...e, parejas: e.parejas.map((x) => (x.id === p.id ? { ...x, fotoUrl: r.url } : x)) }), `Foto de ${p.nombre ?? "la dupla"} lista`);
+      }}
+    >
+      <AvatarPareja nombres={nombres} fotos={fotos} dupla={p.fotoUrl} size={30} />
+      {!p.fotoUrl && (
+        <span className="absolute -bottom-1 -right-1 flex size-4 items-center justify-center rounded-full bg-lima text-marino-2">
+          <Camera className="size-2.5" />
+        </span>
+      )}
+    </TomarFoto>
   );
 }
 

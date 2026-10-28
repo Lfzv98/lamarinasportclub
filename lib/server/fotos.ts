@@ -4,8 +4,8 @@ import type { Torneo } from "@/types/torneo";
 import { getRepository, getTorneosRepository } from "./repository";
 
 /**
- * Fotos tomadas en el club: la de cada dupla de un torneo (la toma el árbitro en la pista o el staff)
- * y la de cada jugador de un torneo o americano (staff). JPEG comprimido en el dispositivo y
+ * Fotos tomadas en el club: la de cada dupla de un torneo (la toma el árbitro en la pista o el staff),
+ * la de cada jugador de un torneo o americano y la de cada dupla fija de un americano (staff). JPEG comprimido en el dispositivo y
  * guardado en `eventos_extras`; se sirve en /api/fotos/:evento/:clave?v=versión.
  */
 export interface FotoGuardada {

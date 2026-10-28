@@ -24,7 +24,7 @@ export const GET = manejar(async (req: Request) => {
 
 /**
  * POST /api/fotos { eventoId, tipo: "dupla" | "jugador", id, img: "data:image/jpeg;base64,…" } → { url }
- * Dupla de un torneo: el staff o un árbitro del torneo. Jugador (torneo o americano): el staff.
+ * Dupla de un torneo: el staff o un árbitro del torneo. Jugador (torneo o americano) y dupla fija de un americano: el staff.
  */
 export const POST = manejar(async (req: Request) => {
   const b = (await leerJson(req, 600_000)) as { eventoId?: unknown; tipo?: unknown; id?: unknown; img?: unknown } | null;
@@ -44,10 +44,12 @@ export const POST = manejar(async (req: Request) => {
     const existe = tipo === "dupla" ? t.categorias.some((c) => c.duplas.some((d) => d.id === b.id)) : t.jugadores.some((j) => j.id === b.id);
     if (por && !existe) throw new ErrorApi(404, "No está en este torneo.");
   } else {
-    if (tipo !== "jugador") throw new ErrorApi(400, "En un americano las fotos son por jugador.");
-    if (por && !ev.americano.jugadores.some((j) => j.id === b.id)) throw new ErrorApi(404, "Ese jugador no está en el americano.");
+    const a = ev.americano;
+    if (tipo === "dupla" && a.modalidad !== "DUPLA_FIJA") throw new ErrorApi(400, "En un americano rotativo las fotos son por jugador.");
+    const existe = tipo === "dupla" ? a.parejas.some((p) => p.id === b.id) : a.jugadores.some((j) => j.id === b.id);
+    if (por && !existe) throw new ErrorApi(404, tipo === "dupla" ? "Esa dupla no está en el americano." : "Ese jugador no está en el americano.");
   }
-  if (!por) throw new ErrorApi(401, tipo === "dupla" ? "Solo el staff o los árbitros del torneo pueden subir fotos." : "Solo el staff puede subir fotos.");
+  if (!por) throw new ErrorApi(401, tipo === "dupla" && "torneo" in ev ? "Solo el staff o los árbitros del torneo pueden subir fotos." : "Solo el staff puede subir fotos.");
   if (!/^data:image\/(jpeg|webp|png);base64,[A-Za-z0-9+/=]+$/.test(b.img)) throw new ErrorApi(422, "La foto debe ser JPEG, WebP o PNG.");
   if (b.img.length > MAX_FOTO) throw new ErrorApi(413, "La foto pesa demasiado.");
   const x = await getTorneosRepository().guardarExtra({
