@@ -29,6 +29,22 @@ const nuevo = async (ctx) => {
   p.on("dialog", (d) => d.accept(d.type() === "prompt" ? "REHACER" : undefined));
   return p;
 };
+/** Foto de prueba (JPEG) dibujada en el navegador. */
+async function imagen(p, texto, color = "#2a6") {
+  const data = await p.evaluate(([texto, color]) => {
+    const c = document.createElement("canvas");
+    c.width = 600;
+    c.height = 600;
+    const x = c.getContext("2d");
+    x.fillStyle = color;
+    x.fillRect(0, 0, 600, 600);
+    x.fillStyle = "#fff";
+    x.font = "bold 160px sans-serif";
+    x.fillText(texto, 60, 360);
+    return c.toDataURL("image/jpeg");
+  }, [texto, color]);
+  return { name: `${texto}.jpg`, mimeType: "image/jpeg", buffer: Buffer.from(data.split(",")[1], "base64") };
+}
 const MOV = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 };
 const S = await b.newContext(MOV);
 if (!(await S.request.post(`${U}/api/staff/login`, { data: { pin: PIN } })).ok()) throw new Error("No se pudo ingresar como staff");
@@ -57,10 +73,14 @@ ok(await p.locator("text=Duplas por grupo").count() > 0, "asistente: paso de dup
 await p.click("button:has-text('Siguiente')");
 await p.waitForTimeout(400);
 ok(await p.locator("text=Duplas por grupo").count() > 0, "asistente: sin duplas no deja avanzar");
+ok((await p.getByRole("button", { name: "Foto de la dupla" }).count()) > 0, "asistente: botón de cámara para la foto de la dupla");
 const NOMBRES = ["Luis", "Ana", "Juan", "Sofía", "Pedro", "Carla", "José", "María", "Diego", "Lucía", "Andrés", "Valentina", "Carlos", "Paola", "Miguel", "Daniela"];
 for (const [g, letra] of [[0, "A"], [1, "B"]]) {
   await p.getByRole("button", { name: new RegExp(`Grupo\\s*${letra}`) }).click();
   await p.waitForTimeout(300);
+  // La primera dupla de cada grupo se anota con foto (botón de cámara junto a los nombres).
+  await p.locator("button[aria-label='Foto de la dupla'] + input[type=file]").setInputFiles(await imagen(p, `${letra}1`));
+  await p.waitForTimeout(500);
   for (let i = 0; i < 8; i++) {
     await p.getByLabel("Hombre de la dupla").fill(`${NOMBRES[i * 2]} ${letra}${i + 1}`);
     await p.getByLabel("Mujer de la dupla").fill(`${NOMBRES[i * 2 + 1]} ${letra}${i + 1}`);
@@ -87,6 +107,15 @@ await p.waitForURL(/\/habibi\/hab_/);
 const id = p.url().split("/habibi/")[1];
 await p.waitForTimeout(1500);
 ok(await p.locator("text=Grupo A").count() > 0 && (await p.locator("text=Grupo B").count()) > 0, "torneo: muestra los dos grupos");
+let conFoto = 0;
+for (let i = 0; i < 20 && conFoto < 2; i++) {
+  await p.waitForTimeout(1000);
+  conFoto = await p.evaluate(async (torneo) => {
+    const { eventos } = await (await fetch("/api/americanos?todos=1")).json();
+    return eventos.filter((x) => x.habibi?.torneoId === torneo).flatMap((x) => x.parejas).filter((x) => x.fotoUrl).length;
+  }, p.url().split("/habibi/")[1]);
+}
+ok(conFoto === 2, `fotos: las tomadas al anotar se suben solas a cada grupo (${conFoto}/2)`);
 await foto(p, "08-torneo-grupos", true);
 
 // Un grupo se juega desde su cuadro vivo: cargar un marcador real por la interfaz
@@ -203,6 +232,7 @@ await p.waitForTimeout(500);
 await p.click("button:has-text('Individual')");
 await p.waitForTimeout(300);
 ok(await p.locator("text=Jugadores por grupo").count() > 0, "individual: el paso pasa a jugadores");
+ok((await p.getByRole("button", { name: /Foto del jugador|Foto de la jugadora/ }).count()) > 0, "individual: botón de cámara para la foto del jugador");
 for (const letra of ["A", "B"]) {
   await p.getByRole("button", { name: new RegExp(`Grupo\\s*${letra}`) }).click();
   await p.waitForTimeout(300);

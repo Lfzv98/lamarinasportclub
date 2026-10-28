@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, ArrowRightLeft, CalendarDays, Clock, Dices, Mars, Medal, Plus, Rocket, Swords, Timer, Trophy, Users, Venus, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
-import { Avatar } from "@/components/Avatar";
+import { AvisoFotos, BotonFoto, FotoDelRegistro } from "@/components/FotosRegistro";
 import { Opcion, Paso } from "@/components/habibi/piezas";
 import { Logo } from "@/components/Logo";
 import { ReglasPuntuacion } from "@/components/ReglasPuntuacion";
@@ -17,6 +17,7 @@ import { toast } from "@/components/ui/Toaster";
 import { categoriaLabel, METODOS, nivelesPara, nivelLabel, RAMAS } from "@/lib/categories";
 import { nuevoId } from "@/lib/evento";
 import { sonar, vibrar } from "@/lib/feedback";
+import { subirFotosDelRegistro, useFotosRegistro } from "@/lib/fotosRegistro";
 import {
   CLASIFICAN,
   crearHabibi,
@@ -185,6 +186,10 @@ function NuevoHabibi() {
     const { llave, grupos: gs } = crearHabibi(input);
     for (const g of gs) guardar(g);
     guardar(llave);
+    // Las fotos del registro se suben en segundo plano apenas cada grupo llega al servidor.
+    const fotos = useFotosRegistro.getState().fotos;
+    useFotosRegistro.getState().limpiar();
+    for (const g of gs) void subirFotosDelRegistro(g, fotos);
     sonar("ok");
     vibrar([20, 40, 60]);
     toast("¡Americano HABIBI creado! A jugar 🎾");
@@ -372,10 +377,9 @@ function NuevoHabibi() {
                     <Dices className="size-4" /> Sortear los grupos al azar
                   </button>
                 )}
-                <p className="mt-3 text-xs text-white/45">
-                  {individual
-                    ? "Las fotos de cada jugador se toman después en cada grupo, en «Jugadores y fotos», y salen en la TV y en el celular de los jugadores."
-                    : "Las fotos de cada dupla se toman después en cada grupo, en «Parejas y fotos», y salen en la TV y en el celular de los jugadores."}
+                <AvisoFotos />
+                <p className="mt-1 px-1 text-xs text-white/40">
+                  Toca la cámara antes de agregar{individual ? " al jugador" : " la dupla"}, o su círculo en la lista para tomarla después. También se pueden tomar luego en cada grupo, en «{individual ? "Jugadores" : "Parejas"} y fotos».
                 </p>
               </Paso>
             )}
@@ -640,6 +644,7 @@ function EditorDuplas({
 }) {
   const [a, setA] = useState("");
   const [b, setB] = useState("");
+  const [foto, setFoto] = useState<string | null>(null);
   const refA = useRef<HTMLInputElement>(null);
   const mixta = rama === "MIXTO";
   const genero: Genero | null = rama === "FEMENINO" ? "F" : rama === "MASCULINO" ? "M" : null;
@@ -661,7 +666,10 @@ function EditorDuplas({
     }
     const ja = crearJugador(a, genero ?? "M", nivel);
     const jb = crearJugador(b, genero ?? "F", nivel);
-    onAgregar({ pareja: { id: nuevoId("par_"), jugadorIds: [ja.id, jb.id], nombre: `${ja.nombre} / ${jb.nombre}` }, jugadores: [ja, jb] });
+    const pareja: Pareja = { id: nuevoId("par_"), jugadorIds: [ja.id, jb.id], nombre: `${ja.nombre} / ${jb.nombre}` };
+    if (foto) useFotosRegistro.getState().poner(pareja.id, foto);
+    setFoto(null);
+    onAgregar({ pareja, jugadores: [ja, jb] });
     setA("");
     setB("");
     vibrar(10);
@@ -689,9 +697,12 @@ function EditorDuplas({
           onKeyDown={(e) => e.key === "Enter" && agregar()}
           aria-label={mixta ? "Mujer de la dupla" : "Jugador 2"}
         />
-        <button className="btn-neon" onClick={agregar}>
-          <Plus className="size-4" /> Dupla al {letra}
-        </button>
+        <div className="flex gap-2">
+          <BotonFoto foto={foto} onFoto={setFoto} etiqueta="Foto de la dupla" />
+          <button className="btn-neon flex-1" onClick={agregar}>
+            <Plus className="size-4" /> Dupla al {letra}
+          </button>
+        </div>
       </div>
       {duplas.length === 0 ? (
         <p className="mt-4 rounded-2xl border border-dashed border-white/15 p-6 text-center text-sm text-white/45">El grupo {letra} aún no tiene duplas.</p>
@@ -701,10 +712,7 @@ function EditorDuplas({
             {duplas.map((d, i) => (
               <motion.li key={d.pareja.id} layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, x: -30 }} className="glass flex items-center gap-3 rounded-2xl px-3 py-2">
                 <span className="w-5 text-right text-xs font-semibold text-white/30">{i + 1}</span>
-                <span className="flex -space-x-2">
-                  <Avatar nombre={d.jugadores[0].nombre} size={32} />
-                  <Avatar nombre={d.jugadores[1].nombre} size={32} />
-                </span>
+                <FotoDelRegistro id={d.pareja.id} nombres={[d.jugadores[0].nombre, d.jugadores[1].nombre]} />
                 <span className="min-w-0 flex-1 truncate text-sm font-medium">{d.jugadores.map((j) => [j.nombre, j.apellido].filter(Boolean).join(" ")).join(" / ")}</span>
                 <button className="rounded-lg p-2 text-white/40 hover:bg-white/10 hover:text-white" onClick={() => onMover(d.pareja.id)} aria-label={`Pasar ${d.pareja.nombre} al otro grupo`} title="Pasar al otro grupo">
                   <ArrowRightLeft className="size-4" />
@@ -741,6 +749,7 @@ function EditorJugadores({
   onMover: (id: string) => void;
 }) {
   const [texto, setTexto] = useState("");
+  const [foto, setFoto] = useState<string | null>(null);
   const mixta = rama === "MIXTO";
   const [genero, setGenero] = useState<Genero>(rama === "FEMENINO" ? "F" : "M");
   const ref = useRef<HTMLInputElement>(null);
@@ -760,7 +769,10 @@ function EditorJugadores({
       toast(`${limpio} ya está anotado. Agrega el apellido para distinguirlo.`, "error");
       return;
     }
-    onAgregar(crearJugador(limpio, mixta ? genero : rama === "FEMENINO" ? "F" : "M", nivel));
+    const j = crearJugador(limpio, mixta ? genero : rama === "FEMENINO" ? "F" : "M", nivel);
+    if (foto) useFotosRegistro.getState().poner(j.id, foto);
+    setFoto(null);
+    onAgregar(j);
     setTexto("");
     vibrar(10);
     sonar("tap");
@@ -795,9 +807,12 @@ function EditorJugadores({
           onKeyDown={(e) => e.key === "Enter" && agregar()}
           aria-label="Nombre del jugador"
         />
-        <button className="btn-neon" onClick={agregar}>
-          <Plus className="size-4" /> Jugador al {letra}
-        </button>
+        <div className="flex gap-2">
+          <BotonFoto foto={foto} onFoto={setFoto} etiqueta={genero === "F" ? "Foto de la jugadora" : "Foto del jugador"} />
+          <button className="btn-neon flex-1" onClick={agregar}>
+            <Plus className="size-4" /> Jugador al {letra}
+          </button>
+        </div>
       </div>
       {mixta && jugadores.length > 0 && (
         <p className={clsx("mt-2 text-xs", hombres === jugadores.length - hombres ? "text-white/45" : "text-amber-600")}>
@@ -814,7 +829,7 @@ function EditorJugadores({
               return (
                 <motion.li key={j.id} layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, x: -30 }} className="glass flex items-center gap-3 rounded-2xl px-3 py-2">
                   <span className="w-5 text-right text-xs font-semibold text-white/30">{i + 1}</span>
-                  <Avatar nombre={j.nombre} size={32} />
+                  <FotoDelRegistro id={j.id} nombres={[completo]} />
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">{completo}</span>
                   {mixta && (j.genero === "M" ? <Mars className="size-4 text-white/40" aria-label="Hombre" /> : <Venus className="size-4 text-white/40" aria-label="Mujer" />)}
                   <button className="rounded-lg p-2 text-white/40 hover:bg-white/10 hover:text-white" onClick={() => onMover(j.id)} aria-label={`Pasar a ${completo} al otro grupo`} title="Pasar al otro grupo">

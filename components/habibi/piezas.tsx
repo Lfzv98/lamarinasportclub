@@ -121,7 +121,7 @@ export function TablaGrupo({ grupo, inicio, emparejar, tv = false, limite }: { g
             <span className="flex min-w-0 items-center gap-2">
               {/* En el celular no hay lugar para fotos y nombres: se priorizan los nombres. */}
               <span className={clsx(!tv && "hidden sm:flex")}>
-                <AvatarPareja nombres={nombres} fotos={f.fotoUrls} size={tv ? 52 : 30} />
+                <AvatarPareja nombres={nombres} fotos={f.fotoUrls} dupla={f.fotoDupla} size={tv ? 52 : 30} />
               </span>
               <span className="min-w-0">
                 {nombres.map((n, k) => (
@@ -186,7 +186,7 @@ export function CruceCard({
         <span className={clsx("shrink-0 rounded-md font-bold tabular", tv ? "w-12 text-center text-lg" : "w-8 text-center text-[10px]", semilla ? "bg-white/5 text-white/60" : "text-white/30")}>{semilla ?? ""}</span>
         {par ? (
           <>
-            <AvatarPareja nombres={nombres} fotos={par.jugadorIds.map((id) => porId.get(id)?.fotoUrl)} size={tv ? 44 : 28} />
+            <AvatarPareja nombres={nombres} fotos={par.jugadorIds.map((id) => porId.get(id)?.fotoUrl)} dupla={par.fotoUrl} size={tv ? 44 : 28} />
             <span className="min-w-0 flex-1">
               {nombres.map((n, k) => (
                 <span key={k} className={clsx("block truncate leading-tight", tv ? "text-xl" : "text-[13px]", gana ? "font-bold" : "font-medium")}>
@@ -305,7 +305,7 @@ export function PodioHabibi({ llave, tv = false, className }: { llave: EventoAme
       </motion.div>
       <p className={clsx("relative mt-3 font-semibold uppercase tracking-[0.3em] text-white/50", tv ? "text-xl" : "text-[11px]")}>Campeones</p>
       <div className="relative mt-4 flex justify-center">
-        <AvatarPareja nombres={nombres} fotos={campeon.pareja.jugadorIds.map((id) => porId.get(id)?.fotoUrl)} size={tv ? 110 : 64} />
+        <AvatarPareja nombres={nombres} fotos={campeon.pareja.jugadorIds.map((id) => porId.get(id)?.fotoUrl)} dupla={campeon.pareja.fotoUrl} size={tv ? 110 : 64} />
       </div>
       <p className={clsx("relative mt-3 font-display font-bold leading-tight", tv ? "text-5xl" : "text-2xl")}>{nombres.join(" / ")}</p>
       {resto.length > 0 && (
