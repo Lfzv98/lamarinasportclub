@@ -45,7 +45,9 @@ export function Avatar({ nombre, fotoUrl, size = 40, className }: { nombre: stri
   );
 }
 
-export function AvatarPareja({ nombres, fotos, size = 36 }: { nombres: string[]; fotos?: (string | null | undefined)[]; size?: number }) {
+/** Avatares de una pareja; con `dupla` (foto de los dos juntos) va una sola foto, un poco más grande. */
+export function AvatarPareja({ nombres, fotos, dupla, size = 36 }: { nombres: string[]; fotos?: (string | null | undefined)[]; dupla?: string | null; size?: number }) {
+  if (dupla) return <Avatar nombre={nombres.join(" y ")} fotoUrl={dupla} size={nombres.length > 1 ? Math.round(size * 1.35) : size} />;
   return (
     <span className="flex -space-x-2">
       {nombres.map((n, i) => (

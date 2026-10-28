@@ -10,17 +10,17 @@ import { AvatarPareja } from "@/components/Avatar";
 import { Cronometro, MarcadorRonda } from "@/components/Cronometro";
 import { enEspera } from "@/components/EnEspera";
 import { Leaderboard } from "@/components/Leaderboard";
-import { Logo } from "@/components/Logo";
 import { PistaLabel } from "@/components/PistaLabel";
 import { QR } from "@/components/QR";
 import { QRPopup, useUrlRanking } from "@/components/QRPopup";
+import { VallasTV } from "@/components/Vallas";
 import { useReloj } from "@/hooks/useReloj";
 import { ANCHO_ESTRECHO, Escenario, Reloj, useCursorOculto, useFullscreenYWakeLock, useLienzo, useVertical } from "@/components/Pantalla";
 import { categoriaLabel } from "@/lib/categories";
 import { horaRonda } from "@/lib/horarios";
-import { calcularTabla, ganador, nombreCompleto, nombresCompletosDeFila } from "@/lib/scoring";
+import { calcularTabla, fotoDeDupla, ganador, nombreCompleto, nombresCompletosDeFila } from "@/lib/scoring";
 import { useAmericanos, useEvento } from "@/lib/store";
-import type { EventoAmericano, FilaPosicion, Partido } from "@/types/americano";
+import type { EventoAmericano, Partido } from "@/types/americano";
 
 const FILAS_POR_PAGINA = 10;
 const SEGUNDOS_POR_PAGINA = 12;
@@ -45,38 +45,56 @@ function TV({ evento }: { evento: EventoAmericano }) {
   const lienzo = useLienzo(vertical);
   const estrecho = lienzo.ancho < ANCHO_ESTRECHO;
   const cursorOculto = useCursorOculto();
+  const vallas = useAmericanos((s) => s.club.vallas);
   const tabla = useMemo(() => calcularTabla(evento), [evento]);
-  // Con partidos jugados, los 3 primeros van en el podio y la tabla sigue desde el 4º.
-  const conPodio = tabla.filas.some((f) => f.pj > 0) && tabla.filas.length > 3;
-  const podio = conPodio ? tabla.filas.slice(0, 3) : [];
-  const resto = conPodio ? tabla.filas.slice(3) : tabla.filas;
-  const filasPorPagina = conPodio ? (vertical ? 4 : 6) : vertical ? 8 : FILAS_POR_PAGINA;
+  const terminado = evento.estado === "FINALIZADO";
+  const filasPorPagina = vertical ? 9 : estrecho ? FILAS_POR_PAGINA : terminado ? 9 : 8;
   const ronda = evento.rondas.find((r) => r.numero === evento.rondaActual);
   const conReloj = evento.cronometro !== false;
-  const reloj = useReloj(evento.estado !== "FINALIZADO" && conReloj ? ronda : undefined, evento.duracionRondaMin);
+  const reloj = useReloj(!terminado && conReloj ? ronda : undefined, evento.duracionRondaMin);
 
   // Paginación automática del ranking cuando hay muchos jugadores.
-  const paginas = Math.max(1, Math.ceil(resto.length / filasPorPagina));
+  const paginas = Math.max(1, Math.ceil(tabla.filas.length / filasPorPagina));
   const [pagina, setPagina] = useState(0);
   useEffect(() => {
     if (paginas <= 1) return setPagina(0);
     const t = setInterval(() => setPagina((p) => (p + 1) % paginas), SEGUNDOS_POR_PAGINA * 1000);
     return () => clearInterval(t);
   }, [paginas]);
-  const tablaPagina = { ...tabla, filas: resto.slice(pagina * filasPorPagina, (pagina + 1) * filasPorPagina) };
-
-  const terminado = evento.estado === "FINALIZADO";
-  const campeon = tabla.filas[0];
+  const tablaPagina = { ...tabla, filas: tabla.filas.slice(pagina * filasPorPagina, (pagina + 1) * filasPorPagina) };
   const espera = ronda ? enEspera(evento, ronda) : [];
+  // Vallas publicitarias: columna a la izquierda en una TV; en vertical o en un celular, franja arriba.
+  const vallasEnFila = vertical || estrecho;
+
+  const ranking = (
+    <div className="flex min-h-0 flex-col">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="flex items-center gap-3 font-display text-4xl font-bold">
+          {terminado && <Trophy className="size-9 text-neon" />}
+          {terminado ? "Resultado final" : "Ranking en vivo"}
+        </h2>
+        {paginas > 1 && (
+          <div className="flex gap-2">
+            {Array.from({ length: paginas }, (_, i) => (
+              <span key={i} className={clsx("h-2.5 rounded-full transition-all", i === pagina ? "w-10 bg-neon" : "w-2.5 bg-white/20")} />
+            ))}
+          </div>
+        )}
+      </div>
+      <AnimatePresence mode="wait">
+        <motion.div key={pagina} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}>
+          <Leaderboard tabla={tablaPagina} nombresPorFila={(f) => nombresCompletosDeFila(evento, f)} modoTV estrecho={estrecho} />
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
 
   return (
-    <Escenario oculto={cursorOculto} lienzo={lienzo}>
+    <Escenario oculto={cursorOculto} lienzo={lienzo} marcaAgua>
       <header className="flex flex-wrap items-center gap-x-6 gap-y-4">
-        <Logo className="!h-14" />
-        <div className="h-12 w-px bg-white/10" />
         <div className="min-w-[18rem] flex-1">
-          <h1 className="truncate font-display text-3xl font-bold xl:text-4xl">{evento.nombre}</h1>
-          <p className="text-lg text-white/50">
+          <h1 className="truncate font-display text-4xl font-bold xl:text-5xl">{evento.nombre}</h1>
+          <p className="text-xl text-white/55">
             {categoriaLabel(evento.categoria)} · {evento.pistas} pistas
           </p>
         </div>
@@ -94,108 +112,56 @@ function TV({ evento }: { evento: EventoAmericano }) {
         </div>
       </header>
 
-      <AnimatePresence mode="wait">
-        {terminado && campeon ? (
-          <motion.section key="campeon" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className={clsx("grid flex-1 items-center gap-10", vertical || estrecho ? "grid-cols-1 content-center" : "grid-cols-[1fr_1.3fr]")}>
-            <div className="flex flex-col items-center text-center">
-              <motion.div animate={{ rotate: [0, -8, 8, 0] }} transition={{ repeat: Infinity, duration: 3 }}>
-                <Trophy className="size-28 text-neon drop-shadow-[0_0_40px_rgba(127,227,2,0.6)]" />
-              </motion.div>
-              <p className="mt-6 text-2xl font-semibold uppercase tracking-[0.3em] text-white/50">{tabla.filas.length > 1 ? "Podio" : "Campeón"}</p>
-              <PodioTV evento={evento} filas={tabla.filas.slice(0, 3)} grande className="mt-8 w-full" />
-            </div>
-            <Leaderboard tabla={{ ...tabla, filas: tabla.filas.slice(0, filasPorPagina) }} nombresPorFila={(f) => nombresCompletosDeFila(evento, f)} modoTV estrecho={estrecho} />
-          </motion.section>
-        ) : (
-          <motion.section key="vivo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={clsx("grid min-h-0 flex-1 gap-8", lienzo.desplaza && (vertical || estrecho) ? "grid-cols-1" : vertical ? "grid-cols-1 grid-rows-[minmax(0,1.1fr)_minmax(0,1fr)]" : "grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]")}>
-            <div className="flex min-h-0 flex-col gap-6">
-              <div className="glass flex items-center gap-8 rounded-[2rem] p-6">
-                {conReloj ? (
-                  <Cronometro restantes={reloj.restantes} progreso={reloj.progreso} corriendo={reloj.corriendo} size={200} />
-                ) : (
-                  ronda && <MarcadorRonda ronda={ronda} total={evento.totalRondas} size={200} />
-                )}
-                <div>
-                  <p className="text-xl font-semibold uppercase tracking-[0.25em] text-white/40">Ronda</p>
-                  <p className="font-display text-8xl font-bold leading-none">
-                    {evento.rondaActual}
-                    <span className="text-4xl text-white/30">/{evento.totalRondas}</span>
-                  </p>
-                  {ronda && conReloj && <p className="mt-2 text-xl text-white/50">Inicio {horaRonda(evento, ronda.numero)}</p>}
-                </div>
-              </div>
-              <div className={clsx("grid min-h-0 flex-1 gap-4", !lienzo.desplaza && "auto-rows-fr", (ronda?.partidos.length ?? 0) > 2 && !estrecho ? "grid-cols-2" : "grid-cols-1")}>
-                {ronda?.partidos.map((p) => <PistaTV key={p.id} partido={p} evento={evento} compacto={(ronda?.partidos.length ?? 0) > 4} />)}
-              </div>
-              {espera.length > 0 && (
-                <div className="glass flex items-center gap-5 rounded-[2rem] border-amber-300/20 px-6 py-4">
-                  <p className="flex shrink-0 items-center gap-3 font-display text-2xl font-bold text-amber-200">
-                    <Coffee className="size-7" /> {evento.modalidad === "DUPLA_FIJA" ? "En espera" : "Descansan"}
-                  </p>
-                  <div className="flex min-w-0 flex-wrap gap-x-6 gap-y-2">
-                    {espera.map((e) => (
-                      <span key={e.id} className="flex items-center gap-2 text-xl">
-                        <span className="font-semibold text-white/90">{e.completo}</span>
-                        {e.vuelve && <span className="text-base text-white/40">→ R{e.vuelve}</span>}
-                      </span>
-                    ))}
+      <div className={clsx("grid min-h-0 flex-1 gap-8", vallasEnFila ? "grid-cols-1 grid-rows-[auto_minmax(0,1fr)]" : "grid-cols-[15rem_minmax(0,1fr)]")}>
+        <VallasTV vallas={vallas} fila={vallasEnFila} className={vallasEnFila ? (estrecho ? "h-32" : "h-44") : undefined} />
+        <AnimatePresence mode="wait">
+          {terminado ? (
+            <motion.section key="final" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} className="flex min-h-0 flex-col">
+              {ranking}
+            </motion.section>
+          ) : (
+            <motion.section key="vivo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={clsx("grid min-h-0 gap-8", lienzo.desplaza && vallasEnFila ? "grid-cols-1" : vertical ? "grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(0,1.2fr)]" : estrecho ? "grid-cols-1" : "grid-cols-[minmax(0,0.75fr)_minmax(0,1.35fr)]")}>
+              <div className="flex min-h-0 flex-col gap-5">
+                <div className="glass flex items-center gap-6 rounded-[2rem] p-5">
+                  {conReloj ? (
+                    <Cronometro restantes={reloj.restantes} progreso={reloj.progreso} corriendo={reloj.corriendo} size={150} />
+                  ) : (
+                    ronda && <MarcadorRonda ronda={ronda} total={evento.totalRondas} size={150} />
+                  )}
+                  <div>
+                    <p className="text-xl font-semibold uppercase tracking-[0.25em] text-white/40">Ronda</p>
+                    <p className="font-display text-7xl font-bold leading-none">
+                      {evento.rondaActual}
+                      <span className="text-4xl text-white/30">/{evento.totalRondas}</span>
+                    </p>
+                    {ronda && conReloj && <p className="mt-2 text-xl text-white/50">Inicio {horaRonda(evento, ronda.numero)}</p>}
                   </div>
                 </div>
-              )}
-            </div>
-            <div className="flex min-h-0 flex-col">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="font-display text-3xl font-bold">Ranking en vivo</h2>
-                {paginas > 1 && (
-                  <div className="flex gap-2">
-                    {Array.from({ length: paginas }, (_, i) => (
-                      <span key={i} className={clsx("h-2 rounded-full transition-all", i === pagina ? "w-8 bg-neon" : "w-2 bg-white/20")} />
-                    ))}
+                <div className={clsx("grid min-h-0 flex-1 gap-4", !lienzo.desplaza && "auto-rows-fr", (ronda?.partidos.length ?? 0) > (vertical ? 2 : 4) ? "grid-cols-2" : "grid-cols-1")}>
+                  {ronda?.partidos.map((p) => <PistaTV key={p.id} partido={p} evento={evento} compacto={(ronda?.partidos.length ?? 0) > 2} />)}
+                </div>
+                {espera.length > 0 && (
+                  <div className="glass flex items-center gap-5 rounded-[2rem] border-amber-300/20 px-6 py-4">
+                    <p className="flex shrink-0 items-center gap-3 font-display text-2xl font-bold text-amber-200">
+                      <Coffee className="size-7" /> {evento.modalidad === "DUPLA_FIJA" ? "En espera" : "Descansan"}
+                    </p>
+                    <div className="flex min-w-0 flex-wrap gap-x-6 gap-y-2">
+                      {espera.map((e) => (
+                        <span key={e.id} className="flex items-center gap-2 text-xl">
+                          <span className="font-semibold text-white/90">{e.completo}</span>
+                          {e.vuelve && <span className="text-base text-white/40">→ R{e.vuelve}</span>}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
-              {conPodio && <PodioTV evento={evento} filas={podio} className="mb-5" />}
-              <AnimatePresence mode="wait">
-                <motion.div key={pagina} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}>
-                  <Leaderboard tabla={tablaPagina} nombresPorFila={(f) => nombresCompletosDeFila(evento, f)} modoTV estrecho={estrecho} />
-                </motion.div>
-              </AnimatePresence>
-            </div>
-          </motion.section>
-        )}
-      </AnimatePresence>
+              {ranking}
+            </motion.section>
+          )}
+        </AnimatePresence>
+      </div>
     </Escenario>
-  );
-}
-
-/** Podio de los 3 primeros, igual que el ranking que abre el QR: 2º, 1º y 3º, con nombre y apellido completos. */
-function PodioTV({ evento, filas, grande = false, className }: { evento: EventoAmericano; filas: FilaPosicion[]; grande?: boolean; className?: string }) {
-  const orden = [filas[1], filas[0], filas[2]].map((f, i) => f && { f, lugar: [2, 1, 3][i] }).filter(Boolean) as { f: FilaPosicion; lugar: number }[];
-  const alturas: Record<number, string> = grande ? { 1: "h-44", 2: "h-32", 3: "h-24" } : { 1: "h-24", 2: "h-16", 3: "h-12" };
-  return (
-    <div className={clsx("grid grid-cols-3 items-end gap-4", className)}>
-      {orden.map(({ f, lugar }) => (
-        <motion.div key={f.entidadId} layout initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: lugar === 1 ? 0.2 : 0.05 * lugar, type: "spring", stiffness: 200, damping: 20 }} className="flex min-w-0 flex-col items-center text-center">
-          <AvatarPareja nombres={nombresCompletosDeFila(evento, f)} fotos={f.fotoUrls} size={grande ? (lugar === 1 ? 104 : 84) : lugar === 1 ? 64 : 52} />
-          <div className={clsx("mt-3 w-full break-words font-semibold leading-tight", grande ? "text-2xl" : "text-xl")}>
-            {nombresCompletosDeFila(evento, f).map((n, i) => (
-              <p key={i}>{n}</p>
-            ))}
-          </div>
-          <p className={clsx("mt-1 font-display font-bold tabular text-neon", grande ? "text-4xl" : "text-2xl")}>{f.puntos} pts</p>
-          <div
-            className={clsx(
-              "mt-2 flex w-full items-start justify-center rounded-t-3xl pt-2 font-display font-black",
-              grande ? "text-6xl" : "text-4xl",
-              alturas[lugar],
-              lugar === 1 ? "bg-gradient-to-b from-neon to-neon/20 text-noche" : "bg-gradient-to-b from-white/15 to-white/[0.02] text-white/80",
-            )}
-          >
-            {f.posicion}
-          </div>
-        </motion.div>
-      ))}
-    </div>
   );
 }
 
@@ -209,7 +175,7 @@ function PistaTV({ partido, evento, compacto = false }: { partido: Partido; even
     const gana = g === (l === "A" ? 1 : -1);
     return (
       <div className={clsx("flex items-center gap-4", res && !gana && "opacity-50")}>
-        <AvatarPareja nombres={nombres} fotos={par.jugadorIds.map((id) => porId.get(id)?.fotoUrl)} size={compacto ? 38 : 52} />
+        <AvatarPareja nombres={nombres} fotos={par.jugadorIds.map((id) => porId.get(id)?.fotoUrl)} dupla={fotoDeDupla(evento, par.id)} size={compacto ? 40 : 52} />
         <div className="min-w-0 flex-1">
           {nombres.map((n, i) => (
             <p key={i} className={clsx("break-words font-semibold leading-tight", compacto ? "text-lg" : "text-2xl")}>

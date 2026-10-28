@@ -3,7 +3,7 @@
 import clsx from "clsx";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, AtSign, Copy, Flag, FlaskConical, KeyRound, MapPin, MessageCircle, Plus, Save, Sun, Trash2, Warehouse } from "lucide-react";
+import { ArrowLeft, AtSign, Copy, Flag, FlaskConical, KeyRound, MapPin, Megaphone, MessageCircle, Plus, Save, Sun, Trash2, Warehouse } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { ArbitrosClub } from "@/components/ArbitrosClub";
@@ -11,6 +11,7 @@ import { DatosPrueba } from "@/components/DatosPrueba";
 import { MenuApp } from "@/components/MenuApp";
 import { ClavesTorneos } from "@/components/torneo/ClavesTorneos";
 import { StaffGate } from "@/components/StaffGate";
+import { VallasClub } from "@/components/VallasClub";
 import { Stepper } from "@/components/ui/Stepper";
 import { toast } from "@/components/ui/Toaster";
 import { aMinutos, DIAS, ORDEN_DIAS } from "@/lib/horarios";
@@ -61,13 +62,16 @@ function Club() {
       </header>
 
       <h1 className="mt-6 font-display text-3xl font-bold tracking-tight">Ajustes</h1>
-      <p className="mt-2 text-white/50">Solo staff. Pistas, horarios y contacto de {borrador.nombre}, claves de torneos, árbitros del club y modo prueba.</p>
+      <p className="mt-2 text-white/50">Solo staff. Pistas, horarios, contacto y publicidad de la TV de {borrador.nombre}, claves de torneos, árbitros del club y modo prueba.</p>
       <div className="mt-4 flex flex-wrap gap-2">
         <a href="#datos-prueba" className="chip hover:border-neon/40 hover:text-white">
           <FlaskConical className="size-3" /> Modo prueba
         </a>
         <a href="#arbitros" className="chip hover:border-neon/40 hover:text-white">
           <Flag className="size-3" /> Árbitros del club
+        </a>
+        <a href="#publicidad" className="chip hover:border-neon/40 hover:text-white">
+          <Megaphone className="size-3" /> Publicidad TV
         </a>
         <a href="#claves" className="chip hover:border-neon/40 hover:text-white">
           <KeyRound className="size-3" /> Claves de torneos
@@ -198,6 +202,8 @@ function Club() {
           <input className="w-full bg-transparent py-3 outline-none placeholder:text-white/30" placeholder="Dirección" value={borrador.contacto.direccion ?? ""} onChange={(e) => setContacto({ direccion: e.target.value })} />
         </label>
       </div>
+
+      <VallasClub valor={borrador.vallas} onChange={(vallas) => setBorrador((b) => ({ ...b, vallas }))} />
 
       <ClavesTorneos />
 

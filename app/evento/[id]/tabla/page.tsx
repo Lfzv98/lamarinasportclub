@@ -12,6 +12,7 @@ import { EventoShell } from "@/components/EventoShell";
 import { Leaderboard } from "@/components/Leaderboard";
 import { CompartirButton } from "@/components/CompartirButton";
 import { Confetti } from "@/components/ui/Confetti";
+import { BotonImagenPodio } from "@/components/ImagenPodio";
 import { calcularTabla, explicacionRanking, nombresDeFila } from "@/lib/scoring";
 import type { EventoAmericano } from "@/types/americano";
 
@@ -34,6 +35,7 @@ function Tabla({ evento }: { evento: EventoAmericano }) {
   return (
     <div className="mt-2">
       <Confetti activo={terminado} piezas={90} />
+      <BotonImagenPodio evento={evento} tabla={tabla} />
       {hayJuego && vista === "TABLA" && (
         <div className="mb-6 flex items-end justify-center gap-3 sm:gap-6">
           {orden.map((f) => (
@@ -45,7 +47,7 @@ function Tabla({ evento }: { evento: EventoAmericano }) {
               transition={{ delay: f.lugar === 1 ? 0.2 : 0.05 * f.lugar, type: "spring", stiffness: 200, damping: 20 }}
               className="flex w-28 flex-col items-center sm:w-40"
             >
-              <AvatarPareja nombres={nombresDeFila(evento, f)} fotos={f.fotoUrls} size={f.lugar === 1 ? 56 : 44} />
+              <AvatarPareja nombres={nombresDeFila(evento, f)} fotos={f.fotoUrls} dupla={f.fotoDupla} size={f.lugar === 1 ? 56 : 44} />
               <p className="mt-2 line-clamp-2 text-center text-xs font-semibold sm:text-sm">{f.nombre}</p>
               <p className="font-display text-lg font-bold text-neon">{f.puntos}</p>
               <div
