@@ -75,8 +75,9 @@ ok(e?.parejas.filter((x) => x.fotoUrl).length === 3, `las fotos se subieron sola
 const foto = e?.parejas.find((x) => x.fotoUrl)?.fotoUrl;
 ok(foto && (await ctx.request.get(`${U}${foto}`)).headers()["content-type"]?.startsWith("image/"), "la foto de la dupla se sirve como imagen");
 
-/* 2) Ajustes → Publicidad del Modo TV: 3 vallas con imagen y 1 solo con nombre */
+/* 2) Ajustes → Publicidad del Modo TV: 6 vallas, 3 con imagen y 1 solo con nombre */
 await p.goto(`${U}/club#publicidad`, { waitUntil: "networkidle" }); await espera(1000);
+await p.locator("[aria-label='Cantidad de vallas'] button:has-text('6')").click(); await espera(300);
 const marcas = [["PADEL PRO", "#d62828"], ["POLAR", "#1d3fa8"], ["BANESCO", "#0b8a5b"]];
 for (const [i, [n, c]] of marcas.entries()) {
   await p.locator(`button[aria-label='Imagen de la valla ${i + 1}']`).click();
