@@ -115,7 +115,7 @@ for (let i = 0; i < 3; i++) {
   await p.click("text=Guardar resultado"); await espera(500);
 }
 await p.goto(`${U}/evento/${id2}/tabla`, { waitUntil: "networkidle" }); await espera(1200);
-ok(await p.locator("text=Empates en puntos").count() > 0 && (await p.locator("text=comparten posición").count()) > 0, "tabla: explica el empate y comparten posición");
+ok(await p.locator("text=Empates en puntos").count() > 0 && (await p.locator("text=empate total").count()) > 0, "tabla: explica el empate total sin repetir puesto");
 await p.screenshot({ path: `${out}/moncho-tabla.png`, fullPage: true });
 await p.locator("button[role='radio']:has-text('Historial')").click(); await espera();
 ok(await p.locator("li:has-text('13')").count() >= 3, "historial: aparecen los 3 marcadores");
