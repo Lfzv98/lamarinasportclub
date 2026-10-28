@@ -36,6 +36,7 @@ export function EventoShell({ id, children }: { id: string; children: (evento: E
     );
   }
 
+  const grupoHabibi = evento.habibi?.rol === "GRUPO" ? evento.habibi : null;
   const tabs = [
     { href: `/evento/${id}`, label: "Cuadro", icon: LayoutGrid },
     { href: `/evento/${id}/tabla`, label: "Ranking", icon: ListOrdered },
@@ -45,13 +46,14 @@ export function EventoShell({ id, children }: { id: string; children: (evento: E
   return (
     <div className="mx-auto min-h-dvh max-w-6xl px-4 pb-28 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6">
       <header className="flex items-center gap-3 py-3">
-        <Link href="/americanos" className="btn-ghost !p-2.5" aria-label="Americanos">
+        <Link href={grupoHabibi ? `/habibi/${grupoHabibi.torneoId}` : "/americanos"} className="btn-ghost !p-2.5" aria-label={grupoHabibi ? "Volver al torneo" : "Americanos"}>
           <ArrowLeft className="size-5" />
         </Link>
         <div className="min-w-0 flex-1">
           <h1 className="truncate font-display text-lg font-bold leading-tight sm:text-xl">{evento.nombre}</h1>
           <div className="mt-1 flex items-center gap-2">
             <EstadoBadge estado={evento.estado} />
+            {grupoHabibi && <span className="chip border-neon/30 text-neon">HABIBI · Grupo {grupoHabibi.letra}</span>}
             <span className="hidden text-xs text-white/50 sm:inline">{categoriaLabel(evento.categoria)}</span>
           </div>
         </div>

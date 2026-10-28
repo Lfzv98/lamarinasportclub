@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { fusionarEventos } from "@/lib/evento";
+import { fusionarLlave } from "@/lib/habibi";
 import { exigirStaff } from "@/lib/server/auth";
 import { ErrorApi, leerJson, manejar } from "@/lib/server/http";
 import { getRepository } from "@/lib/server/repository";
@@ -34,7 +35,7 @@ export const POST = manejar(async (req: Request) => {
 
   const repo = getRepository();
   const existente = await repo.obtener(entrante.id);
-  const final = existente ? fusionarEventos(existente, entrante) : entrante;
+  const final = existente ? fusionarLlave(fusionarEventos(existente, entrante)) : entrante;
   await repo.guardar(final);
   return NextResponse.json({ modo: repo.modo, evento: final }, { status: existente ? 200 : 201 });
 });

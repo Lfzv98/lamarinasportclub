@@ -17,6 +17,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { despues, fusionarEventos } from "@/lib/evento";
+import { fusionarLlave } from "@/lib/habibi";
 import { CLUB_POR_DEFECTO, normalizarClub } from "@/lib/horarios";
 import type { ApiListaRespuesta, ConfigClub, EventoAmericano } from "@/types/americano";
 
@@ -93,7 +94,7 @@ const timers = new Map<string, ReturnType<typeof setTimeout>>();
 /** Une colecciones: para cada evento fusiona la versión local con la remota. */
 function unir(local: Record<string, EventoAmericano>, remotos: EventoAmericano[]) {
   const out = { ...local };
-  for (const e of remotos) out[e.id] = out[e.id] ? fusionarEventos(out[e.id], e) : e;
+  for (const e of remotos) out[e.id] = out[e.id] ? fusionarLlave(fusionarEventos(out[e.id], e)) : e;
   return out;
 }
 
@@ -262,10 +263,19 @@ export function useEvento(id: string) {
   return useAmericanos((s) => (s.eventos[id]?.eliminado ? undefined : s.eventos[id]));
 }
 
+/** Americanos normales (los grupos y la llave de un Americano HABIBI van en su propia sección). */
 export function useListaEventos() {
   const eventos = useAmericanos((s) => s.eventos);
   return Object.values(eventos)
-    .filter((e) => !e.eliminado)
+    .filter((e) => !e.eliminado && !e.habibi)
+    .sort((a, b) => b.actualizadoEn.localeCompare(a.actualizadoEn));
+}
+
+/** Torneos Americano HABIBI: la llave de cada uno (es la ficha del torneo). */
+export function useListaHabibi() {
+  const eventos = useAmericanos((s) => s.eventos);
+  return Object.values(eventos)
+    .filter((e) => !e.eliminado && e.habibi?.rol === "LLAVE")
     .sort((a, b) => b.actualizadoEn.localeCompare(a.actualizadoEn));
 }
 
