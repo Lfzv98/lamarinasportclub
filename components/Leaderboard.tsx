@@ -109,7 +109,7 @@ export function Leaderboard({ tabla, nombresPorFila, modoTV = false, estrecho = 
                 className={clsx(
                   "grid items-center gap-1 border-b border-white/[0.04] last:border-0",
                   cols,
-                  modoTV ? "px-6 py-3.5" : "px-2 py-2.5 sm:px-4",
+                  modoTV ? "px-6 py-3" : "px-2 py-2.5 sm:px-4",
                   f.posicion === 1 && "bg-gradient-to-r from-neon/10 to-transparent",
                   delta && delta > 0 && "bg-lima/[0.06]",
                 )}
@@ -118,7 +118,7 @@ export function Leaderboard({ tabla, nombresPorFila, modoTV = false, estrecho = 
                   <Posicion n={f.posicion} grande={modoTV} />
                 </span>
                 <span className={clsx("flex min-w-0 items-center", modoTV ? "gap-3" : "gap-2")}>
-                  <AvatarPareja nombres={nombresPorFila(f)} fotos={f.fotoUrls} dupla={f.fotoDupla} size={modoTV ? (estrecho ? 48 : 58) : 28} />
+                  <AvatarPareja nombres={nombresPorFila(f)} fotos={f.fotoUrls} dupla={f.fotoDupla} size={modoTV ? (estrecho ? 48 : 54) : 28} />
                   {modoTV ? (
                     // En la TV va el nombre completo de cada jugador, uno por línea, sin cortar.
                     <span className={clsx("min-w-0 break-words font-semibold leading-tight", estrecho ? (nombresPorFila(f).length > 1 ? "text-xl" : "text-2xl") : nombresPorFila(f).length > 1 ? "text-[1.7rem]" : "text-[2rem]")}>

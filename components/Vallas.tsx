@@ -7,18 +7,20 @@ import type { Valla } from "@/types/americano";
 
 export const MAX_VALLAS = 6;
 /** Cada cuánto las vallas cambian de lugar, como el giro de anuncios en las vallas de un estadio. */
-const SEGUNDOS_POR_GIRO = 20;
+const SEGUNDOS_POR_GIRO = 12;
 
 const tieneContenido = (v?: Valla | null): v is Valla => !!v && (!!v.img || !!v.nombre.trim());
 
 /**
- * Las 6 vallas publicitarias del Modo TV. Cada una corre su anuncio sin parar y, cada 20 s,
+ * Las vallas publicitarias del Modo TV (1 a 6). Cada logo va completo y centrado y, cada 12 s,
  * todas giran un lugar en cascada para que cada marca pase por las mejores posiciones.
  * Una valla sin marca muestra el logo de La Marina.
  */
 export function VallasTV({ vallas, fila = false, className }: { vallas?: Valla[]; fila?: boolean; className?: string }) {
-  const lista = Array.from({ length: MAX_VALLAS }, (_, i) => (tieneContenido(vallas?.[i]) ? vallas![i] : null));
-  const hay = lista.some(Boolean);
+  // Cuántas vallas eligió el staff en Ajustes (1 a 6); sin configurar, 6. Se reparten el espacio exacto.
+  const n = Math.min(MAX_VALLAS, Math.max(1, vallas?.length || MAX_VALLAS));
+  const lista = Array.from({ length: n }, (_, i) => (tieneContenido(vallas?.[i]) ? vallas![i] : null));
+  const hay = n > 1 && lista.some(Boolean);
   const [giro, setGiro] = useState(0);
   useEffect(() => {
     if (!hay) return;
@@ -27,9 +29,17 @@ export function VallasTV({ vallas, fila = false, className }: { vallas?: Valla[]
   }, [hay]);
 
   return (
-    <aside aria-label="Publicidad" className={clsx("grid min-h-0 gap-3", fila ? "grid-cols-3 grid-rows-2" : "grid-rows-6", className)}>
+    <aside
+      aria-label="Publicidad"
+      className={clsx("grid min-h-0 gap-3", className)}
+      style={
+        fila
+          ? { gridTemplateColumns: `repeat(${Math.min(n, 3)}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${Math.ceil(n / 3)}, minmax(0, 1fr))` }
+          : { gridTemplateRows: `repeat(${n}, minmax(0, 1fr))` }
+      }
+    >
       {lista.map((_, i) => (
-        <PanelValla key={i} valla={lista[(i + giro) % MAX_VALLAS]} indice={i} />
+        <PanelValla key={i} valla={lista[(i + giro) % n]} indice={i} />
       ))}
     </aside>
   );
@@ -47,14 +57,9 @@ function PanelValla({ valla, indice }: { valla: Valla | null; indice: number }) 
           transition={{ duration: 0.6, delay: indice * 0.08, ease: [0.2, 0.8, 0.2, 1] }}
           className="absolute inset-0 flex items-center overflow-hidden"
         >
-          <div className="valla-pista flex h-full w-max items-center" style={{ "--valla-seg": `${15 + (indice % 3) * 2}s` } as React.CSSProperties}>
-            {[0, 1].map((copia) => (
-              <div key={copia} className="flex h-full items-center" aria-hidden={copia === 1}>
-                {[0, 1, 2].map((k) => (
-                  <Anuncio key={k} valla={valla} />
-                ))}
-              </div>
-            ))}
+          {/* Fijo y centrado: el logo o el nombre de la marca entra completo en la valla. */}
+          <div className="flex size-full items-center justify-center px-4">
+            <Anuncio valla={valla} />
           </div>
         </motion.div>
       </AnimatePresence>
@@ -67,22 +72,13 @@ function PanelValla({ valla, indice }: { valla: Valla | null; indice: number }) 
 function Anuncio({ valla }: { valla: Valla | null }) {
   if (valla?.img)
     return (
-      <span className="flex h-full shrink-0 items-center px-5">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={valla.img} alt={valla.nombre} className="max-h-[70%] w-auto max-w-[12.5rem] object-contain" />
-      </span>
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={valla.img} alt={valla.nombre} className="max-h-[72%] max-w-full object-contain" />
     );
   if (valla)
-    return (
-      <span className="flex h-full shrink-0 items-center gap-6 px-5 font-display text-3xl font-black uppercase tracking-wide text-white">
-        {valla.nombre}
-        <span className="size-2 rounded-full bg-neon" />
-      </span>
-    );
+    return <span className="break-words text-center font-display text-3xl font-black uppercase leading-tight tracking-wide text-white">{valla.nombre}</span>;
   return (
-    <span className="flex h-full shrink-0 items-center px-7">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/brand/logo.png" alt="La Marina Sport Club" className="max-h-[56%] w-auto max-w-[11rem] object-contain opacity-90" />
-    </span>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src="/brand/logo.png" alt="La Marina Sport Club" className="max-h-[58%] max-w-full object-contain opacity-90" />
   );
 }

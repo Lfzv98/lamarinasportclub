@@ -50,9 +50,13 @@ function TV({ evento }: { evento: EventoAmericano }) {
   const terminado = evento.estado === "FINALIZADO";
   // Filas que entran completas en la pantalla (sin cortar la última): alto del lienzo menos
   // márgenes, encabezado, vallas y título, dividido por el alto de una fila de la tabla.
-  const altoFila = (evento.modalidad === "DUPLA_FIJA" ? 100 : 92) - (estrecho ? 14 : 0);
+  const altoFila = (evento.modalidad === "DUPLA_FIJA" ? 96 : 86) - (estrecho ? 10 : 0);
   const altoTabla = vertical ? (terminado ? lienzo.alto - 600 : (lienzo.alto - 560) * 0.54 - 130) : lienzo.alto - 380;
-  const filasPorPagina = lienzo.desplaza ? FILAS_POR_PAGINA : Math.max(3, Math.floor(altoTabla / altoFila));
+  const calculadas = lienzo.desplaza ? FILAS_POR_PAGINA : Math.max(3, Math.floor(altoTabla / altoFila));
+  // Respaldo: si igual algo se sale de la pantalla (otra letra, otro navegador), quita filas hasta que entre.
+  const [menos, setMenos] = useState(0);
+  const filasPorPagina = Math.max(3, calculadas - menos);
+  useEffect(() => setMenos(0), [lienzo.alto, lienzo.ancho, calculadas]);
   const ronda = evento.rondas.find((r) => r.numero === evento.rondaActual);
   const conReloj = evento.cronometro !== false;
   const reloj = useReloj(!terminado && conReloj ? ronda : undefined, evento.duracionRondaMin);
@@ -66,6 +70,14 @@ function TV({ evento }: { evento: EventoAmericano }) {
     return () => clearInterval(t);
   }, [paginas]);
   const tablaPagina = { ...tabla, filas: tabla.filas.slice(pagina * filasPorPagina, (pagina + 1) * filasPorPagina) };
+  useEffect(() => {
+    if (lienzo.desplaza || !lienzo.listo) return;
+    const t = setTimeout(() => {
+      const m = document.querySelector("main");
+      if (m && m.scrollHeight > m.clientHeight + 2 && filasPorPagina > 3) setMenos((n) => n + 1);
+    }, 900);
+    return () => clearTimeout(t);
+  }, [lienzo.desplaza, lienzo.listo, filasPorPagina, pagina, tabla.filas.length]);
   const espera = ronda ? enEspera(evento, ronda) : [];
   // Vallas publicitarias: columna a la izquierda en una TV; en vertical o en un celular, franja arriba.
   const vallasEnFila = vertical || estrecho;
@@ -95,8 +107,9 @@ function TV({ evento }: { evento: EventoAmericano }) {
 
   return (
     <Escenario oculto={cursorOculto} lienzo={lienzo} marcaAgua>
-      <header className="flex flex-wrap items-center gap-x-6 gap-y-4">
-        <div className="min-w-[18rem] flex-1">
+      {/* Cabecera centrada: nombre del americano, QR y hora; las flechas quedan a un lado. */}
+      <header className="relative flex flex-wrap items-center justify-center gap-x-10 gap-y-4 px-28">
+        <div className="min-w-0 max-w-[48rem] text-center">
           <h1 className="truncate font-display text-4xl font-bold xl:text-5xl">{evento.nombre}</h1>
           <p className="text-xl text-white/55">
             {categoriaLabel(evento.categoria)} · {evento.pistas} pistas
@@ -104,7 +117,7 @@ function TV({ evento }: { evento: EventoAmericano }) {
         </div>
         <SeguirQR evento={evento} />
         <Reloj />
-        <div className={clsx("flex gap-2 transition-opacity", cursorOculto && "opacity-0")}>
+        <div className={clsx("absolute right-0 top-1/2 flex -translate-y-1/2 gap-2 transition-opacity", cursorOculto && "opacity-0")}>
           <Link href={`/evento/${evento.id}`} className="btn-ghost !p-3" aria-label="Salir del modo TV">
             <ArrowLeft className="size-5" />
           </Link>

@@ -13,7 +13,10 @@ import type { Valla } from "@/types/americano";
  * de los americanos. La imagen se sube al instante; nombre y orden se guardan con "Guardar cambios".
  */
 export function VallasClub({ valor, onChange }: { valor: Valla[] | undefined; onChange: (v: Valla[]) => void }) {
-  const vallas = Array.from({ length: MAX_VALLAS }, (_, i) => valor?.[i] ?? { id: `valla-${i + 1}`, nombre: "", img: null });
+  const nueva = (i: number): Valla => ({ id: `valla-${i + 1}`, nombre: "", img: null });
+  const cantidad = Math.min(MAX_VALLAS, Math.max(1, valor?.length || MAX_VALLAS));
+  const vallas = Array.from({ length: cantidad }, (_, i) => valor?.[i] ?? nueva(i));
+  const elegirCantidad = (k: number) => onChange(Array.from({ length: k }, (_, i) => vallas[i] ?? nueva(i)));
   const archivo = useRef<HTMLInputElement>(null);
   const [subiendo, setSubiendo] = useState<number | null>(null);
   const cambiar = (i: number, cambios: Partial<Valla>) => onChange(vallas.map((v, k) => (k === i ? { ...v, ...cambios } : v)));
@@ -41,8 +44,24 @@ export function VallasClub({ valor, onChange }: { valor: Valla[] | undefined; on
         <Megaphone className="size-3.5" /> Publicidad del Modo TV (americanos)
       </h2>
       <p className="mb-3 text-xs text-white/50">
-        6 vallas a la izquierda de la tabla, como las de un estadio: corren solas y cambian de lugar cada 20 segundos. Usa imágenes anchas (ej. 1200 × 300). Si una valla queda vacía, sale el logo de La Marina.
+        Vallas a la izquierda de la tabla, como las de un estadio: se reparten el alto de la pantalla y cambian de lugar cada 12 segundos. Usa imágenes anchas (ej. 1200 × 300). Si una valla queda vacía, sale el logo de La Marina.
       </p>
+      <div className="glass mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl p-3">
+        <span className="text-sm font-semibold">¿Cuántas vallas?</span>
+        <div className="flex gap-1 rounded-xl bg-white/5 p-1" role="radiogroup" aria-label="Cantidad de vallas">
+          {Array.from({ length: MAX_VALLAS }, (_, i) => i + 1).map((k) => (
+            <button
+              key={k}
+              role="radio"
+              aria-checked={k === cantidad}
+              onClick={() => elegirCantidad(k)}
+              className={k === cantidad ? "size-9 rounded-lg bg-neon font-display font-bold text-noche" : "size-9 rounded-lg font-display font-bold text-white/60 hover:text-white"}
+            >
+              {k}
+            </button>
+          ))}
+        </div>
+      </div>
       <ul className="space-y-2">
         {vallas.map((v, i) => (
           <li key={v.id} className="glass flex items-center gap-3 rounded-2xl p-3">
