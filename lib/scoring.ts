@@ -227,6 +227,11 @@ function filaVacia(entidadId: string, nombre: string, fotoUrls: FilaPosicion["fo
   return { entidadId, nombre, fotoUrls, posicion: 0, pj: 0, pg: 0, pe: 0, pp: 0, puntosAFavor: 0, puntosEnContra: 0, diferencia: 0, puntos: 0 };
 }
 
+/** Foto de la dupla fija (las parejas de los partidos son copias: se busca la del evento). */
+export function fotoDeDupla(evento: Pick<EventoAmericano, "modalidad" | "parejas">, parejaId: string): string | null {
+  return evento.modalidad === "DUPLA_FIJA" ? (evento.parejas.find((p) => p.id === parejaId)?.fotoUrl ?? null) : null;
+}
+
 export function nombreJugador(j?: Jugador): string {
   if (!j) return "—";
   return j.apellido ? `${j.nombre} ${j.apellido.charAt(0)}.` : j.nombre;
@@ -254,7 +259,7 @@ export function calcularTabla(evento: EventoAmericano): TablaPosiciones {
   } else {
     for (const p of evento.parejas) {
       const [a, b] = p.jugadorIds.map((id) => jugadores.get(id));
-      filas.set(p.id, { ...filaVacia(p.id, p.nombre ?? `${a?.nombre ?? "?"} / ${b?.nombre ?? "?"}`, [a?.fotoUrl, b?.fotoUrl]), retirado: !!p.retirada });
+      filas.set(p.id, { ...filaVacia(p.id, p.nombre ?? `${a?.nombre ?? "?"} / ${b?.nombre ?? "?"}`, [a?.fotoUrl, b?.fotoUrl]), fotoDupla: p.fotoUrl ?? null, retirado: !!p.retirada });
     }
   }
 

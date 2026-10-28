@@ -31,7 +31,7 @@ import {
 import { sonar, vibrar } from "@/lib/feedback";
 import { horaRonda, nombrePista } from "@/lib/horarios";
 import { PistaLabel } from "@/components/PistaLabel";
-import { calcularTabla, ganador } from "@/lib/scoring";
+import { calcularTabla, fotoDeDupla, ganador } from "@/lib/scoring";
 import { useAmericanos, useEsStaff } from "@/lib/store";
 import type { EventoAmericano, Jugador, Partido } from "@/types/americano";
 
@@ -350,7 +350,7 @@ function PistaCard({
     const valor = res ? (lado === "A" ? res.puntosA : res.puntosB) : null;
     return (
       <div className={clsx("flex items-center gap-3 rounded-2xl p-3 transition", gana ? "bg-neon/10" : terminado ? "opacity-60" : "")}>
-        <AvatarPareja nombres={js.map((j) => j?.nombre ?? "?")} fotos={js.map((j) => j?.fotoUrl)} size={38} />
+        <AvatarPareja nombres={js.map((j) => j?.nombre ?? "?")} fotos={js.map((j) => j?.fotoUrl)} dupla={fotoDeDupla(evento, par.id)} size={38} />
         <div className="min-w-0 flex-1">
           {js.map((j, i) => (
             <p key={i} className={clsx("truncate text-sm leading-snug", gana ? "font-bold text-white" : "font-medium text-white/85")}>

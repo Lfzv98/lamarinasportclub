@@ -34,6 +34,39 @@ export async function comprimirFoto(file: File, lado = 900): Promise<string> {
   return url;
 }
 
+/**
+ * Imagen de una valla publicitaria: hasta 1400 × 360 px, conservando la transparencia del logo
+ * (WebP o PNG) y, si pesa mucho, JPEG sobre el fondo oscuro de las vallas.
+ */
+export async function comprimirBanner(file: File): Promise<string> {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((ok, mal) => {
+      const i = new Image();
+      i.onload = () => ok(i);
+      i.onerror = mal;
+      i.src = url;
+    });
+    const escala = Math.min(1, 1400 / img.naturalWidth, 360 / img.naturalHeight);
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(img.naturalWidth * escala));
+    c.height = Math.max(1, Math.round(img.naturalHeight * escala));
+    const ctx = c.getContext("2d")!;
+    ctx.drawImage(img, 0, 0, c.width, c.height);
+    let out = c.toDataURL("image/webp", 0.88);
+    if (!out.startsWith("data:image/webp")) out = c.toDataURL("image/png");
+    if (out.length > 450_000) {
+      ctx.globalCompositeOperation = "destination-over";
+      ctx.fillStyle = "#04060d";
+      ctx.fillRect(0, 0, c.width, c.height);
+      out = c.toDataURL("image/jpeg", 0.85);
+    }
+    return out;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 export async function subirFoto(eventoId: string, tipo: TipoFoto, id: string, img: string): Promise<{ url?: string; error?: string }> {
   try {
     const r = await fetch("/api/fotos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ eventoId, tipo, id, img }) });

@@ -152,12 +152,19 @@ export function useLienzo(vertical: boolean): Lienzo {
   return l;
 }
 
-export function Escenario({ oculto, lienzo, children }: { oculto: boolean; lienzo: Lienzo; children: React.ReactNode }) {
+/** `marcaAgua`: el logo de La Marina grande, centrado y difuminado detrás de todo. */
+export function Escenario({ oculto, lienzo, marcaAgua = false, children }: { oculto: boolean; lienzo: Lienzo; marcaAgua?: boolean; children: React.ReactNode }) {
   const { ancho, alto, escala, desplaza, zoom, listo } = lienzo;
   return (
     <main className={clsx("tema-noche pantalla fixed inset-0 overflow-x-hidden", desplaza ? "overflow-y-auto" : "overflow-hidden", oculto && "cursor-none", !listo && "invisible")}>
+      {marcaAgua && (
+        <div aria-hidden className="pointer-events-none fixed inset-0 flex items-center justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/logo.png" alt="" className="w-[72vw] max-w-none opacity-[0.11] blur-[6px] saturate-[0.85]" />
+        </div>
+      )}
       <div
-        className="flex flex-col gap-6 p-10"
+        className="relative flex flex-col gap-6 p-10"
         style={
           zoom
             ? { width: ancho, height: desplaza ? "auto" : alto, minHeight: alto, zoom: escala }

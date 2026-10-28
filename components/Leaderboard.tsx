@@ -44,7 +44,7 @@ export function Posicion({ n, grande = false }: { n: number; grande?: boolean })
     <span
       className={clsx(
         "inline-flex shrink-0 items-center justify-center rounded-full font-display font-bold tabular",
-        grande ? "size-12 text-xl" : "size-7 text-xs sm:size-8 sm:text-sm",
+        grande ? "size-14 text-2xl" : "size-7 text-xs sm:size-8 sm:text-sm",
         n <= 3 ? `bg-gradient-to-br ${MEDALLAS[n - 1]}` : "bg-white/5 text-white/70",
       )}
     >
@@ -61,9 +61,9 @@ function Delta({ v, grande }: { v?: number; grande?: boolean }) {
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0 }}
-          className={clsx("flex items-center font-bold", grande ? "text-lg" : "text-xs", v > 0 ? "text-lima" : "text-coral")}
+          className={clsx("flex items-center font-bold", grande ? "text-xl" : "text-xs", v > 0 ? "text-lima" : "text-coral")}
         >
-          {v > 0 ? <ArrowUp className={grande ? "size-5" : "size-3.5"} /> : <ArrowDown className={grande ? "size-5" : "size-3.5"} />}
+          {v > 0 ? <ArrowUp className={grande ? "size-6" : "size-3.5"} /> : <ArrowDown className={grande ? "size-6" : "size-3.5"} />}
           {Math.abs(v)}
         </motion.span>
       ) : null}
@@ -72,7 +72,7 @@ function Delta({ v, grande }: { v?: number; grande?: boolean }) {
 }
 
 const COLS = "grid-cols-[1.75rem_minmax(0,1fr)_repeat(3,1.6rem)_2.1rem_2.3rem] sm:grid-cols-[2.75rem_minmax(0,1fr)_repeat(6,3rem)_3.5rem]";
-const COLS_TV = "grid-cols-[4rem_minmax(0,1fr)_repeat(6,5rem)_6rem]";
+const COLS_TV = "grid-cols-[4.5rem_minmax(0,1fr)_repeat(6,4.75rem)_6.5rem]";
 const COLS_TV_ESTRECHO = "grid-cols-[3rem_minmax(0,1fr)_repeat(6,3.25rem)_4rem]";
 
 /** Tabla de posiciones con animación de cambio de posición (layout animations). */
@@ -81,7 +81,7 @@ export function Leaderboard({ tabla, nombresPorFila, modoTV = false, estrecho = 
   const cambios = useCambios(tabla.filas);
   const filas = limite ? tabla.filas.slice(0, limite) : tabla.filas;
   const cols = modoTV ? (estrecho ? COLS_TV_ESTRECHO : COLS_TV) : COLS;
-  const th = clsx("text-center font-semibold uppercase tracking-wider text-white/40", modoTV ? "text-base" : "text-[10px] sm:text-[11px]");
+  const th = clsx("text-center font-semibold uppercase tracking-wider text-white/40", modoTV ? "text-lg" : "text-[10px] sm:text-[11px]");
 
   return (
     <div className={clsx("glass overflow-hidden", modoTV ? "rounded-[2rem]" : "rounded-3xl")}>
@@ -100,7 +100,7 @@ export function Leaderboard({ tabla, nombresPorFila, modoTV = false, estrecho = 
         <ul>
           {filas.map((f) => {
             const delta = cambios[f.entidadId];
-            const td = clsx("text-center tabular", modoTV ? "text-2xl font-semibold" : "text-[13px] sm:text-sm");
+            const td = clsx("text-center tabular", modoTV ? (estrecho ? "text-2xl font-semibold" : "text-[2rem] font-semibold") : "text-[13px] sm:text-sm");
             return (
               <motion.li
                 key={f.entidadId}
@@ -109,7 +109,7 @@ export function Leaderboard({ tabla, nombresPorFila, modoTV = false, estrecho = 
                 className={clsx(
                   "grid items-center gap-1 border-b border-white/[0.04] last:border-0",
                   cols,
-                  modoTV ? "px-6 py-3" : "px-2 py-2.5 sm:px-4",
+                  modoTV ? "px-6 py-3.5" : "px-2 py-2.5 sm:px-4",
                   f.posicion === 1 && "bg-gradient-to-r from-neon/10 to-transparent",
                   delta && delta > 0 && "bg-lima/[0.06]",
                 )}
@@ -118,10 +118,10 @@ export function Leaderboard({ tabla, nombresPorFila, modoTV = false, estrecho = 
                   <Posicion n={f.posicion} grande={modoTV} />
                 </span>
                 <span className={clsx("flex min-w-0 items-center", modoTV ? "gap-3" : "gap-2")}>
-                  <AvatarPareja nombres={nombresPorFila(f)} fotos={f.fotoUrls} size={modoTV ? 48 : 28} />
+                  <AvatarPareja nombres={nombresPorFila(f)} fotos={f.fotoUrls} dupla={f.fotoDupla} size={modoTV ? (estrecho ? 48 : 58) : 28} />
                   {modoTV ? (
                     // En la TV va el nombre completo de cada jugador, uno por línea, sin cortar.
-                    <span className={clsx("min-w-0 break-words font-semibold leading-tight", nombresPorFila(f).length > 1 ? "text-xl" : "text-2xl")}>
+                    <span className={clsx("min-w-0 break-words font-semibold leading-tight", estrecho ? (nombresPorFila(f).length > 1 ? "text-xl" : "text-2xl") : nombresPorFila(f).length > 1 ? "text-[1.7rem]" : "text-[2rem]")}>
                       {nombresPorFila(f).map((n, i) => (
                         <span key={i} className="block">{n}</span>
                       ))}
@@ -130,7 +130,7 @@ export function Leaderboard({ tabla, nombresPorFila, modoTV = false, estrecho = 
                     <span className="min-w-0 truncate text-[13px] font-semibold sm:text-sm">{f.nombre}</span>
                   )}
                   {f.retirado && <span className="chip shrink-0 !px-2 !py-0.5 text-[10px] text-white/50">Retiro</span>}
-                  {f.posicion === 1 && f.pj > 0 && <Crown className={clsx("shrink-0 text-neon", modoTV ? "size-6" : "size-4")} />}
+                  {f.posicion === 1 && f.pj > 0 && <Crown className={clsx("shrink-0 text-neon", modoTV ? "size-7" : "size-4")} />}
                   <Delta v={delta} grande={modoTV} />
                 </span>
                 <span className={td}>{f.pj}</span>
@@ -141,7 +141,7 @@ export function Leaderboard({ tabla, nombresPorFila, modoTV = false, estrecho = 
                 <span className={clsx(td, f.diferencia > 0 ? "text-neon" : f.diferencia < 0 ? "text-coral" : "text-white/50")}>
                   {f.diferencia > 0 ? `+${f.diferencia}` : f.diferencia}
                 </span>
-                <motion.span key={f.puntos} initial={{ scale: 1.3 }} animate={{ scale: 1 }} className={clsx("text-center font-display font-bold tabular text-neon", modoTV ? "text-3xl" : "text-base")}>
+                <motion.span key={f.puntos} initial={{ scale: 1.3 }} animate={{ scale: 1 }} className={clsx("text-center font-display font-bold tabular text-neon", modoTV ? (estrecho ? "text-3xl" : "text-[2.6rem]") : "text-base")}>
                   {f.puntos}
                 </motion.span>
               </motion.li>

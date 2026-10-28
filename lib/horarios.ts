@@ -85,6 +85,7 @@ export function normalizarClub(c: Partial<ConfigClub> | undefined): ConfigClub {
     pistas: c?.pistas?.length ? c.pistas : CLUB_POR_DEFECTO.pistas,
     contacto: { ...CLUB_POR_DEFECTO.contacto, ...c?.contacto },
     dias: c?.dias?.length === 7 ? c.dias : CLUB_POR_DEFECTO.dias,
+    vallas: Array.isArray(c?.vallas) ? c.vallas.slice(0, 6) : [],
   };
 }
 

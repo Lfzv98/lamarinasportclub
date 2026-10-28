@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   ArrowRight,
   CalendarDays,
+  Camera,
   Check,
   Clock,
   CloudRain,
@@ -32,7 +33,8 @@ import {
   X,
 } from "lucide-react";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { Avatar } from "@/components/Avatar";
+import { AvatarPareja } from "@/components/Avatar";
+import { TomarFoto } from "@/components/Foto";
 import { Logo } from "@/components/Logo";
 import { StaffGate } from "@/components/StaffGate";
 import { Segmented } from "@/components/ui/Segmented";
@@ -67,6 +69,7 @@ import { MapaPistas } from "@/components/MapaPistas";
 import { aMinutos, DIAS, diaSemana, horaFinPrevista, horarioDelDia, nombrePista, rondasQueCaben, validarFranja } from "@/lib/horarios";
 import { MAX_RONDAS } from "@/lib/validacion";
 import { useAmericanos } from "@/lib/store";
+import { subirFotosDelRegistro, useFotosRegistro } from "@/lib/fotosRegistro";
 import { hayBorrador, useBorrador, useLimpiarBorrador } from "@/hooks/useBorrador";
 import type { Categoria, ConfigPuntuacion, Genero, Jugador, MetodoPuntuacion, Modalidad, Nivel, Pareja, Rama } from "@/types/americano";
 
@@ -275,6 +278,10 @@ function Setup() {
       semilla,
     });
     guardar(evento);
+    // Las fotos del registro se suben en segundo plano apenas el evento llega al servidor.
+    const fotos = useFotosRegistro.getState().fotos;
+    useFotosRegistro.getState().limpiar();
+    void subirFotosDelRegistro(evento, fotos);
     limpiarBorrador();
     sonar("ok");
     vibrar([20, 40, 60]);
@@ -472,10 +479,13 @@ function Setup() {
                     categoria={categoria}
                   />
                 ) : mixto ? (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <EditorJugadores titulo="Mujeres" jugadores={jugadores} setJugadores={setJugadores} genero="F" nivel={nivelJugadores} conNivel={!!suma} />
-                    <EditorJugadores titulo="Hombres" jugadores={jugadores} setJugadores={setJugadores} genero="M" nivel={nivelJugadores} conNivel={!!suma} />
-                  </div>
+                  <>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <EditorJugadores titulo="Mujeres" jugadores={jugadores} setJugadores={setJugadores} genero="F" nivel={nivelJugadores} conNivel={!!suma} />
+                      <EditorJugadores titulo="Hombres" jugadores={jugadores} setJugadores={setJugadores} genero="M" nivel={nivelJugadores} conNivel={!!suma} />
+                    </div>
+                    <AvisoFotos />
+                  </>
                 ) : (
                   <EditorJugadores jugadores={jugadores} setJugadores={setJugadores} genero={generoFijo ?? "M"} nivel={nivelJugadores} conNivel={!!suma} />
                 )}
@@ -894,6 +904,7 @@ function EditorJugadores({
 }) {
   const [texto, setTexto] = useState("");
   const [nivelNuevo, setNivelNuevo] = useState<Nivel>(nivel);
+  const [foto, setFoto] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const lista = titulo ? jugadores.filter((j) => j.genero === genero) : jugadores;
   const mujer = genero === "F";
@@ -907,7 +918,11 @@ function EditorJugadores({
     if (!nombres.length) return;
     vibrar(10);
     sonar("tap");
-    setJugadores((js) => [...js, ...nombres.map((n) => crearJugador(n, genero, conNivel ? nivelNuevo : nivel))]);
+    const nuevos = nombres.map((n) => crearJugador(n, genero, conNivel ? nivelNuevo : nivel));
+    // La foto tomada antes de presionar Enter es del (primer) jugador que se agrega.
+    if (foto) useFotosRegistro.getState().poner(nuevos[0].id, foto);
+    setFoto(null);
+    setJugadores((js) => [...js, ...nuevos]);
     setTexto("");
     input.current?.focus();
   }
@@ -935,6 +950,7 @@ function EditorJugadores({
           autoComplete="off"
           aria-label={titulo ? `Agregar ${mujer ? "mujer" : "hombre"}` : "Agregar jugador"}
         />
+        <BotonFoto foto={foto} onFoto={setFoto} etiqueta={mujer ? "Foto de la jugadora" : "Foto del jugador"} />
         <button className="btn-neon !px-4" onClick={agregar} aria-label={titulo ? `Agregar ${mujer ? "mujer" : "hombre"}` : "Agregar jugador"}>
           <UserPlus className="size-5" />
         </button>
@@ -952,7 +968,7 @@ function EditorJugadores({
               className={clsx("flex items-center gap-3 rounded-2xl px-3 py-2", titulo ? "bg-white/[0.04]" : "glass")}
             >
               <span className="w-5 text-right text-xs font-semibold text-white/30">{i + 1}</span>
-              <Avatar nombre={`${j.nombre} ${j.apellido ?? ""}`} size={32} />
+              <FotoDelRegistro id={j.id} nombres={[`${j.nombre} ${j.apellido ?? ""}`]} />
               <span className="min-w-0 flex-1 truncate text-sm font-medium">
                 {j.nombre} {j.apellido}
               </span>
@@ -971,6 +987,7 @@ function EditorJugadores({
         </AnimatePresence>
       </ul>
       {titulo && lista.length === 0 && <p className="px-1 pb-1 pt-2 text-xs text-white/35">Escribe un nombre y presiona Enter. Puedes pegar varios separados por coma.</p>}
+      {!titulo && <AvisoFotos />}
     </div>
   );
 }
@@ -1007,6 +1024,7 @@ function EditorParejas({
 }) {
   const [a, setA] = useState("");
   const [b, setB] = useState("");
+  const [foto, setFoto] = useState<string | null>(null);
   const conSuma = !!categoria.suma;
   const [nivelA, setNivelA] = useState<Nivel>(nivel);
   const [nivelB, setNivelB] = useState<Nivel>(nivel);
@@ -1028,8 +1046,11 @@ function EditorParejas({
     // En dupla mixta: primer jugador hombre, segundo mujer.
     const ja = crearJugador(a, generoFijo ?? "M", conSuma ? nivelA : nivel);
     const jb = crearJugador(b, generoFijo ?? "F", conSuma ? nivelB : nivel);
+    const pareja: Pareja = { id: nuevoId("par_"), jugadorIds: [ja.id, jb.id], nombre: `${ja.nombre} / ${jb.nombre}` };
+    if (foto) useFotosRegistro.getState().poner(pareja.id, foto);
+    setFoto(null);
     setJugadores((js) => [...js, ja, jb]);
-    setParejas((ps) => [...ps, { id: nuevoId("par_"), jugadorIds: [ja.id, jb.id], nombre: `${ja.nombre} / ${jb.nombre}` }]);
+    setParejas((ps) => [...ps, pareja]);
     setA("");
     setB("");
     vibrar(10);
@@ -1040,6 +1061,7 @@ function EditorParejas({
   function quitar(p: Pareja) {
     setParejas((ps) => ps.filter((x) => x.id !== p.id));
     setJugadores((js) => js.filter((j) => !p.jugadorIds.includes(j.id)));
+    useFotosRegistro.getState().poner(p.id, null);
   }
 
   const cambiarNivel = (id: string, n: Nivel) => setJugadores((js) => js.map((x) => (x.id === id ? { ...x, nivel: n } : x)));
@@ -1070,9 +1092,12 @@ function EditorParejas({
             aria-label={mixta ? "Mujer de la dupla" : "Jugador 2"}
           />
         </div>
-        <button className="btn-neon" onClick={() => agregar()}>
-          <Plus className="size-4" /> Dupla
-        </button>
+        <div className="flex gap-2">
+          <BotonFoto foto={foto} onFoto={setFoto} etiqueta="Foto de la dupla" />
+          <button className="btn-neon flex-1" onClick={() => agregar()}>
+            <Plus className="size-4" /> Dupla
+          </button>
+        </div>
       </div>
       {conSuma && (
         <p className="mt-2 text-xs text-white/45">
@@ -1096,10 +1121,7 @@ function EditorParejas({
               >
                 <div className="flex items-center gap-3">
                   <span className="w-5 text-right text-xs font-semibold text-white/30">{i + 1}</span>
-                  <span className="flex -space-x-2">
-                    <Avatar nombre={x?.nombre ?? "?"} size={32} />
-                    <Avatar nombre={y?.nombre ?? "?"} size={32} />
-                  </span>
+                  <FotoDelRegistro id={p.id} nombres={[x?.nombre ?? "?", y?.nombre ?? "?"]} />
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">{p.nombre}</span>
                   {conSuma && <span className={clsx("chip !py-0.5 tabular", ok ? "text-neon" : "border-coral/40 text-coral")}>Σ {s ?? "?"}</span>}
                   <button className="rounded-lg p-2 text-white/40 hover:bg-coral/10 hover:text-coral" onClick={() => quitar(p)} aria-label={`Quitar dupla ${p.nombre}`}>
@@ -1121,6 +1143,51 @@ function EditorParejas({
           })}
         </AnimatePresence>
       </ul>
+      <AvisoFotos />
     </div>
+  );
+}
+
+/** Cámara junto a la casilla del nombre: la foto queda lista para el que se agregue con Enter. */
+function BotonFoto({ foto, onFoto, etiqueta }: { foto: string | null; onFoto: (img: string | null) => void; etiqueta: string }) {
+  if (foto)
+    return (
+      <span className="relative shrink-0">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={foto} alt={etiqueta} className="size-11 rounded-xl object-cover ring-2 ring-neon" />
+        <button type="button" className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full bg-coral text-white" onClick={() => onFoto(null)} aria-label="Quitar foto">
+          <X className="size-3" />
+        </button>
+      </span>
+    );
+  return (
+    <TomarFoto className="btn-ghost !h-11 shrink-0 !px-3" etiqueta={etiqueta} onFoto={onFoto}>
+      <Camera className="size-5" />
+    </TomarFoto>
+  );
+}
+
+/** Avatar de un jugador o dupla ya inscritos: tócalo para tomar o cambiar la foto. */
+function FotoDelRegistro({ id, nombres }: { id: string; nombres: string[] }) {
+  const foto = useFotosRegistro((s) => s.fotos[id]);
+  const poner = useFotosRegistro((s) => s.poner);
+  return (
+    <TomarFoto className="relative shrink-0 rounded-full" etiqueta={`Foto de ${nombres.join(" y ")}`} onFoto={(img) => poner(id, img)}>
+      <AvatarPareja nombres={nombres} dupla={nombres.length > 1 ? foto : undefined} fotos={nombres.length > 1 ? undefined : [foto]} size={32} />
+      {!foto && (
+        <span className="absolute -bottom-1 -right-1 flex size-4 items-center justify-center rounded-full bg-lima text-marino-2">
+          <Camera className="size-2.5" />
+        </span>
+      )}
+    </TomarFoto>
+  );
+}
+
+function AvisoFotos() {
+  return (
+    <p className="mt-3 flex items-start gap-1.5 px-1 text-xs text-white/40">
+      <Camera className="mt-0.5 size-3.5 shrink-0" />
+      <span>Foto opcional: sale en la TV del club y en el ranking del QR. Pide permiso antes de tomarla.</span>
+    </p>
   );
 }

@@ -135,6 +135,11 @@ export function validarClub(x: unknown): string[] {
   if (!esEntero(c.minutosEntreRondas, 0, 60)) errores.push("minutosEntreRondas debe estar entre 0 y 60.");
   if (!Array.isArray(c.pistas) || c.pistas.length < 1 || c.pistas.length > 6) errores.push("pistas debe tener entre 1 y 6 elementos.");
   else if (new Set(c.pistas.map((p) => p.numero)).size !== c.pistas.length) errores.push("Números de pista repetidos.");
+  if (c.vallas != null) {
+    if (!Array.isArray(c.vallas) || c.vallas.length > 6) errores.push("vallas: máximo 6.");
+    else if (c.vallas.some((v) => !v || typeof v.id !== "string" || typeof v.nombre !== "string" || v.nombre.length > 80 || (v.img != null && (typeof v.img !== "string" || !v.img.startsWith("/api/club/vallas/")))))
+      errores.push("Cada valla necesita id, nombre (hasta 80 letras) y, si tiene imagen, la subida en Ajustes.");
+  }
   if (typeof c.actualizadoEn !== "string" || Number.isNaN(Date.parse(c.actualizadoEn))) errores.push("actualizadoEn debe ser una fecha ISO.");
   return errores;
 }

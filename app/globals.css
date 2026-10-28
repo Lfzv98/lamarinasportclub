@@ -213,6 +213,22 @@ body {
 }
 .animar-subir { animation: subir 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
+/* Vallas publicitarias del Modo TV: como las vallas LED de un estadio, corren sin parar. */
+@keyframes valla-correr {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.valla-pista { animation: valla-correr var(--valla-seg, 18s) linear infinite; will-change: transform; }
+.valla-led {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.09) 0.9px, transparent 1.2px);
+  background-size: 5px 5px;
+}
+@keyframes valla-brillo {
+  from { transform: translateX(-100%) skewX(-20deg); }
+  to { transform: translateX(400%) skewX(-20deg); }
+}
+.valla-brillo { animation: valla-brillo 7s ease-in-out infinite; }
+
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
 
