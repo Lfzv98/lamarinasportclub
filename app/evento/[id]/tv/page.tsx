@@ -48,7 +48,11 @@ function TV({ evento }: { evento: EventoAmericano }) {
   const vallas = useAmericanos((s) => s.club.vallas);
   const tabla = useMemo(() => calcularTabla(evento), [evento]);
   const terminado = evento.estado === "FINALIZADO";
-  const filasPorPagina = vertical ? 9 : estrecho ? FILAS_POR_PAGINA : terminado ? 9 : 8;
+  // Filas que entran completas en la pantalla (sin cortar la última): alto del lienzo menos
+  // márgenes, encabezado, vallas y título, dividido por el alto de una fila de la tabla.
+  const altoFila = (evento.modalidad === "DUPLA_FIJA" ? 100 : 92) - (estrecho ? 14 : 0);
+  const altoTabla = vertical ? (terminado ? lienzo.alto - 600 : (lienzo.alto - 560) * 0.54 - 130) : lienzo.alto - 380;
+  const filasPorPagina = lienzo.desplaza ? FILAS_POR_PAGINA : Math.max(3, Math.floor(altoTabla / altoFila));
   const ronda = evento.rondas.find((r) => r.numero === evento.rondaActual);
   const conReloj = evento.cronometro !== false;
   const reloj = useReloj(!terminado && conReloj ? ronda : undefined, evento.duracionRondaMin);
