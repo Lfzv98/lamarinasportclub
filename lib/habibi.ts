@@ -15,10 +15,13 @@
 import type {
   Categoria,
   ConfigPuntuacion,
+  EmparejarLlave,
   EventoAmericano,
   FaseLlave,
   HabibiLlave,
   InicioLlave,
+  Jugador,
+  Modalidad,
   Pareja,
   Partido,
   PistaClub,
@@ -26,13 +29,21 @@ import type {
   Ronda,
 } from "@/types/americano";
 import { crearEvento, despues, nuevoId } from "./evento.ts";
-import { planRondas } from "./rotation.ts";
+import { planRondas, rondasSugeridas } from "./rotation.ts";
 import { calcularTabla, ganador, normalizarResultado } from "./scoring.ts";
 
 export const NOMBRE_HABIBI = "Americano HABIBI Tournament";
 export const LETRAS = ["A", "B"] as const;
 export const MIN_DUPLAS_GRUPO = 2;
 export const MAX_DUPLAS_GRUPO = 12;
+/** Grupos individuales: jugadores por grupo (la API admite 48 por evento y la llave reúne a los dos grupos). */
+export const MIN_JUGADORES_GRUPO = 4;
+export const MAX_JUGADORES_GRUPO = 24;
+
+export const EMPAREJAR: { id: EmparejarLlave; label: string; detalle: string }[] = [
+  { id: "EQUILIBRADO", label: "Equilibradas", detalle: "El 1º juega con el último clasificado, el 2º con el penúltimo… Duplas parejas entre sí." },
+  { id: "POR_ORDEN", label: "Por orden", detalle: "El 1º con el 2º, el 3º con el 4º… Premia al que terminó arriba." },
+];
 
 /**
  * Cruces de la primera ronda de la llave, en orden de cuadro: los partidos vecinos
@@ -129,7 +140,11 @@ export interface NuevoHabibiInput {
   horaFin?: string;
   minutosEntreRondas?: number;
   categoria: Categoria;
-  /** Duplas y sus jugadores de cada grupo, en orden A, B. */
+  /** Formato de los grupos: individual (cambian de pareja cada ronda) o dupla fija. */
+  modalidad: Modalidad;
+  /** Grupos individuales: cómo se forman las duplas de la llave. */
+  emparejar?: EmparejarLlave;
+  /** Duplas (dupla fija) o solo jugadores (individual) de cada grupo, en orden A, B. */
   grupos: { parejas: Pareja[]; jugadores: EventoAmericano["jugadores"]; canchas: PistaClub[] }[];
   puntuacionGrupos: ConfigPuntuacion;
   cronometro: boolean;
@@ -146,16 +161,68 @@ export interface NuevoHabibiInput {
 /** Valida lo esencial antes de crear (mensajes para el staff). */
 export function erroresHabibi(input: NuevoHabibiInput): string[] {
   const errores: string[] = [];
+  const mixto = input.categoria.rama === "MIXTO";
   input.grupos.forEach((g, i) => {
     const letra = LETRAS[i];
-    if (g.parejas.length < MIN_DUPLAS_GRUPO) errores.push(`El grupo ${letra} necesita al menos ${MIN_DUPLAS_GRUPO} duplas.`);
-    if (g.parejas.length > MAX_DUPLAS_GRUPO) errores.push(`El grupo ${letra} admite hasta ${MAX_DUPLAS_GRUPO} duplas.`);
+    if (input.modalidad === "DUPLA_FIJA") {
+      if (g.parejas.length < MIN_DUPLAS_GRUPO) errores.push(`El grupo ${letra} necesita al menos ${MIN_DUPLAS_GRUPO} duplas.`);
+      if (g.parejas.length > MAX_DUPLAS_GRUPO) errores.push(`El grupo ${letra} admite hasta ${MAX_DUPLAS_GRUPO} duplas.`);
+    } else {
+      const h = g.jugadores.filter((j) => j.genero === "M").length;
+      const m = g.jugadores.length - h;
+      if (g.jugadores.length < MIN_JUGADORES_GRUPO) errores.push(`El grupo ${letra} necesita al menos ${MIN_JUGADORES_GRUPO} jugadores.`);
+      else if (mixto && (h < 2 || m < 2)) errores.push(`El grupo ${letra} necesita al menos 2 hombres y 2 mujeres.`);
+      if (g.jugadores.length > MAX_JUGADORES_GRUPO) errores.push(`El grupo ${letra} admite hasta ${MAX_JUGADORES_GRUPO} jugadores.`);
+    }
     if (!g.canchas.length) errores.push(`Elige al menos una pista para el grupo ${letra}.`);
   });
-  const menor = Math.min(...input.grupos.map((g) => g.parejas.length));
-  if (menor < CLASIFICAN[input.inicio]) errores.push(`Para arrancar en ${NOMBRE_FASE[input.inicio].toLowerCase()} cada grupo necesita ${CLASIFICAN[input.inicio]} duplas.`);
+  const menor = Math.min(...input.grupos.map((g) => duplasPosibles({ modalidad: input.modalidad, ...g }, mixto)));
+  const n = CLASIFICAN[input.inicio];
+  if (menor < n)
+    errores.push(
+      input.modalidad === "DUPLA_FIJA"
+        ? `Para arrancar en ${NOMBRE_FASE[input.inicio].toLowerCase()} cada grupo necesita ${n} duplas.`
+        : `Para arrancar en ${NOMBRE_FASE[input.inicio].toLowerCase()} cada grupo necesita ${mixto ? `${n} hombres y ${n} mujeres` : `${n * 2} jugadores`}.`,
+    );
   if (!input.canchasLlave.length) errores.push("Elige al menos una pista para la llave.");
   return errores;
+}
+
+/**
+ * Duplas que puede aportar un grupo a la llave: en dupla fija, sus duplas activas;
+ * en individual, las que se pueden formar con sus jugadores (en mixto, hombre + mujer).
+ */
+export function duplasPosibles(g: { modalidad: Modalidad; parejas: Pareja[]; jugadores: Jugador[] }, mixto: boolean): number {
+  if (g.modalidad === "DUPLA_FIJA") return g.parejas.filter((p) => !p.retirada).length;
+  const activos = g.jugadores.filter((j) => !j.retirado);
+  if (!mixto) return Math.floor(activos.length / 2);
+  const h = activos.filter((j) => j.genero === "M").length;
+  return Math.min(h, activos.length - h);
+}
+
+/**
+ * Grupo individual: forma las n duplas de la llave con su ranking, de la mejor sembrada
+ * a la peor. En mixto se ordena a hombres y mujeres por separado y cada dupla es hombre + mujer.
+ */
+export function duplasDeGrupo(g: EventoAmericano, n: number, emparejar: EmparejarLlave = "EQUILIBRADO"): Pareja[] {
+  const letra = g.habibi?.rol === "GRUPO" ? g.habibi.letra : "?";
+  const porId = new Map(g.jugadores.map((j) => [j.id, j]));
+  const orden = calcularTabla(g)
+    .filas.filter((f) => !f.retirado)
+    .map((f) => porId.get(f.entidadId))
+    .filter((j): j is Jugador => !!j);
+  let pares: [Jugador, Jugador][];
+  if (g.categoria.rama === "MIXTO") {
+    const h = orden.filter((j) => j.genero === "M").slice(0, n);
+    const m = orden.filter((j) => j.genero === "F").slice(0, n);
+    if (h.length < n || m.length < n) return [];
+    pares = h.map((x, i) => [x, emparejar === "POR_ORDEN" ? m[i] : m[n - 1 - i]]);
+  } else {
+    const top = orden.slice(0, n * 2);
+    if (top.length < n * 2) return [];
+    pares = Array.from({ length: n }, (_, i) => (emparejar === "POR_ORDEN" ? [top[2 * i], top[2 * i + 1]] : [top[i], top[2 * n - 1 - i]]));
+  }
+  return pares.map(([a, b], i) => ({ id: `hp-${letra}${i + 1}-${a.id}`, jugadorIds: [a.id, b.id], nombre: `${a.nombre} / ${b.nombre}` }));
 }
 
 /** Crea los grupos y la llave. Devuelve primero la llave (es la ficha del torneo). */
@@ -165,7 +232,12 @@ export function crearHabibi(input: NuevoHabibiInput): { llave: EventoAmericano; 
   const grupos = input.grupos.map((g, i) => {
     const letra = LETRAS[i];
     const pistas = Math.min(6, Math.max(1, g.canchas.length));
-    const plan = planRondas(g.parejas.length, "DUPLA_FIJA", pistas);
+    const mixto = input.categoria.rama === "MIXTO";
+    const hombres = g.jugadores.filter((j) => j.genero === "M").length;
+    const rondas =
+      input.modalidad === "DUPLA_FIJA"
+        ? planRondas(g.parejas.length, "DUPLA_FIJA", pistas).rondas
+        : rondasSugeridas(g.jugadores.length, "INDIVIDUAL_ROTATIVO", pistas, mixto ? { hombres, mujeres: g.jugadores.length - hombres } : undefined);
     const e = crearEvento({
       nombre: `${nombre} · Grupo ${letra}`,
       fecha: input.fecha,
@@ -173,15 +245,15 @@ export function crearHabibi(input: NuevoHabibiInput): { llave: EventoAmericano; 
       horaFin: input.horaFin,
       minutosEntreRondas: input.minutosEntreRondas,
       categoria: input.categoria,
-      modalidad: "DUPLA_FIJA",
+      modalidad: input.modalidad,
       puntuacion: input.puntuacionGrupos,
       pistas,
       canchas: g.canchas,
       duracionRondaMin: input.duracionRondaMin,
       cronometro: input.cronometro,
-      totalRondas: plan.rondas,
+      totalRondas: rondas,
       jugadores: g.jugadores,
-      parejas: g.parejas,
+      parejas: input.modalidad === "DUPLA_FIJA" ? g.parejas : [],
     });
     return { ...e, habibi: { rol: "GRUPO" as const, torneoId: llaveId, letra } };
   });
@@ -225,6 +297,7 @@ export function crearHabibi(input: NuevoHabibiInput): { llave: EventoAmericano; 
       grupos: grupos.map((g) => ({ letra: (g.habibi as { letra: string }).letra, eventoId: g.id })),
       inicio: input.inicio,
       tercerPuesto: input.tercerPuesto,
+      ...(input.modalidad === "INDIVIDUAL_ROTATIVO" ? { emparejar: input.emparejar ?? "EQUILIBRADO" } : {}),
       siembra: {},
       armadaEn: null,
     },
@@ -248,16 +321,45 @@ export function definir(p: Partido | undefined, cfg: ConfigPuntuacion): { ganado
   return g > 0 ? { ganador: p.parejaA, perdedor: p.parejaB } : { ganador: p.parejaB, perdedor: p.parejaA };
 }
 
-/** Clasificados de cada grupo en orden ("1A", "2A"…), sin duplas retiradas. */
-export function clasificacion(grupos: EventoAmericano[]): Record<string, string> {
+/**
+ * Clasificados de cada grupo en orden ("1A", "2A"…) y las duplas que van a la llave.
+ * En dupla fija son sus duplas; en individual se forman con el ranking del grupo.
+ */
+export function clasificados(grupos: EventoAmericano[], inicio: InicioLlave, emparejar?: EmparejarLlave): { siembra: Record<string, string>; parejas: Pareja[] } {
   const siembra: Record<string, string> = {};
+  const parejas: Pareja[] = [];
   for (const g of grupos) {
     const letra = g.habibi?.rol === "GRUPO" ? g.habibi.letra : "?";
-    calcularTabla(g)
-      .filas.filter((f) => !f.retirado)
-      .forEach((f, i) => (siembra[`${i + 1}${letra}`] = f.entidadId));
+    if (g.modalidad === "DUPLA_FIJA") {
+      const porId = new Map(g.parejas.map((p) => [p.id, p]));
+      calcularTabla(g)
+        .filas.filter((f) => !f.retirado)
+        .forEach((f, i) => {
+          siembra[`${i + 1}${letra}`] = f.entidadId;
+          const p = porId.get(f.entidadId);
+          if (p) parejas.push(p);
+        });
+    } else {
+      duplasDeGrupo(g, CLASIFICAN[inicio], emparejar).forEach((p, i) => {
+        siembra[`${i + 1}${letra}`] = p.id;
+        parejas.push(p);
+      });
+    }
   }
-  return siembra;
+  return { siembra, parejas };
+}
+
+/** Ids (duplas o jugadores) de cada grupo que hoy pasarían a la llave, para marcarlos en la tabla. */
+export function idsQueClasifican(g: EventoAmericano, inicio: InicioLlave, emparejar?: EmparejarLlave): Set<string> {
+  const n = CLASIFICAN[inicio];
+  if (g.modalidad === "DUPLA_FIJA")
+    return new Set(
+      calcularTabla(g)
+        .filas.filter((f) => !f.retirado)
+        .slice(0, n)
+        .map((f) => f.entidadId),
+    );
+  return new Set(duplasDeGrupo(g, n, emparejar).flatMap((p) => p.jugadorIds));
 }
 
 /** Partidos de grupos que faltan por jugar. */
@@ -272,9 +374,12 @@ export function bloqueoArmar(llave: EventoAmericano, grupos: EventoAmericano[]):
   if (grupos.length !== info.grupos.length) return "Faltan grupos: espera a que se sincronicen.";
   const n = CLASIFICAN[info.inicio];
   for (const g of grupos) {
-    const activas = g.parejas.filter((p) => !p.retirada).length;
+    const posibles = duplasPosibles(g, g.categoria.rama === "MIXTO");
     const letra = g.habibi?.rol === "GRUPO" ? g.habibi.letra : "?";
-    if (activas < n) return `El grupo ${letra} tiene ${activas} duplas activas y la llave necesita ${n}.`;
+    if (posibles < n)
+      return g.modalidad === "DUPLA_FIJA"
+        ? `El grupo ${letra} tiene ${posibles} duplas activas y la llave necesita ${n}.`
+        : `Con los jugadores activos del grupo ${letra} salen ${posibles} duplas y la llave necesita ${n}.`;
   }
   return null;
 }
@@ -286,9 +391,9 @@ export function bloqueoArmar(llave: EventoAmericano, grupos: EventoAmericano[]):
 export function armarLlave(llave: EventoAmericano, grupos: EventoAmericano[]): EventoAmericano {
   const info = infoLlave(llave);
   if (!info) return llave;
-  const siembra = clasificacion(grupos);
+  const { siembra, parejas: todas } = clasificados(grupos, info.inicio, info.emparejar);
   const usados = new Set(CRUCES[info.inicio].flat().map((s) => siembra[s]));
-  const parejas = grupos.flatMap((g) => g.parejas).filter((p) => usados.has(p.id));
+  const parejas = todas.filter((p) => usados.has(p.id));
   const ids = new Set(parejas.flatMap((p) => p.jugadorIds));
   const base: EventoAmericano = {
     ...llave,

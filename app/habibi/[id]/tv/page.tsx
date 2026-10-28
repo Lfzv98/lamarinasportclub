@@ -11,7 +11,7 @@ import { ANCHO_ESTRECHO, Escenario, Reloj, useCursorOculto, useFullscreenYWakeLo
 import { QR } from "@/components/QR";
 import { QRPopup, useUrlRanking } from "@/components/QRPopup";
 import { categoriaLabel } from "@/lib/categories";
-import { CLASIFICAN, infoLlave, NOMBRE_FASE, pendientesGrupos } from "@/lib/habibi";
+import { infoLlave, NOMBRE_FASE, pendientesGrupos } from "@/lib/habibi";
 import { useAmericanos, useEvento } from "@/lib/store";
 import type { EventoAmericano, FaseLlave } from "@/types/americano";
 
@@ -143,7 +143,7 @@ function TV({ llave }: { llave: EventoAmericano }) {
                     <h2 className="font-display text-4xl font-bold">Grupo {letra}</h2>
                     <span className="text-xl text-white/50">{g.estado === "FINALIZADO" ? "Terminado" : `Ronda ${Math.min(g.rondaActual, g.totalRondas)} de ${g.totalRondas}`}</span>
                   </div>
-                  <TablaGrupo grupo={g} clasifican={CLASIFICAN[info.inicio]} tv />
+                  <TablaGrupo grupo={g} inicio={info.inicio} emparejar={info.emparejar} tv />
                 </div>
               );
             })}

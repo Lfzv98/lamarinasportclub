@@ -187,7 +187,7 @@ function Torneo({ llave }: { llave: EventoAmericano }) {
                   <div className="min-w-0 flex-1">
                     <p className="font-display text-lg font-bold">Grupo {letra}</p>
                     <p className="text-xs text-white/50">
-                      {g.parejas.filter((p) => !p.retirada).length} duplas · {g.estado === "FINALIZADO" ? "terminado" : `ronda ${Math.min(g.rondaActual, g.totalRondas)} de ${g.totalRondas}`} · {prog.jugados}/{prog.total} partidos
+                      {g.modalidad === "DUPLA_FIJA" ? `${g.parejas.filter((p) => !p.retirada).length} duplas` : `${g.jugadores.filter((j) => !j.retirado).length} jugadores · individual`} · {g.estado === "FINALIZADO" ? "terminado" : `ronda ${Math.min(g.rondaActual, g.totalRondas)} de ${g.totalRondas}`} · {prog.jugados}/{prog.total} partidos
                     </p>
                   </div>
                   <EstadoBadge estado={g.estado} />
@@ -195,7 +195,7 @@ function Torneo({ llave }: { llave: EventoAmericano }) {
                 <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-white/5">
                   <motion.div className="h-full rounded-full bg-neon" animate={{ width: `${prog.pct}%` }} />
                 </div>
-                <TablaGrupo grupo={g} clasifican={CLASIFICAN[info.inicio]} />
+                <TablaGrupo grupo={g} inicio={info.inicio} emparejar={info.emparejar} />
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   <Link href={`/evento/${g.id}`} className="btn-ghost text-sm">
                     <LayoutGrid className="size-4" /> {esStaff ? "Cuadro y marcadores" : "Cuadro vivo"}
@@ -208,7 +208,10 @@ function Torneo({ llave }: { llave: EventoAmericano }) {
             );
           })}
           <p className="text-xs text-white/45 lg:col-span-2">
-            Pasan {CLASIFICAN[info.inicio]} duplas por grupo (en verde). Grupos: {descripcionPuntuacion(grupos[0]?.puntuacion ?? llave.puntuacion)}.
+            {info.emparejar
+              ? `Pasan ${CLASIFICAN[info.inicio]} duplas por grupo, armadas con el ranking individual (${info.emparejar === "POR_ORDEN" ? "1º con 2º, 3º con 4º…" : "1º con el último que pasa, 2º con el penúltimo…"}${llave.categoria.rama === "MIXTO" ? ", siempre hombre + mujer" : ""}). Los que pasan van en verde.`
+              : `Pasan ${CLASIFICAN[info.inicio]} duplas por grupo (en verde).`}{" "}
+            Grupos: {descripcionPuntuacion(grupos[0]?.puntuacion ?? llave.puntuacion)}.
           </p>
         </div>
       ) : (

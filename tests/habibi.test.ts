@@ -8,6 +8,7 @@ import {
   cargarResultadoLlave,
   crearHabibi,
   cruces,
+  duplasDeGrupo,
   erroresHabibi,
   fasesLlave,
   fusionarLlave,
@@ -40,6 +41,7 @@ function input(n = 8, inicio: InicioLlave = "OCTAVOS", extra: Partial<NuevoHabib
     nombre: "Habibi test",
     fecha: "2026-10-28",
     categoria: { rama: "MASCULINO", nivel: "5TA" },
+    modalidad: "DUPLA_FIJA",
     grupos: [
       { ...grupo("A", n), canchas: [cancha(1), cancha(2), cancha(3), cancha(4)] },
       { ...grupo("B", n), canchas: [cancha(5), cancha(6)] },
@@ -249,4 +251,92 @@ test("rehacer la llave no resucita resultados viejos al sincronizar con otro cel
   const unida = fusionarLlave(fusionarEventos(vieja, nueva));
   assert.ok(unida.rondas[0].partidos.every((p) => !p.resultado), "la llave rehecha queda en blanco");
   assert.equal(unida.rondas.find((r) => r.fase === "FINAL")!.partidos.length, 0);
+});
+
+/* ---------- grupos individuales ---------- */
+
+/** Jugadores sueltos con nombres que ordenan igual que su número (A01, A02…). */
+function sueltos(letra: string, n: number, mixto = false): Jugador[] {
+  return Array.from({ length: n }, (_, i) => {
+    const id = `${letra}${String(i + 1).padStart(2, "0")}`;
+    return { id, nombre: id, genero: mixto && i % 2 === 1 ? ("F" as const) : ("M" as const) };
+  });
+}
+
+function inputIndividual(n = 16, extra: Partial<NuevoHabibiInput> = {}, mixto = false): NuevoHabibiInput {
+  const base = input(8, "OCTAVOS", extra);
+  return {
+    ...base,
+    modalidad: "INDIVIDUAL_ROTATIVO",
+    categoria: { rama: mixto ? "MIXTO" : "MASCULINO", nivel: "5TA" },
+    grupos: base.grupos.map((g, i) => ({ ...g, parejas: [], jugadores: sueltos(i ? "B" : "A", n, mixto) })),
+    ...extra,
+  };
+}
+
+test("individual: crea grupos rotativos sin duplas y valida la cantidad de jugadores", () => {
+  const { llave, grupos } = crearHabibi(inputIndividual());
+  assert.equal(grupos.length, 2);
+  for (const g of grupos) {
+    assert.equal(g.modalidad, "INDIVIDUAL_ROTATIVO");
+    assert.equal(g.parejas.length, 0);
+    assert.equal(g.jugadores.length, 16);
+    assert.ok(g.rondas.length > 0);
+  }
+  const info = llave.habibi;
+  assert.ok(info?.rol === "LLAVE" && info.emparejar === "EQUILIBRADO");
+  assert.deepEqual(erroresHabibi(inputIndividual()), []);
+  // Para octavos hacen falta 16 jugadores por grupo (8 duplas).
+  assert.ok(erroresHabibi(inputIndividual(12)).some((e) => e.includes("16 jugadores")));
+  assert.deepEqual(erroresHabibi(inputIndividual(12, { inicio: "CUARTOS" })), []);
+  assert.ok(erroresHabibi(inputIndividual(3, { inicio: "SEMIS" })).some((e) => e.includes("al menos 4 jugadores")));
+});
+
+test("individual: las duplas de la llave salen del ranking (equilibradas o por orden)", () => {
+  const { grupos } = crearHabibi(inputIndividual());
+  const [a] = grupos;
+  // Sin partidos jugados el ranking queda por nombre: A01, A02… A16.
+  const eq = duplasDeGrupo(a, 8, "EQUILIBRADO").map((p) => p.jugadorIds.join("+"));
+  assert.deepEqual(eq.slice(0, 2), ["A01+A16", "A02+A15"]);
+  assert.equal(eq[7], "A08+A09");
+  const orden = duplasDeGrupo(a, 8, "POR_ORDEN").map((p) => p.jugadorIds.join("+"));
+  assert.deepEqual(orden.slice(0, 2), ["A01+A02", "A03+A04"]);
+  // Cuartos: solo pasan los 8 mejores.
+  assert.deepEqual(
+    duplasDeGrupo(a, 4, "EQUILIBRADO").map((p) => p.jugadorIds.join("+")),
+    ["A01+A08", "A02+A07", "A03+A06", "A04+A05"],
+  );
+});
+
+test("individual mixto: cada dupla de la llave es hombre + mujer", () => {
+  const { grupos } = crearHabibi(inputIndividual(16, {}, true));
+  const porId = new Map(grupos[0].jugadores.map((j) => [j.id, j]));
+  const duplas = duplasDeGrupo(grupos[0], 8, "EQUILIBRADO");
+  assert.equal(duplas.length, 8);
+  for (const d of duplas) assert.deepEqual(d.jugadorIds.map((id) => porId.get(id)!.genero).sort(), ["F", "M"]);
+  // Mejor hombre con la mujer que pasa última.
+  assert.deepEqual(duplas[0].jugadorIds, ["A01", "A16"]);
+  // Con menos de 8 mujeres no alcanza para octavos.
+  const pocas = inputIndividual(16, {}, true);
+  pocas.grupos[0].jugadores = pocas.grupos[0].jugadores.map((j, i) => (i < 4 ? j : { ...j, genero: "M" as const }));
+  assert.ok(erroresHabibi(pocas).some((e) => e.includes("8 hombres y 8 mujeres")));
+});
+
+test("individual: se arma la llave completa sin repetir jugadores y con la hoja de cruces", () => {
+  const { llave, grupos } = crearHabibi(inputIndividual());
+  const jugados = grupos.map((g) => {
+    let e = g;
+    for (const r of g.rondas) for (const p of r.partidos) e = cargarResultado(e, p.id, { puntosA: 9, puntosB: 7 });
+    return e;
+  });
+  assert.equal(bloqueoArmar(llave, jugados), null);
+  const armada = armarLlave(llave, jugados);
+  assert.equal(armada.parejas.length, 16);
+  const ids = armada.parejas.flatMap((p) => p.jugadorIds);
+  assert.equal(new Set(ids).size, 32, "ningún jugador está en dos duplas");
+  for (const p of armada.parejas) assert.equal(new Set(p.jugadorIds.map((id) => id[0])).size, 1, "cada dupla es de un solo grupo");
+  const primero = cruces(armada)[0];
+  assert.equal(semillaDe(armada, primero.parejaA!.id), "1A");
+  assert.equal(semillaDe(armada, primero.parejaB!.id), "3A");
+  assert.deepEqual(validarEvento(armada), []);
 });

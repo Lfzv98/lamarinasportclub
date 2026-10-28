@@ -14,8 +14,8 @@ import { useAmericanos, useEsStaff, useListaHabibi } from "@/lib/store";
 import type { EventoAmericano } from "@/types/americano";
 
 const PASOS = [
-  { t: "Fase de grupos", d: "Grupo A y grupo B juegan su americano en dupla fija, todos contra todos, con cuadro vivo y ranking." },
-  { t: "Se arma la llave", d: "Según cómo terminó cada grupo, la app cruza a las duplas: octavos, cuartos o semis directo." },
+  { t: "Fase de grupos", d: "Grupo A y grupo B juegan su americano, individual (cambian de pareja cada ronda) o en dupla fija: el staff elige. Con cuadro vivo y ranking." },
+  { t: "Se arma la llave", d: "Según cómo terminó cada grupo, la app cruza a las duplas: octavos, cuartos o semis directo. En individual, las duplas se forman con el ranking del grupo." },
   { t: "Hasta la gran final", d: "El ganador de cada cruce avanza solo. Semis, 3er puesto si lo quieren y la gran final." },
 ];
 
@@ -115,7 +115,7 @@ export default function HabibiInicio() {
               ))}
             </div>
             <div className="glass mt-3 rounded-2xl p-4">
-              <p className="text-sm font-semibold">Octavos con 8 duplas por grupo</p>
+              <p className="text-sm font-semibold">Octavos con 8 duplas por grupo (o 16 jugadores en individual)</p>
               <p className="mt-1 text-xs text-white/50">Los cruces vecinos se enfrentan en cuartos; 1A y 1B solo se pueden ver en la final.</p>
               <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {CRUCES.OCTAVOS.map(([a, b], i) => (

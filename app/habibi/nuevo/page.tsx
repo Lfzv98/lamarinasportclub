@@ -21,20 +21,23 @@ import {
   CLASIFICAN,
   crearHabibi,
   CRUCES,
+  duplasPosibles,
+  EMPAREJAR,
   erroresHabibi,
   iniciosPosibles,
   INICIOS,
   LETRAS,
   MAX_DUPLAS_GRUPO,
+  MAX_JUGADORES_GRUPO,
   NOMBRE_HABIBI,
   type NuevoHabibiInput,
 } from "@/lib/habibi";
 import { planRondas } from "@/lib/rotation";
 import { configPorDefecto, descripcionPuntuacion } from "@/lib/scoring";
 import { useAmericanos } from "@/lib/store";
-import type { ConfigPuntuacion, Genero, InicioLlave, Jugador, MetodoPuntuacion, Nivel, Pareja, PistaClub, Rama } from "@/types/americano";
+import type { ConfigPuntuacion, EmparejarLlave, Genero, InicioLlave, Jugador, MetodoPuntuacion, Modalidad, Nivel, Pareja, PistaClub, Rama } from "@/types/americano";
 
-const PASOS = ["Torneo", "Duplas", "Grupos", "Llave", "Listo"];
+const PASOS = ["Torneo", "Jugadores", "Grupos", "Llave", "Listo"];
 
 const variantes = {
   entra: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0 }),
@@ -82,7 +85,10 @@ function NuevoHabibi() {
   const [hora, setHora] = useState("19:00");
   const [rama, setRama] = useState<Rama>("MIXTO");
   const [nivel, setNivel] = useState<Nivel>("5TA");
+  const [modalidad, setModalidad] = useState<Modalidad>("DUPLA_FIJA");
   const [grupos, setGrupos] = useState<Dupla[][]>([[], []]);
+  const [sueltos, setSueltos] = useState<Jugador[][]>([[], []]);
+  const [emparejar, setEmparejar] = useState<EmparejarLlave>("EQUILIBRADO");
   const [grupoActivo, setGrupoActivo] = useState(0);
   const [puntGrupos, setPuntGrupos] = useState<ConfigPuntuacion>(A16);
   const [uso, setUso] = useState<Record<number, Uso>>(() => {
@@ -101,7 +107,11 @@ function NuevoHabibi() {
   const canchasDe = (letra: "A" | "B"): PistaClub[] =>
     activas.filter((p) => uso[p.numero] === letra || uso[p.numero] === "AB").sort((a, b) => Number(b.techada) - Number(a.techada) || a.numero - b.numero);
   const canchasLlave = activas.filter((p) => uso[p.numero]).sort((a, b) => Number(b.techada) - Number(a.techada) || a.numero - b.numero);
-  const menor = Math.min(...grupos.map((g) => g.length));
+  const individual = modalidad === "INDIVIDUAL_ROTATIVO";
+  const mixto = rama === "MIXTO";
+  const datosGrupo = (i: number) =>
+    individual ? { parejas: [] as Pareja[], jugadores: sueltos[i] } : { parejas: grupos[i].map((d) => d.pareja), jugadores: grupos[i].flatMap((d) => d.jugadores) };
+  const menor = Math.min(...LETRAS.map((_, i) => duplasPosibles({ modalidad, ...datosGrupo(i) }, mixto)));
   const posibles = iniciosPosibles(menor);
   // Si cambian las duplas y el inicio elegido ya no alcanza, se baja al siguiente posible.
   const inicioEfectivo: InicioLlave = posibles.includes(inicio) ? inicio : (posibles[0] ?? inicio);
@@ -115,11 +125,9 @@ function NuevoHabibi() {
       horaFin: "23:59",
       minutosEntreRondas: club.minutosEntreRondas,
       categoria: { rama, nivel },
-      grupos: grupos.map((g, i) => ({
-        parejas: g.map((d) => d.pareja),
-        jugadores: g.flatMap((d) => d.jugadores),
-        canchas: canchasDe(LETRAS[i]),
-      })),
+      modalidad,
+      emparejar: individual ? emparejar : undefined,
+      grupos: LETRAS.map((l, i) => ({ ...datosGrupo(i), canchas: canchasDe(l) })),
       puntuacionGrupos: puntGrupos,
       cronometro,
       duracionRondaMin: duracion,
@@ -130,14 +138,18 @@ function NuevoHabibi() {
       canchasLlave,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [nombre, fecha, hora, rama, nivel, grupos, puntGrupos, uso, cronometro, duracion, inicioEfectivo, tercerPuesto, puntLlave, finalDistinta, puntFinal, club.minutosEntreRondas],
+    [nombre, fecha, hora, rama, nivel, modalidad, emparejar, grupos, sueltos, puntGrupos, uso, cronometro, duracion, inicioEfectivo, tercerPuesto, puntLlave, finalDistinta, puntFinal, club.minutosEntreRondas],
   );
   const errores = erroresHabibi(input);
 
   const errorPaso = (p: number): string | null => {
     if (p === 0) return nombre.trim() ? null : "Ponle nombre al torneo.";
     if (p === 1) {
-      for (const [i, g] of grupos.entries()) if (g.length < 2) return `El grupo ${LETRAS[i]} necesita al menos 2 duplas.`;
+      for (const [i, l] of LETRAS.entries()) {
+        if (!individual && grupos[i].length < 2) return `El grupo ${l} necesita al menos 2 duplas.`;
+        if (individual && sueltos[i].length < 4) return `El grupo ${l} necesita al menos 4 jugadores.`;
+        if (individual && mixto && duplasPosibles({ modalidad, ...datosGrupo(i) }, true) < 2) return `El grupo ${l} necesita al menos 2 hombres y 2 mujeres.`;
+      }
       return null;
     }
     if (p === 2) {
@@ -254,56 +266,105 @@ function NuevoHabibi() {
             )}
 
             {paso === 1 && (
-              <Paso titulo="Duplas por grupo" sub="Anota cada dupla en su grupo. Lo normal: 8 en el A y 8 en el B.">
-                <div className="grid grid-cols-2 gap-2">
-                  {LETRAS.map((l, i) => (
-                    <Opcion key={l} activo={grupoActivo === i} onClick={() => setGrupoActivo(i)} className="!py-3">
-                      <span className="block text-[11px] font-semibold uppercase tracking-[0.2em] opacity-70">Grupo</span>
-                      <span className="flex items-baseline gap-2">
-                        <span className="font-display text-3xl font-bold">{l}</span>
-                        <span className="text-sm font-semibold opacity-70">
-                          {grupos[i].length} dupla{grupos[i].length === 1 ? "" : "s"}
-                        </span>
-                      </span>
+              <Paso
+                titulo={individual ? "Jugadores por grupo" : "Duplas por grupo"}
+                sub={individual ? "Anota a cada jugador en su grupo: cambian de pareja cada ronda." : "Anota cada dupla en su grupo. Lo normal: 8 en el A y 8 en el B."}
+              >
+                <span className="label">¿Cómo se juega en los grupos?</span>
+                <div className="mb-6 grid grid-cols-2 gap-2">
+                  {FORMATOS.map((f) => (
+                    <Opcion key={f.id} activo={modalidad === f.id} onClick={() => setModalidad(f.id)}>
+                      <span className="block font-display text-lg font-bold">{f.label}</span>
+                      <span className="mt-1 block text-xs opacity-70">{f.detalle}</span>
                     </Opcion>
                   ))}
                 </div>
-                <EditorDuplas
-                  key={grupoActivo}
-                  letra={LETRAS[grupoActivo]}
-                  rama={rama}
-                  nivel={nivel}
-                  duplas={grupos[grupoActivo]}
-                  todos={grupos.flat()}
-                  onAgregar={(d) => setGrupos((gs) => gs.map((g, i) => (i === grupoActivo ? [...g, d] : g)))}
-                  onQuitar={(id) => setGrupos((gs) => gs.map((g) => g.filter((d) => d.pareja.id !== id)))}
-                  onMover={(id) =>
-                    setGrupos((gs) => {
-                      const d = gs[grupoActivo].find((x) => x.pareja.id === id);
-                      if (!d) return gs;
-                      const otro = 1 - grupoActivo;
-                      if (gs[otro].length >= MAX_DUPLAS_GRUPO) {
-                        toast(`El grupo ${LETRAS[otro]} ya tiene ${MAX_DUPLAS_GRUPO} duplas`, "error");
-                        return gs;
-                      }
-                      toast(`${d.pareja.nombre} pasó al grupo ${LETRAS[otro]}`, "info");
-                      return gs.map((g, i) => (i === grupoActivo ? g.filter((x) => x.pareja.id !== id) : i === otro ? [...g, d] : g));
-                    })
-                  }
-                />
-                {grupos.flat().length >= 4 && (
+                <div className="grid grid-cols-2 gap-2">
+                  {LETRAS.map((l, i) => {
+                    const n = individual ? sueltos[i].length : grupos[i].length;
+                    const unidad = individual ? "jugador" : "dupla";
+                    return (
+                      <Opcion key={l} activo={grupoActivo === i} onClick={() => setGrupoActivo(i)} className="!py-3">
+                        <span className="block text-[11px] font-semibold uppercase tracking-[0.2em] opacity-70">Grupo</span>
+                        <span className="flex items-baseline gap-2">
+                          <span className="font-display text-3xl font-bold">{l}</span>
+                          <span className="text-sm font-semibold opacity-70">
+                            {n} {unidad}
+                            {n === 1 ? "" : individual ? "es" : "s"}
+                          </span>
+                        </span>
+                      </Opcion>
+                    );
+                  })}
+                </div>
+                {individual ? (
+                  <EditorJugadores
+                    key={`j${grupoActivo}`}
+                    letra={LETRAS[grupoActivo]}
+                    rama={rama}
+                    nivel={nivel}
+                    jugadores={sueltos[grupoActivo]}
+                    todos={sueltos.flat()}
+                    onAgregar={(j) => setSueltos((gs) => gs.map((g, i) => (i === grupoActivo ? [...g, j] : g)))}
+                    onQuitar={(id) => setSueltos((gs) => gs.map((g) => g.filter((j) => j.id !== id)))}
+                    onMover={(id) =>
+                      setSueltos((gs) => {
+                        const j = gs[grupoActivo].find((x) => x.id === id);
+                        if (!j) return gs;
+                        const otro = 1 - grupoActivo;
+                        if (gs[otro].length >= MAX_JUGADORES_GRUPO) {
+                          toast(`El grupo ${LETRAS[otro]} ya tiene ${MAX_JUGADORES_GRUPO} jugadores`, "error");
+                          return gs;
+                        }
+                        toast(`${j.nombre} pasó al grupo ${LETRAS[otro]}`, "info");
+                        return gs.map((g, i) => (i === grupoActivo ? g.filter((x) => x.id !== id) : i === otro ? [...g, j] : g));
+                      })
+                    }
+                  />
+                ) : (
+                  <EditorDuplas
+                    key={grupoActivo}
+                    letra={LETRAS[grupoActivo]}
+                    rama={rama}
+                    nivel={nivel}
+                    duplas={grupos[grupoActivo]}
+                    todos={grupos.flat()}
+                    onAgregar={(d) => setGrupos((gs) => gs.map((g, i) => (i === grupoActivo ? [...g, d] : g)))}
+                    onQuitar={(id) => setGrupos((gs) => gs.map((g) => g.filter((d) => d.pareja.id !== id)))}
+                    onMover={(id) =>
+                      setGrupos((gs) => {
+                        const d = gs[grupoActivo].find((x) => x.pareja.id === id);
+                        if (!d) return gs;
+                        const otro = 1 - grupoActivo;
+                        if (gs[otro].length >= MAX_DUPLAS_GRUPO) {
+                          toast(`El grupo ${LETRAS[otro]} ya tiene ${MAX_DUPLAS_GRUPO} duplas`, "error");
+                          return gs;
+                        }
+                        toast(`${d.pareja.nombre} pasó al grupo ${LETRAS[otro]}`, "info");
+                        return gs.map((g, i) => (i === grupoActivo ? g.filter((x) => x.pareja.id !== id) : i === otro ? [...g, d] : g));
+                      })
+                    }
+                  />
+                )}
+                {(individual ? sueltos.flat().length >= 8 : grupos.flat().length >= 4) && (
                   <button
                     type="button"
                     className="btn-ghost mt-4 w-full text-sm"
                     onClick={() => {
-                      if (!confirm("¿Repartir todas las duplas al azar entre los dos grupos?")) return;
-                      const todas = grupos.flat();
-                      for (let i = todas.length - 1; i > 0; i--) {
-                        const j = Math.floor(Math.random() * (i + 1));
-                        [todas[i], todas[j]] = [todas[j], todas[i]];
+                      if (!confirm(`¿Repartir ${individual ? "a todos los jugadores" : "todas las duplas"} al azar entre los dos grupos?`)) return;
+                      if (individual) {
+                        // En mixto se sortea a hombres y mujeres por separado: los grupos quedan parejos.
+                        const a: Jugador[] = [];
+                        const b: Jugador[] = [];
+                        for (const lista of mixto ? [sueltos.flat().filter((j) => j.genero === "M"), sueltos.flat().filter((j) => j.genero !== "M")] : [sueltos.flat()]) {
+                          barajar(lista).forEach((j) => (a.length <= b.length ? a : b).push(j));
+                        }
+                        setSueltos([a, b]);
+                      } else {
+                        const todas = barajar(grupos.flat());
+                        const mitad = Math.ceil(todas.length / 2);
+                        setGrupos([todas.slice(0, mitad), todas.slice(mitad)]);
                       }
-                      const mitad = Math.ceil(todas.length / 2);
-                      setGrupos([todas.slice(0, mitad), todas.slice(mitad)]);
                       vibrar(20);
                       toast("Grupos sorteados", "info");
                     }}
@@ -311,12 +372,16 @@ function NuevoHabibi() {
                     <Dices className="size-4" /> Sortear los grupos al azar
                   </button>
                 )}
-                <p className="mt-3 text-xs text-white/45">Las fotos de cada dupla se toman después en cada grupo, en «Parejas y fotos», y salen en la TV y en el celular de los jugadores.</p>
+                <p className="mt-3 text-xs text-white/45">
+                  {individual
+                    ? "Las fotos de cada jugador se toman después en cada grupo, en «Jugadores y fotos», y salen en la TV y en el celular de los jugadores."
+                    : "Las fotos de cada dupla se toman después en cada grupo, en «Parejas y fotos», y salen en la TV y en el celular de los jugadores."}
+                </p>
               </Paso>
             )}
 
             {paso === 2 && (
-              <Paso titulo="Fase de grupos" sub="Cada grupo juega su americano en dupla fija, todos contra todos.">
+              <Paso titulo="Fase de grupos" sub={individual ? "Cada grupo juega su americano individual: cada ronda cambian de pareja y de rivales." : "Cada grupo juega su americano en dupla fija, todos contra todos."}>
                 <span className="label">¿Cómo se cuenta cada partido?</span>
                 <MetodoSelector valor={puntGrupos} onChange={setPuntGrupos} />
                 <ReglasPuntuacion valor={puntGrupos} onChange={setPuntGrupos} />
@@ -349,17 +414,18 @@ function NuevoHabibi() {
                 {compartidas > 0 && <p className="mt-2 text-xs text-amber-600">Con pistas compartidas los dos grupos se turnan: tardará más.</p>}
                 <div className="mt-4 grid gap-2 sm:grid-cols-2">
                   {LETRAS.map((l, i) => {
-                    const n = grupos[i].length;
+                    const n = individual ? sueltos[i].length : grupos[i].length;
                     const pistas = canchasDe(l).length;
-                    const plan = planRondas(n, "DUPLA_FIJA", Math.max(1, pistas));
+                    const hombres = sueltos[i].filter((j) => j.genero === "M").length;
+                    const plan = planRondas(n, modalidad, Math.max(1, pistas), individual && mixto ? { hombres, mujeres: n - hombres } : undefined);
                     return (
                       <div key={l} className="glass rounded-2xl p-3 text-sm">
                         <p className="font-semibold">Grupo {l}</p>
                         <p className="text-white/55">
-                          {n} duplas · {pistas} pista{pistas === 1 ? "" : "s"} · <span className="font-semibold text-white">{plan.rondas} rondas</span>
+                          {n} {individual ? "jugadores" : "duplas"} · {pistas} pista{pistas === 1 ? "" : "s"} · <span className="font-semibold text-white">{plan.rondas} rondas</span>
                         </p>
                         <p className="text-xs text-white/45">
-                          Cada dupla juega {plan.partidos[0] === plan.partidos[1] ? plan.partidos[0] : `${plan.partidos[0]}-${plan.partidos[1]}`} partidos
+                          {individual ? "Cada jugador" : "Cada dupla"} juega {plan.partidos[0] === plan.partidos[1] ? plan.partidos[0] : `${plan.partidos[0]}-${plan.partidos[1]}`} partidos
                           {plan.enEspera > 0 ? ` · ${plan.enEspera} en espera por ronda` : ""}
                         </p>
                       </div>
@@ -391,7 +457,7 @@ function NuevoHabibi() {
                     return (
                       <Opcion key={o.id} activo={inicioEfectivo === o.id} disabled={!ok} onClick={() => ok && setInicio(o.id)}>
                         <span className="block font-display text-lg font-bold">{o.label}</span>
-                        <span className="mt-1 block text-xs opacity-70">{ok ? o.detalle : `Necesita ${CLASIFICAN[o.id]} duplas en cada grupo.`}</span>
+                        <span className="mt-1 block text-xs opacity-70">{ok ? o.detalle : individual ? `Necesita ${mixto ? `${CLASIFICAN[o.id]} hombres y ${CLASIFICAN[o.id]} mujeres` : `${CLASIFICAN[o.id] * 2} jugadores`} en cada grupo.` : `Necesita ${CLASIFICAN[o.id]} duplas en cada grupo.`}</span>
                       </Opcion>
                     );
                   })}
@@ -406,9 +472,25 @@ function NuevoHabibi() {
                     ))}
                   </div>
                   <p className="mt-2 text-xs text-white/50">
-                    Pasan {CLASIFICAN[inicioEfectivo]} duplas por grupo. 1A y 1B van en mitades opuestas: solo se pueden cruzar en la final.
+                    Pasan {CLASIFICAN[inicioEfectivo]} duplas por grupo
+                    {individual ? ` (${mixto ? `los ${CLASIFICAN[inicioEfectivo]} mejores hombres y las ${CLASIFICAN[inicioEfectivo]} mejores mujeres` : `los ${CLASIFICAN[inicioEfectivo] * 2} mejores jugadores`})` : ""}. 1A y 1B van en mitades opuestas: solo se pueden cruzar en la final.
                   </p>
                 </div>
+
+                {individual && (
+                  <>
+                    <span className="label mt-8 block">¿Cómo se forman las duplas de la llave?</span>
+                    <p className="mb-3 text-xs text-white/50">Con el ranking individual de cada grupo{mixto ? ", siempre un hombre con una mujer" : ""}. La dupla del mejor clasificado es 1A (o 1B), la siguiente 2A…</p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {EMPAREJAR.map((o) => (
+                        <Opcion key={o.id} activo={emparejar === o.id} onClick={() => setEmparejar(o.id)}>
+                          <span className="block font-display text-lg font-bold">{o.label}</span>
+                          <span className="mt-1 block text-xs opacity-70">{o.detalle}</span>
+                        </Opcion>
+                      ))}
+                    </div>
+                  </>
+                )}
 
                 <span className="label mt-8 block">¿Cómo se cuenta en la llave?</span>
                 <MetodoSelector valor={puntLlave} onChange={setPuntLlave} />
@@ -440,9 +522,10 @@ function NuevoHabibi() {
                   </p>
                   <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
                     {LETRAS.map((l, i) => (
-                      <Dato key={l} icono={Users} titulo={`Grupo ${l}`} valor={`${grupos[i].length} duplas · ${canchasDe(l).map((p) => p.nombre).join(", ") || "sin pistas"}`} />
+                      <Dato key={l} icono={Users} titulo={`Grupo ${l}`} valor={`${individual ? `${sueltos[i].length} jugadores` : `${grupos[i].length} duplas`} · ${canchasDe(l).map((p) => p.nombre).join(", ") || "sin pistas"}`} />
                     ))}
-                    <Dato icono={Timer} titulo="Grupos" valor={descripcionPuntuacion(puntGrupos)} />
+                    <Dato icono={Timer} titulo="Grupos" valor={`${individual ? "Individual" : "Dupla fija"} · ${descripcionPuntuacion(puntGrupos)}`} />
+                    {individual && <Dato icono={Users} titulo="Duplas de la llave" valor={EMPAREJAR.find((x) => x.id === emparejar)!.label + (mixto ? " · hombre + mujer" : "")} />}
                     <Dato icono={Swords} titulo="Llave" valor={`Desde ${INICIOS.find((x) => x.id === inicioEfectivo)!.label.toLowerCase()} · ${descripcionPuntuacion(puntLlave)}`} />
                     <Dato icono={Trophy} titulo="Final" valor={descripcionPuntuacion(finalDistinta ? puntFinal : puntLlave)} />
                     <Dato icono={Medal} titulo="3er puesto" valor={tercerPuesto ? "Se juega" : "No se juega (los dos semifinalistas son 3º)"} />
@@ -481,6 +564,20 @@ function NuevoHabibi() {
       </footer>
     </main>
   );
+}
+
+const FORMATOS: { id: Modalidad; label: string; detalle: string }[] = [
+  { id: "INDIVIDUAL_ROTATIVO", label: "Individual", detalle: "Cada ronda cambian de pareja. Con el ranking individual se arman las duplas de la llave." },
+  { id: "DUPLA_FIJA", label: "Dupla fija", detalle: "La misma dupla todo el torneo, todas contra todas." },
+];
+
+function barajar<T>(xs: T[]): T[] {
+  const r = [...xs];
+  for (let i = r.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [r[i], r[j]] = [r[j], r[i]];
+  }
+  return r;
 }
 
 function FilaSwitch({ activo, onChange, etiqueta }: { activo: boolean; onChange: (v: boolean) => void; etiqueta: string }) {
@@ -617,6 +714,118 @@ function EditorDuplas({
                 </button>
               </motion.li>
             ))}
+          </AnimatePresence>
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function EditorJugadores({
+  letra,
+  rama,
+  nivel,
+  jugadores,
+  todos,
+  onAgregar,
+  onQuitar,
+  onMover,
+}: {
+  letra: string;
+  rama: Rama;
+  nivel: Nivel;
+  jugadores: Jugador[];
+  todos: Jugador[];
+  onAgregar: (j: Jugador) => void;
+  onQuitar: (id: string) => void;
+  onMover: (id: string) => void;
+}) {
+  const [texto, setTexto] = useState("");
+  const mixta = rama === "MIXTO";
+  const [genero, setGenero] = useState<Genero>(rama === "FEMENINO" ? "F" : "M");
+  const ref = useRef<HTMLInputElement>(null);
+  const hombres = jugadores.filter((j) => j.genero === "M").length;
+
+  function agregar() {
+    if (!texto.trim()) {
+      toast("Escribe el nombre del jugador", "error");
+      return;
+    }
+    if (jugadores.length >= MAX_JUGADORES_GRUPO) {
+      toast(`Máximo ${MAX_JUGADORES_GRUPO} jugadores por grupo`, "error");
+      return;
+    }
+    const limpio = texto.trim().replace(/\s+/g, " ");
+    if (todos.some((j) => `${j.nombre} ${j.apellido ?? ""}`.trim().toLowerCase() === limpio.toLowerCase())) {
+      toast(`${limpio} ya está anotado. Agrega el apellido para distinguirlo.`, "error");
+      return;
+    }
+    onAgregar(crearJugador(limpio, mixta ? genero : rama === "FEMENINO" ? "F" : "M", nivel));
+    setTexto("");
+    vibrar(10);
+    sonar("tap");
+    ref.current?.focus();
+  }
+
+  return (
+    <div className="mt-4">
+      <div className="glass flex flex-col gap-2 rounded-2xl p-3 sm:flex-row">
+        {mixta && (
+          <div className="grid grid-cols-2 gap-1 sm:w-44" role="group" aria-label="Hombre o mujer">
+            {(["M", "F"] as const).map((g) => (
+              <button
+                key={g}
+                type="button"
+                aria-pressed={genero === g}
+                onClick={() => setGenero(g)}
+                className={clsx("flex items-center justify-center gap-1 rounded-xl px-2 py-2 text-sm font-semibold transition", genero === g ? "bg-marca text-blanco" : "bg-white/5 text-white/60")}
+              >
+                {g === "M" ? <Mars className="size-4" /> : <Venus className="size-4" />}
+                {g === "M" ? "Él" : "Ella"}
+              </button>
+            ))}
+          </div>
+        )}
+        <input
+          ref={ref}
+          className="input flex-1"
+          placeholder="Nombre y apellido"
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && agregar()}
+          aria-label="Nombre del jugador"
+        />
+        <button className="btn-neon" onClick={agregar}>
+          <Plus className="size-4" /> Jugador al {letra}
+        </button>
+      </div>
+      {mixta && jugadores.length > 0 && (
+        <p className={clsx("mt-2 text-xs", hombres === jugadores.length - hombres ? "text-white/45" : "text-amber-600")}>
+          {hombres} hombres y {jugadores.length - hombres} mujeres{hombres === jugadores.length - hombres ? "" : ": lo ideal es la misma cantidad"}.
+        </p>
+      )}
+      {jugadores.length === 0 ? (
+        <p className="mt-4 rounded-2xl border border-dashed border-white/15 p-6 text-center text-sm text-white/45">El grupo {letra} aún no tiene jugadores.</p>
+      ) : (
+        <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+          <AnimatePresence initial={false}>
+            {jugadores.map((j, i) => {
+              const completo = [j.nombre, j.apellido].filter(Boolean).join(" ");
+              return (
+                <motion.li key={j.id} layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, x: -30 }} className="glass flex items-center gap-3 rounded-2xl px-3 py-2">
+                  <span className="w-5 text-right text-xs font-semibold text-white/30">{i + 1}</span>
+                  <Avatar nombre={j.nombre} size={32} />
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{completo}</span>
+                  {mixta && (j.genero === "M" ? <Mars className="size-4 text-white/40" aria-label="Hombre" /> : <Venus className="size-4 text-white/40" aria-label="Mujer" />)}
+                  <button className="rounded-lg p-2 text-white/40 hover:bg-white/10 hover:text-white" onClick={() => onMover(j.id)} aria-label={`Pasar a ${completo} al otro grupo`} title="Pasar al otro grupo">
+                    <ArrowRightLeft className="size-4" />
+                  </button>
+                  <button className="rounded-lg p-2 text-white/40 hover:bg-coral/10 hover:text-coral" onClick={() => onQuitar(j.id)} aria-label={`Quitar a ${completo}`}>
+                    <X className="size-4" />
+                  </button>
+                </motion.li>
+              );
+            })}
           </AnimatePresence>
         </ul>
       )}

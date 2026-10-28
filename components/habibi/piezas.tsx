@@ -6,10 +6,10 @@ import { Check, Crown, Medal, Trophy } from "lucide-react";
 import { useMemo } from "react";
 import { AvatarPareja } from "@/components/Avatar";
 import { nombrePista } from "@/lib/horarios";
-import { CORTO_FASE, cruces, NOMBRE_FASE, configRonda, infoLlave, podio, semillaDe, type CruceLlave } from "@/lib/habibi";
+import { CORTO_FASE, cruces, NOMBRE_FASE, configRonda, idsQueClasifican, infoLlave, podio, semillaDe, type CruceLlave } from "@/lib/habibi";
 import { calcularTabla, ganador, nombreCompleto } from "@/lib/scoring";
 import { vibrar } from "@/lib/feedback";
-import type { EventoAmericano, FaseLlave, Jugador, Pareja } from "@/types/americano";
+import type { EmparejarLlave, EventoAmericano, FaseLlave, InicioLlave, Jugador, Pareja } from "@/types/americano";
 
 /* ---------- piezas del asistente ---------- */
 
@@ -64,31 +64,38 @@ export function nombresPareja(p: Pareja | null | undefined, porId: Map<string, J
 /* ---------- tabla de un grupo ---------- */
 
 /**
- * Tabla de posiciones de un grupo con la línea de clasificación: las duplas que
- * pasan a la llave llevan su semilla (1A, 2A…).
+ * Tabla de posiciones de un grupo con la línea de clasificación. En dupla fija, las
+ * duplas que pasan a la llave llevan su semilla (1A, 2A…); en individual se marcan
+ * los jugadores que hoy pasarían (con ellos se forman las duplas de la llave).
  */
-export function TablaGrupo({ grupo, clasifican, tv = false, limite }: { grupo: EventoAmericano; clasifican: number; tv?: boolean; limite?: number }) {
+export function TablaGrupo({ grupo, inicio, emparejar, tv = false, limite }: { grupo: EventoAmericano; inicio: InicioLlave; emparejar?: EmparejarLlave; tv?: boolean; limite?: number }) {
   const tabla = useMemo(() => calcularTabla(grupo), [grupo]);
+  const pasan = useMemo(() => idsQueClasifican(grupo, inicio, emparejar), [grupo, inicio, emparejar]);
   const porId = new Map(grupo.jugadores.map((j) => [j.id, j]));
+  const individual = grupo.modalidad !== "DUPLA_FIJA";
   const letra = grupo.habibi?.rol === "GRUPO" ? grupo.habibi.letra : "";
   const parejas = new Map(grupo.parejas.map((p) => [p.id, p]));
   let activos = 0;
   const filas = tabla.filas.map((f) => ({ f, semilla: f.retirado ? null : ++activos }));
   const vista = limite ? filas.slice(0, limite) : filas;
+  // Línea de corte: después del último que pasa, si los que pasan van seguidos.
+  const ultimo = Math.max(-1, ...vista.map(({ f }, i) => (pasan.has(f.entidadId) ? i : -1)));
+  const seguidos = vista.slice(0, ultimo + 1).every(({ f }) => pasan.has(f.entidadId));
   return (
     <div className={clsx("overflow-hidden", tv ? "rounded-[2rem]" : "rounded-2xl")}>
       <div className={clsx("grid items-center gap-2 px-3 font-semibold uppercase tracking-wider text-white/40", tv ? "grid-cols-[3.5rem_1fr_3.5rem_3.5rem_4.5rem_5rem] py-2 text-lg" : "grid-cols-[2.25rem_1fr_2rem_2rem_2.75rem_3rem] py-1.5 text-[10px]")}>
         <span>#</span>
-        <span>Dupla</span>
+        <span>{individual ? "Jugador" : "Dupla"}</span>
         <span className="text-center">PJ</span>
         <span className="text-center">PG</span>
         <span className="text-center">+/-</span>
         <span className="text-right">PTS</span>
       </div>
       {vista.map(({ f, semilla }, i) => {
-        const pasa = semilla !== null && semilla <= clasifican;
-        const nombres = nombresPareja(parejas.get(f.entidadId), porId, tv);
-        const corte = semilla === clasifican && i < vista.length - 1;
+        const pasa = pasan.has(f.entidadId);
+        const j = porId.get(f.entidadId);
+        const nombres = individual ? [tv ? nombreCompleto(j) : (j?.nombre ?? f.nombre) + (j?.apellido ? ` ${j.apellido.charAt(0)}.` : "")] : nombresPareja(parejas.get(f.entidadId), porId, tv);
+        const corte = seguidos && i === ultimo && i < vista.length - 1;
         return (
           <motion.div
             layout
@@ -107,12 +114,15 @@ export function TablaGrupo({ grupo, clasifican, tv = false, limite }: { grupo: E
                 tv ? "size-12 text-xl" : "size-8 text-[11px]",
                 pasa ? "bg-neon text-noche" : "bg-white/5 text-white/60",
               )}
-              title={pasa ? `Clasifica como ${semilla}${letra}` : undefined}
+              title={pasa ? (individual ? "Pasa a la llave" : `Clasifica como ${semilla}${letra}`) : undefined}
             >
-              {semilla ? `${semilla}${letra}` : "–"}
+              {semilla ? (individual ? semilla : `${semilla}${letra}`) : "–"}
             </span>
             <span className="flex min-w-0 items-center gap-2">
-              <AvatarPareja nombres={nombres} fotos={f.fotoUrls} size={tv ? 52 : 30} />
+              {/* En el celular no hay lugar para fotos y nombres: se priorizan los nombres. */}
+              <span className={clsx(!tv && "hidden sm:flex")}>
+                <AvatarPareja nombres={nombres} fotos={f.fotoUrls} size={tv ? 52 : 30} />
+              </span>
               <span className="min-w-0">
                 {nombres.map((n, k) => (
                   <span key={k} className={clsx("block truncate leading-tight", tv ? "text-2xl font-semibold" : "text-sm font-medium")}>

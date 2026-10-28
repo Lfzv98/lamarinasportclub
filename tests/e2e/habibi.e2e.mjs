@@ -195,6 +195,65 @@ const pasa = await tv.locator("h2:has-text('Cuartos de final')").first().waitFor
 ok(pasa, "TV: pasa sola a cuartos");
 await foto(tv, "17-tv-cuartos");
 
+// 8) Grupos individuales (mixto): cambian de pareja cada ronda y las duplas de la llave salen del ranking
+await p.goto(`${U}/habibi/nuevo`, { waitUntil: "networkidle" });
+await p.waitForTimeout(800);
+await p.click("button:has-text('Siguiente')");
+await p.waitForTimeout(500);
+await p.click("button:has-text('Individual')");
+await p.waitForTimeout(300);
+ok(await p.locator("text=Jugadores por grupo").count() > 0, "individual: el paso pasa a jugadores");
+for (const letra of ["A", "B"]) {
+  await p.getByRole("button", { name: new RegExp(`Grupo\\s*${letra}`) }).click();
+  await p.waitForTimeout(300);
+  for (let i = 0; i < 16; i++) {
+    await p.getByRole("button", { name: i % 2 ? "Ella" : "Él", exact: true }).click();
+    await p.getByLabel("Nombre del jugador").fill(`${NOMBRES[i]} ${letra}${i + 1}`);
+    await p.getByLabel("Nombre del jugador").press("Enter");
+    await p.waitForTimeout(60);
+  }
+  ok(await p.locator("text=8 hombres y 8 mujeres").count() > 0, `individual: 16 jugadores en el grupo ${letra} (8 y 8)`);
+}
+await foto(p, "18-individual-jugadores", true);
+await p.click("button:has-text('Siguiente')");
+await p.waitForTimeout(500);
+ok(await p.locator("text=/Cada jugador juega/").count() > 0, "individual: plan de rondas por jugador");
+await p.click("button:has-text('Siguiente')");
+await p.waitForTimeout(500);
+ok(await p.locator("text=¿Cómo se forman las duplas de la llave?").count() > 0, "individual: elige cómo se forman las duplas de la llave");
+await foto(p, "19-individual-llave", true);
+await p.click("button:has-text('Siguiente')");
+await p.waitForTimeout(500);
+await p.click("button:has-text('Crear torneo')");
+await p.waitForURL(/\/habibi\/hab_/);
+const id2 = p.url().split("/habibi/")[1];
+await p.waitForTimeout(1500);
+ok(await p.locator("text=/16 jugadores · individual/").count() === 2, "individual: los dos grupos son individuales");
+await p.evaluate(async (torneo) => {
+  const { eventos } = await (await fetch("/api/americanos?todos=1")).json();
+  for (const e of eventos.filter((x) => x.habibi?.torneoId === torneo)) {
+    const ahora = new Date(Date.now() + 5000).toISOString();
+    for (const r of e.rondas) {
+      r.estado = "FINALIZADA";
+      for (const m of r.partidos) {
+        m.resultado = { puntosA: 10, puntosB: 6 };
+        m.estado = "FINALIZADO";
+        m.actualizadoEn = ahora;
+      }
+    }
+    e.estado = "FINALIZADO";
+    e.actualizadoEn = ahora;
+    await fetch("/api/americanos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ evento: e }) });
+  }
+}, id2);
+await p.goto(`${U}/habibi/${id2}`, { waitUntil: "networkidle" });
+await p.waitForTimeout(2000);
+await foto(p, "20-individual-grupos", true);
+await p.click("button:has-text('Armar la llave')");
+await p.waitForTimeout(1200);
+ok((await p.locator("button:has-text('Por jugar')").count()) === 8, "individual: la llave arma 8 octavos con duplas del ranking");
+await foto(p, "21-individual-llave-armada", true);
+
 console.log(errs.length ? "Errores JS:\n" + [...new Set(errs)].join("\n") : "Sin errores JS");
 await b.close();
 if (fallos || errs.length) process.exit(1);

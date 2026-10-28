@@ -119,6 +119,8 @@ export type FaseLlave = "OCTAVOS" | "CUARTOS" | "SEMIS" | "TERCER_PUESTO" | "FIN
 /** Ronda en que arranca la llave: define cuántas duplas de cada grupo clasifican (8, 4 o 2). */
 export type InicioLlave = "OCTAVOS" | "CUARTOS" | "SEMIS";
 
+export type EmparejarLlave = "EQUILIBRADO" | "POR_ORDEN";
+
 /** Lo lleva el evento "llave", que es además la ficha del torneo HABIBI. */
 export interface HabibiLlave {
   rol: "LLAVE";
@@ -127,6 +129,11 @@ export interface HabibiLlave {
   inicio: InicioLlave;
   /** Se juega el partido por el 3er puesto entre los que pierden las semis. */
   tercerPuesto: boolean;
+  /**
+   * Grupos individuales: cómo se forman las duplas de la llave con el ranking de cada grupo.
+   * EQUILIBRADO: 1º con el último clasificado, 2º con el penúltimo… POR_ORDEN: 1º con 2º, 3º con 4º…
+   */
+  emparejar?: EmparejarLlave;
   /** Clasificados al armar la llave: "1A" → id de la dupla. Vacío mientras se juegan los grupos. */
   siembra?: Record<string, string>;
   armadaEn?: string | null;

@@ -43,7 +43,7 @@ export default function Home() {
       icon: Swords,
       titulo: "Americano HABIBI Tournament",
       lema: "Grupos A y B, y llave hasta la final.",
-      detalle: "Cada grupo juega su americano en dupla fija; según cómo terminan se arma la llave: octavos, cuartos, semis y la gran final.",
+      detalle: "Cada grupo juega su americano, individual o en dupla fija; según cómo terminan se arma la llave: octavos, cuartos, semis y la gran final.",
       chip: habibiVivos ? `${habibiVivos} en juego` : `${habibis.length} torneo${habibis.length === 1 ? "" : "s"}`,
       vivo: habibis.some((e) => e.estado === "EN_CURSO"),
       largo: true,

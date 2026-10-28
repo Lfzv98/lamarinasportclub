@@ -58,7 +58,7 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 
 Torneo recreativo de dos fases (`lib/habibi.ts`):
 
-1. **Grupos A y B**: cada grupo es un americano en dupla fija, todos contra todos (por defecto 8 duplas y 16 puntos), con su cuadro vivo, ranking y TV de siempre.
+1. **Grupos A y B**: cada grupo es un americano **individual** (cambian de pareja cada ronda) o en **dupla fija** (todos contra todos), a elección del staff (por defecto 8 duplas y 16 puntos), con su cuadro vivo, ranking y TV de siempre. En individual, al terminar los grupos las duplas de la llave se forman con el ranking de cada grupo: *equilibradas* (1º con el último que pasa, 2º con el penúltimo…) o *por orden* (1º con 2º, 3º con 4º…); en mixto siempre hombre + mujer.
 2. **Llave**: con las posiciones finales se cruzan las duplas. El staff elige dónde arranca:
    - **Octavos** (8 por grupo), la hoja del creador del formato: 1A-3A, 6B-8B, 2A-4A, 5B-7B, 5A-7A, 2B-4B, 6A-8A, 1B-3B. Los cruces vecinos se enfrentan en cuartos (siempre un ganador del A contra uno del B).
    - **Cuartos** (4 por grupo): 1A-4B, 2B-3A, 1B-4A, 2A-3B.
