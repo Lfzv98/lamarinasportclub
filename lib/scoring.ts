@@ -4,8 +4,8 @@
  * Criterio de clasificación:
  *   - PUNTOS_TOTALES: suma de puntos a favor (Americano clásico).
  *   - GAMES / SETS:   3 por victoria, 1 por empate.
- *   Desempate: en dupla fija, primero el enfrentamiento directo entre las empatadas;
- *   luego diferencia (+/-) y puntos a favor. Si siguen iguales, comparten posición.
+ *   Desempate: partidos ganados; en dupla fija, el enfrentamiento directo; luego diferencia
+ *   (+/-) y puntos a favor. Si siguen iguales, orden alfabético: el puesto nunca se repite.
  */
 import type {
   ConfigPuntuacion,
@@ -321,6 +321,7 @@ export function calcularTabla(evento: EventoAmericano): TablaPosiciones {
   const d = (id: string) => directo.get(id) ?? { pts: 0, dif: 0, pj: 0 };
   const llaves: ((x: FilaPosicion, y: FilaPosicion) => number)[] = [
     (x, y) => y.puntos - x.puntos,
+    (x, y) => y.pg - x.pg,
     (x, y) => d(y.entidadId).pts - d(x.entidadId).pts,
     (x, y) => d(y.entidadId).dif - d(x.entidadId).dif,
     (x, y) => y.diferencia - x.diferencia,
@@ -335,25 +336,25 @@ export function calcularTabla(evento: EventoAmericano): TablaPosiciones {
   };
   lista.sort((x, y) => comparar(x, y) || x.nombre.localeCompare(y.nombre, "es"));
 
-  // Posiciones: si dos filas son idénticas en todos los criterios, comparten puesto (1, 2, 2, 4).
+  // Posiciones siempre únicas y seguidas (1, 2, 3…): si dos filas son idénticas en todo, decide el orden estable.
   const desempates: NotaDesempate[] = [];
   const unidad = cfg.metodo === "PUNTOS_TOTALES" ? "puntos" : "games";
   lista.forEach((f, i) => {
     const previa = lista[i - 1];
     const sinJugar = !previa || (previa.pj === 0 && f.pj === 0);
-    if (!sinJugar && comparar(previa, f) === 0) {
-      f.posicion = previa.posicion;
-      previa.empatado = f.empatado = true;
-    } else f.posicion = i + 1;
+    f.posicion = i + 1;
+    if (!sinJugar && comparar(previa, f) === 0) previa.empatado = f.empatado = true;
     if (sinJugar || previa.puntos !== f.puntos) return;
     const motivo =
       comparar(previa, f) === 0
-        ? "empate total, comparten posición"
-        : d(previa.entidadId).pts !== d(f.entidadId).pts || d(previa.entidadId).dif !== d(f.entidadId).dif
-          ? `ganó el enfrentamiento directo${d(f.entidadId).pj ? ` (${d(previa.entidadId).dif > 0 ? "+" : ""}${d(previa.entidadId).dif} ${unidad})` : ""}`
-          : previa.diferencia !== f.diferencia
-            ? `mejor diferencia (${fmt(previa.diferencia)} vs ${fmt(f.diferencia)})`
-            : `más ${unidad} a favor (${previa.puntosAFavor} vs ${f.puntosAFavor})`;
+        ? "empate total, se ordenan por nombre"
+        : previa.pg !== f.pg
+          ? `más partidos ganados (${previa.pg} vs ${f.pg})`
+          : d(previa.entidadId).pts !== d(f.entidadId).pts || d(previa.entidadId).dif !== d(f.entidadId).dif
+            ? `ganó el enfrentamiento directo${d(f.entidadId).pj ? ` (${d(previa.entidadId).dif > 0 ? "+" : ""}${d(previa.entidadId).dif} ${unidad})` : ""}`
+            : previa.diferencia !== f.diferencia
+              ? `mejor diferencia (${fmt(previa.diferencia)} vs ${fmt(f.diferencia)})`
+              : `más ${unidad} a favor (${previa.puntosAFavor} vs ${f.puntosAFavor})`;
     const ultima = desempates[desempates.length - 1];
     if (ultima?.empatados && comparar(previa, f) === 0 && ultima.empatados[ultima.empatados.length - 1] === previa.nombre) ultima.empatados.push(f.nombre);
     else desempates.push({ arriba: previa.nombre, abajo: f.nombre, puntos: f.puntos, motivo, ...(comparar(previa, f) === 0 ? { empatados: [previa.nombre, f.nombre] } : {}) });
@@ -366,7 +367,7 @@ const fmt = (n: number) => (n > 0 ? `+${n}` : String(n));
 
 export function explicacionRanking(cfg: ConfigPuntuacion, dupla = false): string {
   const unidad = cfg.metodo === "PUNTOS_TOTALES" ? "puntos" : "games";
-  const desempate = `${dupla ? "enfrentamiento directo, luego " : ""}diferencia de ${unidad}, luego ${unidad} a favor. Si siguen iguales, comparten posición.`;
+  const desempate = `partidos ganados, luego ${dupla ? "enfrentamiento directo, luego " : ""}diferencia de ${unidad}, luego ${unidad} a favor. Si siguen iguales, por orden alfabético (nunca se repite un puesto).`;
   switch (criterioDe(cfg)) {
     case "PUNTOS_A_FAVOR":
       return `PTS = ${unidad} a favor en todos los partidos (gane o pierda). Si empatan: ${desempate}`;

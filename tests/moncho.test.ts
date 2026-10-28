@@ -188,14 +188,14 @@ test("desempate: sin directo decide la diferencia y luego los games a favor", ()
   assert.match(t.desempates!.find((d) => d.arriba === "P0")!.motivo, /mejor diferencia/);
 });
 
-test("desempate: si todo es idéntico comparten posición (1, 1, 3…)", () => {
+test("desempate: si todo es idéntico el puesto no se repite (1, 2, 3, 4)", () => {
   let e = eventoDupla(4);
   e = jugar(e, "p0", "p2", 6, 3);
   e = jugar(e, "p1", "p3", 6, 3);
   const t = calcularTabla(e);
-  assert.deepEqual(t.filas.map((f) => f.posicion), [1, 1, 3, 3]);
+  assert.deepEqual(t.filas.map((f) => f.posicion), [1, 2, 3, 4]);
   assert.ok(t.filas[0].empatado && t.filas[1].empatado);
-  assert.match(t.desempates![0].motivo, /comparten posición/);
+  assert.match(t.desempates![0].motivo, /empate total/);
   // Antes de jugar nadie comparte puesto: 1, 2, 3, 4.
   assert.deepEqual(calcularTabla(eventoDupla(4)).filas.map((f) => f.posicion), [1, 2, 3, 4]);
 });
@@ -221,8 +221,18 @@ test("individual: empate en puntos se define por diferencia y no inventa un dire
   });
   e = cargarResultado(e, e.rondas[0].partidos[0].id, { puntosA: 12, puntosB: 12 });
   const t = calcularTabla(e);
-  assert.deepEqual(t.filas.map((f) => f.posicion), [1, 1, 1, 1]);
+  assert.deepEqual(t.filas.map((f) => f.posicion), [1, 2, 3, 4]);
   assert.doesNotMatch(explicacionRanking(e.puntuacion, false), /directo/);
+});
+
+test("con los mismos puntos va delante quien ganó más partidos y nunca se repite un puesto", () => {
+  let e = eventoDupla(4);
+  e = jugar(e, "p0", "p1", 6, 0); // P0: 1 PG, 6 a favor
+  e = jugar(e, "p2", "p3", 3, 6); // P3: 1 PG; P2: 0 PG pero suma games
+  const t = calcularTabla(e);
+  const pos = t.filas.map((f) => f.posicion);
+  assert.deepEqual(pos, [1, 2, 3, 4]);
+  for (const [i, f] of t.filas.entries()) if (i) assert.ok(t.filas[i - 1].puntos > f.puntos || t.filas[i - 1].pg >= f.pg);
 });
 
 /* ---------- duplas en espera ---------- */
