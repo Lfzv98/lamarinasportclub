@@ -378,9 +378,7 @@ function NuevoHabibi() {
                   </button>
                 )}
                 <AvisoFotos />
-                <p className="mt-1 px-1 text-xs text-white/40">
-                  Toca la cámara antes de agregar{individual ? " al jugador" : " la dupla"}, o su círculo en la lista para tomarla después. También se pueden tomar luego en cada grupo, en «{individual ? "Jugadores" : "Parejas"} y fotos».
-                </p>
+                <p className="mt-1 px-1 text-xs text-white/40">También se pueden tomar luego en cada grupo, en «{individual ? "Jugadores" : "Parejas"} y fotos».</p>
               </Paso>
             )}
 
