@@ -8,7 +8,7 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 
 | Ruta | Qué hace |
 | --- | --- |
-| `/` | Inicio: tres entradas, **Americanos**, **Torneos** y **Árbitros** (y **Tenis** solo si el club lo tiene encendido) |
+| `/` | Inicio: cuatro entradas, **Americanos**, **Americano HABIBI Tournament**, **Torneos** y **Árbitros** (y **Tenis** solo si el club lo tiene encendido) |
 | Menú (☰ arriba a la derecha) | Todas las secciones: Americanos, Torneos, Árbitros, Nuevo americano/torneo de pádel (Tenis y Nuevo torneo de tenis solo en clubes con tenis), Ranking FVP, Manual y Ajustes (Datos de prueba, Mi club, Árbitros del club, Claves). Lo del staff lleva candado y pide el mismo PIN del staff |
 | `/arbitro` | Panel del árbitro (tablet): se registra una sola vez en el club (nombre, teléfono, PIN de árbitros y un código propio de 4 dígitos) y sirve para todos los torneos, luego entra tocando su nombre y su código. Ve su turno y su pista, llama, empieza, anota y toma las fotos de las duplas |
 | `/americanos` | Eventos activos e historial, acceso rápido a Modo TV |
@@ -16,6 +16,10 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 | `/evento/:id` | Cuadro vivo: rondas con hora, cronómetro con alarma, pistas activas, carga de score |
 | `/evento/:id/tabla` | Podio + ranking (PJ, PG, PP, PF, PC, +/-, PTS) con animación de posiciones |
 | `/evento/:id/tv` | Dashboard fullscreen 1920×1080 que se escala a cualquier pantalla, con QR para seguir el ranking |
+| `/habibi` | **Americano HABIBI Tournament**: torneos activos, historial y cómo se juega |
+| `/habibi/nuevo` | (staff) Asistente de 5 pasos: nombre y categoría, duplas de los grupos A y B, reglas y pistas de los grupos, dónde arranca la llave (octavos, cuartos o semis directo), reglas de la llave y de la final, 3er puesto |
+| `/habibi/:id` | El torneo: tablas de los dos grupos con la línea de clasificación, botón "Armar la llave" y la llave completa; el staff toca un cruce para cargar el marcador y el ganador avanza solo. Es también lo que abre el QR |
+| `/habibi/:id/tv` | Modo TV del HABIBI: logo del club grande y difuminado de fondo, grupos lado a lado, después la ronda en juego y el camino a la final, y al terminar los campeones |
 | `/club` | Ajustes (staff): pistas, horarios por día, contacto y **claves de torneos** |
 | `/torneos` | Torneos del club; crear uno nuevo (staff) |
 | `/torneos/:id` | En vivo: pistas, llamados, W.O., próximos, resultados; Imprevistos (staff) |
@@ -49,6 +53,20 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 - **Formatos:** Individual (americano tradicional, cambias de pareja cada ronda), Dupla fija (todos contra todos) y Mixto (como Individual, pero cada pareja es siempre hombre + mujer). Internamente Mixto = `INDIVIDUAL_ROTATIVO` + categoría `MIXTO`.
 - **Puntuación:** Puntos totales (16/21/24/32), Games con punto de oro (4/6/9) y Sets cortos a 4 (1 set o mejor de 3).
 - **Rotación balanceada** (`lib/rotation.ts`): nadie repite compañero mientras sea posible, se minimizan rivales repetidos, se equilibra el nivel entre parejas, los descansos se reparten parejo y en Mixto cada pareja es hombre + mujer. Es determinista por semilla.
+
+## Americano HABIBI Tournament
+
+Torneo recreativo de dos fases (`lib/habibi.ts`):
+
+1. **Grupos A y B**: cada grupo es un americano en dupla fija, todos contra todos (por defecto 8 duplas y 16 puntos), con su cuadro vivo, ranking y TV de siempre.
+2. **Llave**: con las posiciones finales se cruzan las duplas. El staff elige dónde arranca:
+   - **Octavos** (8 por grupo), la hoja del creador del formato: 1A-3A, 6B-8B, 2A-4A, 5B-7B, 5A-7A, 2B-4B, 6A-8A, 1B-3B. Los cruces vecinos se enfrentan en cuartos (siempre un ganador del A contra uno del B).
+   - **Cuartos** (4 por grupo): 1A-4B, 2B-3A, 1B-4A, 2A-3B.
+   - **Semis directo** (2 por grupo): 1A-2B, 1B-2A.
+   En las tres, 1A y 1B (y 2A y 2B) van en mitades opuestas: solo se pueden ver en la final.
+3. **Reglas de la llave a gusto del staff**: puntos, games o sets (con todas las opciones del americano), la final con reglas propias y el 3er puesto opcional. En la llave no hay empates: un marcador igualado se define con un punto de oro y se anota quién lo ganó.
+
+Se guarda como eventos normales de `/api/americanos` (no hace falta tabla nueva): cada grupo lleva `habibi = { rol: "GRUPO", torneoId, letra }` y la llave, que es la ficha del torneo, `habibi = { rol: "LLAVE", grupos, inicio, tercerPuesto, siembra }`; sus rondas son las fases y la final puede traer su propia `puntuacion`. Si se corrige un marcador de la llave, avanza el nuevo ganador y se limpia lo que dependía del anterior.
 
 ## Torneos
 
@@ -100,9 +118,10 @@ Al crear el evento se elige cómo suma cada jugador: **todos los puntos** de su 
 ```bash
 npm install
 npm run dev        # http://localhost:3000
-npm test           # 87 tests: americanos (rotación, marcadores, horarios, fusión, plantel, validación) y torneos (sorteo, desempates, programación, lluvia, sedes, anotador, reglamento FIP)
+npm test           # tests: americanos (rotación, marcadores, horarios, fusión, plantel, validación) y torneos (sorteo, desempates, programación, lluvia, sedes, anotador, reglamento FIP)
 node tests/e2e/robustez.e2e.mjs   # 22 pruebas en navegador (con la app corriendo)
 node tests/e2e/horario.e2e.mjs    # 18 pruebas del selector de fecha y horas (celular y computadora)
+node tests/e2e/habibi.e2e.mjs     # Americano HABIBI de punta a punta: asistente, grupos, llave desde octavos, empate con punto de oro, campeones, TV
 npm run typecheck
 npm run build
 ```

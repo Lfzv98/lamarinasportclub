@@ -9,15 +9,15 @@ import { vibrar } from "@/lib/feedback";
 import type { EventoAmericano } from "@/types/americano";
 
 /** Enlace público del ranking de un evento (lo que abre el QR). */
-export function useUrlRanking(id: string) {
+export function useUrlRanking(id: string, ruta?: string) {
   const [url, setUrl] = useState("");
-  useEffect(() => setUrl(`${location.origin}/evento/${id}/tabla`), [id]);
+  useEffect(() => setUrl(`${location.origin}${ruta ?? `/evento/${id}/tabla`}`), [id, ruta]);
   return url;
 }
 
 /** QR a pantalla completa: grande, con mucho contraste y fácil de escanear desde lejos. */
-export function QRPopup({ evento, abierto, onClose }: { evento: EventoAmericano; abierto: boolean; onClose: () => void }) {
-  const url = useUrlRanking(evento.id);
+export function QRPopup({ evento, abierto, onClose, ruta }: { evento: EventoAmericano; abierto: boolean; onClose: () => void; ruta?: string }) {
+  const url = useUrlRanking(evento.id, ruta);
 
   useEffect(() => {
     if (!abierto) return;
@@ -66,7 +66,7 @@ export function QRPopup({ evento, abierto, onClose }: { evento: EventoAmericano;
 }
 
 /** Botón con ícono de QR que abre el QR grande. */
-export function QRBoton({ evento, className }: { evento: EventoAmericano; className?: string }) {
+export function QRBoton({ evento, className, ruta }: { evento: EventoAmericano; className?: string; ruta?: string }) {
   const [abierto, setAbierto] = useState(false);
   return (
     <>
@@ -80,7 +80,7 @@ export function QRBoton({ evento, className }: { evento: EventoAmericano; classN
       >
         <QrCode className="size-5" />
       </button>
-      <QRPopup evento={evento} abierto={abierto} onClose={() => setAbierto(false)} />
+      <QRPopup evento={evento} abierto={abierto} onClose={() => setAbierto(false)} ruta={ruta} />
     </>
   );
 }

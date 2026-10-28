@@ -80,6 +80,8 @@ export interface Resultado {
   sets?: SetScore[];
   /** Puntos del tie-break que definió un partido a games (opcional, solo informativo). */
   tieBreak?: SetScore | null;
+  /** Solo en llaves eliminatorias: quién ganó el punto de oro de desempate si el marcador quedó igualado. */
+  desempate?: "A" | "B";
 }
 
 export interface Partido {
@@ -104,6 +106,37 @@ export interface Ronda {
   inicioEn?: string | null;
   /** Segundos ya consumidos antes de la última pausa. */
   segundosAcumulados?: number;
+  /** Solo en la llave del Americano HABIBI: fase eliminatoria de esta ronda. */
+  fase?: FaseLlave;
+  /** Reglas propias de esta ronda (ej. la final a mejor de 3 sets). Si falta, rige la del evento. */
+  puntuacion?: ConfigPuntuacion;
+}
+
+/* ---------- Americano HABIBI Tournament: grupos + llave eliminatoria ---------- */
+
+export type FaseLlave = "OCTAVOS" | "CUARTOS" | "SEMIS" | "TERCER_PUESTO" | "FINAL";
+
+/** Ronda en que arranca la llave: define cuántas duplas de cada grupo clasifican (8, 4 o 2). */
+export type InicioLlave = "OCTAVOS" | "CUARTOS" | "SEMIS";
+
+/** Lo lleva el evento "llave", que es además la ficha del torneo HABIBI. */
+export interface HabibiLlave {
+  rol: "LLAVE";
+  /** Los grupos (americanos en dupla fija) en orden: A, B. */
+  grupos: { letra: string; eventoId: string }[];
+  inicio: InicioLlave;
+  /** Se juega el partido por el 3er puesto entre los que pierden las semis. */
+  tercerPuesto: boolean;
+  /** Clasificados al armar la llave: "1A" → id de la dupla. Vacío mientras se juegan los grupos. */
+  siembra?: Record<string, string>;
+  armadaEn?: string | null;
+}
+
+/** Lo lleva cada grupo para saber a qué torneo HABIBI pertenece. */
+export interface HabibiGrupo {
+  rol: "GRUPO";
+  torneoId: string;
+  letra: string;
 }
 
 export interface ConfigPuntuacion {
@@ -254,6 +287,8 @@ export interface EventoAmericano {
   actualizadoEn: string;
   /** Borrado lógico: se sincroniza a todos los dispositivos. */
   eliminado?: boolean;
+  /** Parte de un Americano HABIBI Tournament (grupo o llave). Los americanos normales no lo llevan. */
+  habibi?: HabibiLlave | HabibiGrupo;
 }
 
 /** Payload del POST /api/americanos */

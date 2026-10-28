@@ -61,6 +61,15 @@ export function validarEvento(x: unknown): string[] {
   if (!esEntero(e.rondaActual, 1, MAX_RONDAS + 1)) err("rondaActual fuera de rango.");
   if (!e.estado || !ESTADOS.includes(e.estado)) err("estado inválido.");
   if (typeof e.actualizadoEn !== "string" || Number.isNaN(Date.parse(e.actualizadoEn))) err("actualizadoEn debe ser una fecha ISO.");
+  if (e.habibi !== undefined) {
+    const h = e.habibi as { rol?: unknown; torneoId?: unknown; letra?: unknown; grupos?: unknown; inicio?: unknown };
+    if (h.rol === "GRUPO") {
+      if (!esTexto(h.torneoId, 100) || !esTexto(h.letra, 4)) err("habibi: grupo sin torneo o sin letra.");
+    } else if (h.rol === "LLAVE") {
+      if (!Array.isArray(h.grupos) || h.grupos.length < 2 || h.grupos.length > 4) err("habibi: la llave necesita sus grupos.");
+      if (!["OCTAVOS", "CUARTOS", "SEMIS"].includes(h.inicio as string)) err("habibi.inicio inválido.");
+    } else err("habibi.rol inválido.");
+  }
   if (!Array.isArray(e.jugadores)) return [...errores, "jugadores debe ser una lista."];
   if (!Array.isArray(e.rondas)) return [...errores, "rondas debe ser una lista."];
   if (!Array.isArray(e.parejas)) return [...errores, "parejas debe ser una lista."];
@@ -89,7 +98,11 @@ export function validarEvento(x: unknown): string[] {
       err("Hay una ronda mal formada.");
       continue;
     }
-    if (r.partidos.length > 6) err(`Ronda ${r.numero}: más partidos que pistas posibles.`);
+    // La llave del Americano HABIBI puede tener hasta 8 partidos en octavos (se juegan por turnos).
+    const tope = e.habibi?.rol === "LLAVE" ? 8 : 6;
+    if (r.partidos.length > tope) err(`Ronda ${r.numero}: más partidos que pistas posibles.`);
+    const cfgRonda = r.puntuacion && METODOS.includes(r.puntuacion.metodo) ? r.puntuacion : e.puntuacion;
+    if (r.puntuacion && !METODOS.includes(r.puntuacion.metodo)) err(`Ronda ${r.numero}: puntuacion.metodo inválido.`);
     for (const p of r.partidos) {
       if (!p || !esTexto(p.id, 120)) {
         err(`Ronda ${r.numero}: partido sin id.`);
@@ -100,8 +113,8 @@ export function validarEvento(x: unknown): string[] {
       const enCancha = [...(p.parejaA?.jugadorIds ?? []), ...(p.parejaB?.jugadorIds ?? [])];
       if (enCancha.length !== 4 || enCancha.some((id) => !ids.has(id))) err(`Partido ${p.id}: jugadores inexistentes.`);
       if (new Set(enCancha).size !== enCancha.length) err(`Partido ${p.id}: un jugador aparece dos veces.`);
-      if (p.resultado && e.puntuacion && METODOS.includes(e.puntuacion.metodo)) {
-        const m = validarResultado(e.puntuacion, p.resultado);
+      if (p.resultado && cfgRonda && METODOS.includes(cfgRonda.metodo)) {
+        const m = validarResultado(cfgRonda, p.resultado);
         if (m) err(`Partido ${p.id}: ${m}`);
       }
     }

@@ -17,6 +17,10 @@ interface Props {
   onClose: () => void;
   onGuardar: (r: Resultado) => void;
   onBorrar: () => void;
+  /** Llave eliminatoria: no se puede guardar un empate sin decir quién ganó el punto de oro. */
+  sinEmpate?: boolean;
+  /** Reemplaza "Ronda N" en el encabezado (ej. "Semifinal 1"). */
+  titulo?: string;
 }
 
 function inicial(p: Partido | null, cfg: ConfigPuntuacion): Resultado {
@@ -26,7 +30,7 @@ function inicial(p: Partido | null, cfg: ConfigPuntuacion): Resultado {
 }
 
 /** Modal táctil (bottom sheet) para cargar el marcador de un partido. */
-export function ScoreModal({ partido, config, nombrePista, jugadores, onClose, onGuardar, onBorrar }: Props) {
+export function ScoreModal({ partido, config, nombrePista, jugadores, onClose, onGuardar, onBorrar, sinEmpate = false, titulo }: Props) {
   const [r, setR] = useState<Resultado>(() => inicial(partido, config));
   const [autoCompletar, setAutoCompletar] = useState(true);
 
@@ -41,7 +45,10 @@ export function ScoreModal({ partido, config, nombrePista, jugadores, onClose, o
   const fotos = (ids: string[]) => ids.map((id) => porId.get(id)?.fotoUrl);
 
   const normal = normalizarResultado(config, r);
-  const error = validarResultado(config, r);
+  const errorMarcador = validarResultado(config, r);
+  // En la llave un empate se define con un punto de oro: hay que decir quién lo ganó.
+  const empatado = sinEmpate && !errorMarcador && ganador(config, { ...normal, desempate: undefined }) === 0;
+  const error = errorMarcador ?? (empatado && !normal.desempate ? "Empate: elige qué dupla ganó el punto de oro de desempate." : null);
   const g = error ? null : ganador(config, normal);
   const total = metaDe(config);
   const maxGames = metaDe(config);
@@ -147,7 +154,7 @@ export function ScoreModal({ partido, config, nombrePista, jugadores, onClose, o
             <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-white/20" />
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-neon">{nombrePista} · Ronda {partido.rondaNumero}</p>
+                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-neon">{nombrePista} · {titulo ?? `Ronda ${partido.rondaNumero}`}</p>
                 <p className="text-sm text-white/50">
                   {descripcionPuntuacion(config)}
                 </p>
@@ -273,7 +280,32 @@ export function ScoreModal({ partido, config, nombrePista, jugadores, onClose, o
             </AnimatePresence>
 
             <AnimatePresence>
-              {error && (r.puntosA > 0 || r.puntosB > 0 || (r.sets ?? []).some((s) => s.a || s.b)) && (
+              {empatado && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                  <div className="glass mt-4 rounded-2xl p-3">
+                    <p className="mb-2 text-center text-[11px] font-bold uppercase tracking-widest text-white/50">Empate · ¿Quién ganó el punto de oro?</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(["A", "B"] as const).map((lado) => (
+                        <button
+                          key={lado}
+                          type="button"
+                          onClick={() => {
+                            vibrar(10);
+                            setR((x) => ({ ...x, desempate: lado }));
+                          }}
+                          className={clsx("rounded-xl border-2 px-3 py-2.5 text-sm font-semibold transition", r.desempate === lado ? "border-neon bg-neon/10 text-neon" : "border-white/10 text-white/70 hover:border-white/30")}
+                        >
+                          {nombres((lado === "A" ? partido.parejaA : partido.parejaB).jugadorIds).join(" / ")}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+              {error && !empatado && (r.puntosA > 0 || r.puntosB > 0 || (r.sets ?? []).some((s) => s.a || s.b)) && (
                 <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mt-4 text-center text-sm text-coral">
                   {error}
                 </motion.p>

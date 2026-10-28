@@ -109,6 +109,12 @@ export function setsGanados(r: Resultado): { a: number; b: number } {
 
 /** Normaliza un resultado: en sets `puntosA/B` = games totales (el super tie cuenta como un game). */
 export function normalizarResultado(cfg: ConfigPuntuacion, r: Resultado): Resultado {
+  const n = normalizarSinDesempate(cfg, r);
+  // El desempate (llave) solo vale si el marcador quedó igualado.
+  return r.desempate && n.puntosA === n.puntosB && ganador(cfg, { ...n, desempate: undefined }) === 0 ? { ...n, desempate: r.desempate } : n;
+}
+
+function normalizarSinDesempate(cfg: ConfigPuntuacion, r: Resultado): Resultado {
   if (cfg.metodo === "GAMES_PUNTO_ORO") {
     const tb = r.tieBreak && (r.tieBreak.a > 0 || r.tieBreak.b > 0) ? { a: r.tieBreak.a, b: r.tieBreak.b } : undefined;
     return tb ? { puntosA: r.puntosA, puntosB: r.puntosB, tieBreak: tb } : { puntosA: r.puntosA, puntosB: r.puntosB };
@@ -213,7 +219,7 @@ export function ganador(cfg: ConfigPuntuacion, r: Resultado): 1 | -1 | 0 {
     const { a, b } = setsGanados(r);
     if (a !== b) return a > b ? 1 : -1;
   }
-  if (r.puntosA === r.puntosB) return 0;
+  if (r.puntosA === r.puntosB) return r.desempate === "A" ? 1 : r.desempate === "B" ? -1 : 0;
   return r.puntosA > r.puntosB ? 1 : -1;
 }
 

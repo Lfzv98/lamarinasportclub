@@ -224,7 +224,7 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
             <button className="btn-ghost flex-1 !px-3 text-xs" onClick={() => setPlantel(true)}>
               <Users className="size-3.5" /> {evento.modalidad === "DUPLA_FIJA" ? "Parejas y fotos" : "Jugadores y fotos"}
             </button>
-            <button
+            {!evento.habibi && <button
               className="btn-ghost !px-3 text-xs text-coral"
               aria-label="Eliminar evento"
               title="Eliminar evento"
@@ -237,7 +237,7 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
               }}
             >
               <Trash2 className="size-3.5" />
-            </button>
+            </button>}
           </div>}
         </aside>
 

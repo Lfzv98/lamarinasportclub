@@ -1,21 +1,24 @@
 "use client";
 
+import clsx from "clsx";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, Flag, Settings, Shuffle, Ticket, Trophy } from "lucide-react";
+import { ArrowRight, Flag, Settings, Shuffle, Swords, Ticket, Trophy } from "lucide-react";
 import { InstallButton } from "@/components/InstallButton";
 import { Logo } from "@/components/Logo";
 import { MenuApp } from "@/components/MenuApp";
 import { StaffChip } from "@/components/StaffGate";
-import { useListaEventos } from "@/lib/store";
+import { useListaEventos, useListaHabibi } from "@/lib/store";
 import { useListaTorneos } from "@/lib/torneosStore";
 import { useListaTenis } from "@/lib/tenisStore";
 import { PelotaTenis } from "@/components/tenis/piezas";
 import { TENIS_ACTIVO } from "@/lib/tenis/activo";
 
-/** Inicio: tres puertas, Americanos, Torneos y Árbitros, y la entrada a Tenis si el club lo tiene. */
+/** Inicio: cuatro puertas, Americanos, Americano HABIBI, Torneos y Árbitros, y la entrada a Tenis si el club lo tiene. */
 export default function Home() {
   const eventos = useListaEventos();
+  const habibis = useListaHabibi();
+  const habibiVivos = habibis.filter((e) => e.estado !== "FINALIZADO").length;
   const torneos = useListaTorneos();
   const tenis = useListaTenis();
   const tenisEnCancha = tenis.reduce((n, t) => n + t.partidos.filter((p) => p.estado === "EN_JUEGO").length, 0);
@@ -34,6 +37,16 @@ export default function Home() {
       detalle: "Rotación de parejas, cuadro vivo, ranking y Modo TV.",
       chip: americanosVivos ? `${americanosVivos} en vivo` : `${eventos.length} evento${eventos.length === 1 ? "" : "s"}`,
       vivo: americanosVivos > 0,
+    },
+    {
+      href: "/habibi",
+      icon: Swords,
+      titulo: "Americano HABIBI Tournament",
+      lema: "Grupos A y B, y llave hasta la final.",
+      detalle: "Cada grupo juega su americano en dupla fija; según cómo terminan se arma la llave: octavos, cuartos, semis y la gran final.",
+      chip: habibiVivos ? `${habibiVivos} en juego` : `${habibis.length} torneo${habibis.length === 1 ? "" : "s"}`,
+      vivo: habibis.some((e) => e.estado === "EN_CURSO"),
+      largo: true,
     },
     {
       href: "/torneos",
@@ -108,9 +121,9 @@ export default function Home() {
             </Link>
           )}
 
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
             {puertas.map((p, i) => (
-              <motion.div key={p.href} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 + i * 0.07 }} className={i === 2 ? "sm:col-span-2 lg:col-span-1" : undefined}>
+              <motion.div key={p.href} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 + i * 0.07 }}>
                 <Link
                   href={p.href}
                   className="glass group relative flex h-full min-h-56 flex-col overflow-hidden rounded-[2rem] p-6 transition hover:border-neon/40 active:scale-[0.99] sm:min-h-72 sm:p-8"
@@ -130,7 +143,7 @@ export default function Home() {
                       {p.chip}
                     </span>
                   </div>
-                  <h2 className="relative mt-auto pt-8 font-display text-4xl font-bold tracking-tight sm:text-5xl">{p.titulo}</h2>
+                  <h2 className={clsx("relative mt-auto pt-8 font-display font-bold tracking-tight", "largo" in p && p.largo ? "text-3xl leading-[1.05] sm:text-4xl" : "text-4xl sm:text-5xl")}>{p.titulo}</h2>
                   <p className="relative mt-1 font-semibold text-neon">{p.lema}</p>
                   <p className="relative mt-2 max-w-sm text-sm text-white/55">{p.detalle}</p>
                   <span className="relative mt-5 flex items-center gap-2 text-sm font-semibold text-white/80 group-hover:text-neon">
