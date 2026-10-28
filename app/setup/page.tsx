@@ -1161,8 +1161,8 @@ function BotonFoto({ foto, onFoto, etiqueta }: { foto: string | null; onFoto: (i
       </span>
     );
   return (
-    <TomarFoto className="btn-ghost !h-11 shrink-0 !px-3" etiqueta={etiqueta} onFoto={onFoto}>
-      <Camera className="size-5" />
+    <TomarFoto className="btn-ghost !h-11 shrink-0 border-neon/40 !px-3 text-neon" etiqueta={etiqueta} onFoto={onFoto}>
+      <Camera className="size-5" /> <span className="text-sm font-semibold">Foto</span>
     </TomarFoto>
   );
 }
@@ -1175,8 +1175,8 @@ function FotoDelRegistro({ id, nombres }: { id: string; nombres: string[] }) {
     <TomarFoto className="relative shrink-0 rounded-full" etiqueta={`Foto de ${nombres.join(" y ")}`} onFoto={(img) => poner(id, img)}>
       <AvatarPareja nombres={nombres} dupla={nombres.length > 1 ? foto : undefined} fotos={nombres.length > 1 ? undefined : [foto]} size={32} />
       {!foto && (
-        <span className="absolute -bottom-1 -right-1 flex size-4 items-center justify-center rounded-full bg-lima text-marino-2">
-          <Camera className="size-2.5" />
+        <span className="absolute -bottom-1 -right-1 flex size-5 items-center justify-center rounded-full bg-lima text-marino-2 ring-2 ring-fondo">
+          <Camera className="size-3" />
         </span>
       )}
     </TomarFoto>
@@ -1187,7 +1187,7 @@ function AvisoFotos() {
   return (
     <p className="mt-3 flex items-start gap-1.5 px-1 text-xs text-white/40">
       <Camera className="mt-0.5 size-3.5 shrink-0" />
-      <span>Foto opcional: sale en la TV del club y en el ranking del QR. Pide permiso antes de tomarla.</span>
+      <span>Foto opcional: toca <b className="text-white/70">Foto</b> antes de agregar, o la cara de alguien ya inscrito. Sale en la TV del club y en el ranking del QR. Pide permiso antes de tomarla.</span>
     </p>
   );
 }
