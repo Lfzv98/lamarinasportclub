@@ -3,7 +3,7 @@
 import clsx from "clsx";
 import { useParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronRight, Eye, LockKeyhole, Flag, Pause, Pencil, Play, RotateCcw, Trash2, Trophy, Users } from "lucide-react";
+import { Check, ChevronRight, Eye, LockKeyhole, Flag, Pause, Pencil, Play, RotateCcw, Trash2, Trophy, UserCog, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { PlantelSheet } from "@/components/PlantelSheet";
 import { useEffect, useRef, useState } from "react";
@@ -27,6 +27,7 @@ import {
   reiniciarCronometro,
   rondaCompleta,
   volverARonda,
+  parejaSinJugar,
 } from "@/lib/evento";
 import { sonar, vibrar } from "@/lib/feedback";
 import { horaRonda, nombrePista } from "@/lib/horarios";
@@ -48,6 +49,8 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
   const [abierto, setAbierto] = useState<Partido | null>(null);
   const [fiesta, setFiesta] = useState(false);
   const [plantel, setPlantel] = useState(false);
+  // Dupla tocada en una pista para cambiarla o quitarla (abre "Editar parejas" sobre ella).
+  const [parejaElegida, setParejaElegida] = useState<string | null>(null);
   const router = useRouter();
   const rondaPrevia = useRef(evento.rondaActual);
 
@@ -222,7 +225,7 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
 
           {esStaff && <div className="mt-6 flex w-full gap-2">
             <button className="btn-ghost flex-1 !px-3 text-xs" onClick={() => setPlantel(true)}>
-              <Users className="size-3.5" /> {evento.modalidad === "DUPLA_FIJA" ? "Parejas y fotos" : "Jugadores y fotos"}
+              <Users className="size-3.5" /> {evento.modalidad === "DUPLA_FIJA" ? "Editar parejas y fotos" : "Jugadores y fotos"}
             </button>
             {!evento.habibi && <button
               className="btn-ghost !px-3 text-xs text-coral"
@@ -259,6 +262,14 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
                   porId={porId}
                   index={i}
                   soloLectura={!esStaff}
+                  onEditarPareja={
+                    esStaff && evento.modalidad === "DUPLA_FIJA"
+                      ? (id) => {
+                          setParejaElegida(id);
+                          setPlantel(true);
+                        }
+                      : undefined
+                  }
                   onClick={() => {
                     vibrar(10);
                     if (!esStaff) {
@@ -285,7 +296,11 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
       <PlantelSheet
         evento={evento}
         abierto={plantel}
-        onClose={() => setPlantel(false)}
+        parejaInicial={parejaElegida}
+        onClose={() => {
+          setPlantel(false);
+          setParejaElegida(null);
+        }}
         onCambio={(fn, mensaje) => {
           act(fn);
           toast(mensaje, "info");
@@ -329,6 +344,7 @@ function PistaCard({
   porId,
   index,
   onClick,
+  onEditarPareja,
   soloLectura = false,
 }: {
   partido: Partido;
@@ -336,6 +352,7 @@ function PistaCard({
   porId: Map<string, Jugador>;
   index: number;
   onClick: () => void;
+  onEditarPareja?: (parejaId: string) => void;
   soloLectura?: boolean;
 }) {
   const res = partido.resultado;
@@ -358,6 +375,27 @@ function PistaCard({
             </p>
           ))}
         </div>
+        {onEditarPareja && !res && parejaSinJugar(evento, par.id) && (
+          <span
+            role="button"
+            tabIndex={0}
+            aria-label={`Cambiar o quitar ${par.nombre ?? "la dupla"}`}
+            title="Cambiar o quitar esta dupla"
+            className="flex shrink-0 items-center gap-1 rounded-lg border border-white/10 px-2 py-1 text-[11px] font-semibold text-white/60 hover:border-neon/50 hover:text-neon"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEditarPareja(par.id);
+            }}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter" && e.key !== " ") return;
+              e.preventDefault();
+              e.stopPropagation();
+              onEditarPareja(par.id);
+            }}
+          >
+            <UserCog className="size-3.5" /> Cambiar
+          </span>
+        )}
         {valor !== null && (
           <motion.span key={valor} initial={{ scale: 1.4 }} animate={{ scale: 1 }} className={clsx("font-display text-3xl font-bold tabular", gana ? "text-neon" : "text-white/70")}>
             {valor}

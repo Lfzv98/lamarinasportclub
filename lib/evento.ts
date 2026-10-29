@@ -239,6 +239,60 @@ export function agregarPareja(e: EventoAmericano, a: Jugador, b: Jugador): Event
   return reSortear({ ...e, jugadores: [...e.jugadores, a, b], parejas: [...e.parejas, pareja] });
 }
 
+/** La dupla aún no tiene ningún marcador cargado (ni terminado ni a medias). */
+export function parejaSinJugar(e: EventoAmericano, parejaId: string): boolean {
+  return !e.rondas.some((r) => r.partidos.some((p) => (p.parejaA.id === parejaId || p.parejaB.id === parejaId) && (p.estado === "FINALIZADO" || !!p.resultado)));
+}
+
+/** La dupla está en pista en la ronda que ya empezó (no se puede quitar sin dejar un hueco). */
+export function parejaEnPistaAhora(e: EventoAmericano, parejaId: string): boolean {
+  const desde = primeraRondaEditable(e);
+  return e.rondas.some((r) => r.numero < desde && r.partidos.some((p) => p.parejaA.id === parejaId || p.parejaB.id === parejaId));
+}
+
+/** Quita jugadores que ya no están en ninguna dupla. */
+const sinHuerfanos = (e: EventoAmericano, ids: string[]) => {
+  const usados = new Set(e.parejas.flatMap((p) => p.jugadorIds));
+  return e.jugadores.filter((j) => !ids.includes(j.id) || usados.has(j.id));
+};
+
+/**
+ * Cambia los jugadores de una dupla que aún no jugó (no vino, la reemplazan): entra en su
+ * mismo lugar de todas las rondas, sin perder ni sumar nada. Si estaba retirada, vuelve.
+ */
+export function cambiarPareja(e: EventoAmericano, parejaId: string, a: Jugador, b: Jugador): EventoAmericano {
+  const vieja = e.parejas.find((p) => p.id === parejaId);
+  if (!vieja) return e;
+  const nueva: Pareja = { id: vieja.id, jugadorIds: [a.id, b.id], nombre: `${a.nombre} / ${b.nombre}`, fotoUrl: null };
+  const ahora = new Date().toISOString();
+  const parejas = e.parejas.map((p) => (p.id === parejaId ? nueva : p));
+  const out: EventoAmericano = {
+    ...e,
+    parejas,
+    jugadores: [...e.jugadores, a, b],
+    rondas: e.rondas.map((r) => ({
+      ...r,
+      partidos: r.partidos.map((p) =>
+        p.parejaA.id === parejaId ? { ...p, parejaA: nueva, actualizadoEn: ahora } : p.parejaB.id === parejaId ? { ...p, parejaB: nueva, actualizadoEn: ahora } : p,
+      ),
+    })),
+  };
+  const limpio = { ...out, jugadores: sinHuerfanos(out, vieja.jugadorIds) };
+  return vieja.retirada ? reSortear(limpio) : tocar(limpio);
+}
+
+/** Borra una dupla que aún no jugó ni está en pista: como si nunca se hubiera inscrito. */
+export function quitarPareja(e: EventoAmericano, parejaId: string): EventoAmericano {
+  const vieja = e.parejas.find((p) => p.id === parejaId);
+  if (!vieja) return e;
+  const out: EventoAmericano = {
+    ...e,
+    parejas: e.parejas.filter((p) => p.id !== parejaId),
+    rondas: e.rondas.map((r) => ({ ...r, descansanIds: r.descansanIds.filter((id) => id !== parejaId) })),
+  };
+  return reSortear({ ...out, jugadores: sinHuerfanos(out, vieja.jugadorIds) });
+}
+
 /** Cuántos pueden jugar ahora (sin retirados). */
 export function activosEnEvento(e: EventoAmericano): number {
   return e.modalidad === "DUPLA_FIJA" ? e.parejas.filter((p) => !p.retirada).length : e.jugadores.filter((j) => !j.retirado).length;
