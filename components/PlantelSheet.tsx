@@ -281,7 +281,7 @@ export function PlantelSheet({
 function FotoPareja({ evento, p, nombres, fotos, onCambio }: { evento: EventoAmericano; p: Pareja; nombres: string[]; fotos: (string | null | undefined)[]; onCambio: (fn: (e: EventoAmericano) => EventoAmericano, mensaje: string) => void }) {
   return (
     <TomarFoto
-      className="relative shrink-0 rounded-full"
+      className="relative flex shrink-0 items-center gap-1.5 rounded-full border border-neon/40 bg-neon/10 py-0.5 pl-0.5 pr-2.5 text-xs font-semibold text-neon hover:bg-neon/20"
       etiqueta={`Foto de ${p.nombre ?? "la dupla"}`}
       onFoto={async (img) => {
         const r = await subirFoto(evento.id, "dupla", p.id, img);
@@ -290,11 +290,8 @@ function FotoPareja({ evento, p, nombres, fotos, onCambio }: { evento: EventoAme
       }}
     >
       <AvatarPareja nombres={nombres} fotos={fotos} dupla={p.fotoUrl} size={30} />
-      {!p.fotoUrl && (
-        <span className="absolute -bottom-1 -right-1 flex size-4 items-center justify-center rounded-full bg-lima text-marino-2">
-          <Camera className="size-2.5" />
-        </span>
-      )}
+      {/* Botón a la vista: en celular y tablet abre la cámara trasera directo. */}
+      <Camera className="size-3.5" /> Foto
     </TomarFoto>
   );
 }
@@ -303,7 +300,7 @@ function FotoPareja({ evento, p, nombres, fotos, onCambio }: { evento: EventoAme
 function FotoJugador({ evento, j, onCambio }: { evento: EventoAmericano; j: Jugador; onCambio: (fn: (e: EventoAmericano) => EventoAmericano, mensaje: string) => void }) {
   return (
     <TomarFoto
-      className="relative rounded-full"
+      className="relative flex shrink-0 items-center gap-1.5 rounded-full border border-neon/40 bg-neon/10 py-0.5 pl-0.5 pr-2.5 text-xs font-semibold text-neon hover:bg-neon/20"
       etiqueta={`Foto de ${j.nombre}`}
       onFoto={async (img) => {
         const r = await subirFoto(evento.id, "jugador", j.id, img);
@@ -312,11 +309,7 @@ function FotoJugador({ evento, j, onCambio }: { evento: EventoAmericano; j: Juga
       }}
     >
       <Avatar nombre={`${j.nombre} ${j.apellido ?? ""}`} fotoUrl={j.fotoUrl} size={30} />
-      {!j.fotoUrl && (
-        <span className="absolute -bottom-1 -right-1 flex size-4 items-center justify-center rounded-full bg-lima text-marino-2">
-          <Camera className="size-2.5" />
-        </span>
-      )}
+      <Camera className="size-3.5" /> Foto
     </TomarFoto>
   );
 }

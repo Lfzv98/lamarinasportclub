@@ -11,7 +11,7 @@ import { QRBoton } from "@/components/QRPopup";
 import { StaffChip } from "@/components/StaffGate";
 import { EstadoBadge } from "@/components/EventoCard";
 import { categoriaLabel } from "@/lib/categories";
-import { useAmericanos, useEvento } from "@/lib/store";
+import { useAmericanos, useEsStaff, useEvento } from "@/lib/store";
 import type { EventoAmericano } from "@/types/americano";
 
 export function EventoShell({ id, children }: { id: string; children: (evento: EventoAmericano) => React.ReactNode }) {
@@ -19,6 +19,9 @@ export function EventoShell({ id, children }: { id: string; children: (evento: E
   const hidratado = useAmericanos((s) => s.hidratado);
   const ultimoSync = useAmericanos((s) => s.ultimoSync);
   const pathname = usePathname();
+  const esStaff = useEsStaff();
+  // Pantalla del QR para el público: solo ranking y podio, sin salidas al resto de la app.
+  const publico = pathname === `/evento/${id}/tabla` && esStaff !== true;
 
   if (!evento) {
     const cargando = !hidratado || !ultimoSync;
@@ -29,7 +32,7 @@ export function EventoShell({ id, children }: { id: string; children: (evento: E
         ) : (
           <>
             <p className="font-display text-2xl font-bold">Evento no encontrado</p>
-            <Link href="/americanos" className="btn-neon">Volver al inicio</Link>
+            {!publico && <Link href="/americanos" className="btn-neon">Volver al inicio</Link>}
           </>
         )}
       </main>
@@ -44,11 +47,15 @@ export function EventoShell({ id, children }: { id: string; children: (evento: E
   ];
 
   return (
-    <div className="mx-auto min-h-dvh max-w-6xl px-4 pb-28 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6">
+    <div id="captura-ranking" className={clsx("mx-auto min-h-dvh max-w-6xl px-4 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6", publico ? "pb-10" : "pb-28")}>
       <header className="flex items-center gap-3 py-3">
-        <Link href={grupoHabibi ? `/habibi/${grupoHabibi.torneoId}` : "/americanos"} className="btn-ghost !p-2.5" aria-label={grupoHabibi ? "Volver al torneo" : "Americanos"}>
-          <ArrowLeft className="size-5" />
-        </Link>
+        {publico ? (
+          <Logo compacto />
+        ) : (
+          <Link href={grupoHabibi ? `/habibi/${grupoHabibi.torneoId}` : "/americanos"} className="btn-ghost !p-2.5" aria-label={grupoHabibi ? "Volver al torneo" : "Americanos"}>
+            <ArrowLeft className="size-5" />
+          </Link>
+        )}
         <div className="min-w-0 flex-1">
           <h1 className="truncate font-display text-lg font-bold leading-tight sm:text-xl">{evento.nombre}</h1>
           <div className="mt-1 flex items-center gap-2">
@@ -57,14 +64,18 @@ export function EventoShell({ id, children }: { id: string; children: (evento: E
             <span className="hidden text-xs text-white/50 sm:inline">{categoriaLabel(evento.categoria)}</span>
           </div>
         </div>
-        <ModoBadge />
-        <StaffChip />
-        <Logo compacto className="hidden sm:block" />
+        {!publico && (
+          <>
+            <ModoBadge />
+            <StaffChip />
+            <Logo compacto className="hidden sm:block" />
+          </>
+        )}
       </header>
 
       {children(evento)}
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex justify-center pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      {!publico && <nav className="fixed inset-x-0 bottom-0 z-40 flex justify-center pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <div className="glass-strong flex gap-1 rounded-2xl p-1.5 shadow-2xl">
           {tabs.map((t) => {
             const activo = pathname === t.href;
@@ -87,7 +98,7 @@ export function EventoShell({ id, children }: { id: string; children: (evento: E
           })}
           <QRBoton evento={evento} className="flex items-center rounded-xl px-2.5 py-2.5 text-white/60 transition hover:text-white min-[380px]:px-3" />
         </div>
-      </nav>
+      </nav>}
     </div>
   );
 }
