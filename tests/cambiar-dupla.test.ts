@@ -70,3 +70,42 @@ test("una dupla con marcador ya no se puede cambiar ni quitar", () => {
   assert.ok(!parejaSinJugar(e, p.parejaA.id));
   assert.ok(!parejaSinJugar(e, p.parejaB.id));
 });
+
+test("nunca se repite un partido: ni al armar ni después de cambiar o quitar duplas a mitad del evento", () => {
+  const sinRepetir = (e: EventoAmericano, msg: string) => {
+    const vistos = new Set<string>();
+    for (const r of e.rondas)
+      for (const p of r.partidos) {
+        const k = [p.parejaA.id, p.parejaB.id].sort().join("|");
+        assert.ok(!vistos.has(k), `${msg}: ${k} se repite (ronda ${r.numero})`);
+        vistos.add(k);
+      }
+  };
+  for (const n of [4, 5, 6, 7, 8, 9, 10, 12]) {
+    let e = evento(n);
+    sinRepetir(e, `${n} duplas al armar`);
+    e = iniciarRonda(e);
+    e = agregarPareja(e, jug(`x${n}`), jug(`y${n}`));
+    sinRepetir(e, `${n} duplas + una que llega tarde`);
+    const fuera = e.parejas.find((p) => !parejaEnPistaAhora(e, p.id) && parejaSinJugar(e, p.id));
+    if (fuera) {
+      e = quitarPareja(e, fuera.id);
+      sinRepetir(e, `${n} duplas tras quitar una`);
+    }
+    const enPista = e.rondas[0].partidos[0].parejaA.id;
+    e = cambiarPareja(e, enPista, jug(`c${n}`), jug(`d${n}`));
+    sinRepetir(e, `${n} duplas tras cambiar una`);
+  }
+});
+
+test("no deja inscribir dos veces al mismo jugador ni la misma dupla", async () => {
+  const { duplaRepetida } = await import("../lib/evento.ts");
+  const js = [jug("m", "Manuel"), jug("r", "Raul"), jug("x", "Massimiliano")];
+  assert.match(duplaRepetida(js, "manuel ", "Pedro")!, /ya está inscrito/);
+  assert.match(duplaRepetida(js, "Pedro", "Raúl")!, /ya está inscrito/);
+  assert.match(duplaRepetida(js, "Ana", "ana")!, /mismo nombre/);
+  assert.equal(duplaRepetida(js, "Manuel Pérez", "Pedro"), null, "otro Manuel con apellido sí puede");
+  // Al cambiar la dupla de Manuel/Raul, sus propios jugadores no cuentan como repetidos.
+  assert.equal(duplaRepetida(js, "Manuel", "Luis", ["m", "r"]), null);
+  assert.match(duplaRepetida(js, "Manuel", "Massimiliano", ["m", "r"])!, /Massimiliano ya está inscrito/);
+});

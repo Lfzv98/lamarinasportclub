@@ -239,6 +239,27 @@ export function agregarPareja(e: EventoAmericano, a: Jugador, b: Jugador): Event
   return reSortear({ ...e, jugadores: [...e.jugadores, a, b], parejas: [...e.parejas, pareja] });
 }
 
+const normalizarNombre = (n: string) => n.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " ").toLowerCase();
+
+/**
+ * ¿Ya hay un jugador inscrito (y no retirado) con ese mismo nombre completo? Evita inscribir dos
+ * veces a la misma persona o la misma dupla. `excluir`: ids que no cuentan (la dupla que se cambia).
+ */
+export function jugadorYaInscrito(jugadores: Jugador[], nombre: string, excluir: string[] = []): Jugador | undefined {
+  const n = normalizarNombre(nombre);
+  return jugadores.find((j) => !j.retirado && !excluir.includes(j.id) && normalizarNombre(`${j.nombre} ${j.apellido ?? ""}`) === n);
+}
+
+/** Mensaje de error si la dupla nueva repite a alguien (o es la misma persona dos veces); null si está bien. */
+export function duplaRepetida(jugadores: Jugador[], a: string, b: string, excluir: string[] = []): string | null {
+  if (normalizarNombre(a) === normalizarNombre(b)) return "Los dos jugadores de la dupla tienen el mismo nombre.";
+  for (const n of [a, b]) {
+    const ya = jugadorYaInscrito(jugadores, n, excluir);
+    if (ya) return `${n.trim()} ya está inscrito en este americano. Si es otra persona, agrega su apellido.`;
+  }
+  return null;
+}
+
 /** La dupla aún no tiene ningún marcador cargado (ni terminado ni a medias). */
 export function parejaSinJugar(e: EventoAmericano, parejaId: string): boolean {
   return !e.rondas.some((r) => r.partidos.some((p) => (p.parejaA.id === parejaId || p.parejaB.id === parejaId) && (p.estado === "FINALIZADO" || !!p.resultado)));

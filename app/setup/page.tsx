@@ -36,6 +36,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { AvatarPareja } from "@/components/Avatar";
 import { AvisoFotos, BotonFoto, FotoDelRegistro } from "@/components/FotosRegistro";
 import { Logo } from "@/components/Logo";
+import { LogoMenu } from "@/components/LogoMenu";
 import { StaffGate } from "@/components/StaffGate";
 import { Segmented } from "@/components/ui/Segmented";
 import { Stepper } from "@/components/ui/Stepper";
@@ -59,7 +60,7 @@ import {
   sumaPareja,
   type Formato,
 } from "@/lib/categories";
-import { crearEvento, generarRondas, nuevoId } from "@/lib/evento";
+import { crearEvento, duplaRepetida, generarRondas, nuevoId } from "@/lib/evento";
 import { sonar, vibrar } from "@/lib/feedback";
 import { partidosPorUnidad, planRondas } from "@/lib/rotation";
 import { configPorDefecto, CRITERIOS, criterioDe, descripcionPuntuacion } from "@/lib/scoring";
@@ -298,7 +299,7 @@ function Setup() {
         <button onClick={volver} className="btn-ghost !p-2.5" aria-label={paso > 0 ? `Volver a ${PASOS[paso - 1]}` : "Volver al inicio"}>
           <ArrowLeft className="size-5" />
         </button>
-        <Logo compacto />
+        <LogoMenu />
         <span className="w-10 text-right text-xs font-semibold text-white/40">
           {paso + 1}/{PASOS.length}
         </span>
@@ -1039,6 +1040,11 @@ function EditorParejas({
     }
     if (jugadores.length + 2 > 48) {
       toast("Máximo 24 duplas por evento", "error");
+      return;
+    }
+    const repetida = duplaRepetida(jugadores, a, b);
+    if (repetida) {
+      toast(repetida, "error");
       return;
     }
     if (conSuma && !cumpleSuma(categoria, nivelA, nivelB))

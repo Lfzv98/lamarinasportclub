@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, CalendarDays, ChevronRight, KeyRound, Layers, ListChecks, Plus, Ticket, Users } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { LogoMenu } from "@/components/LogoMenu";
 import { StaffChip } from "@/components/StaffGate";
 import { EstadoTorneoBadge, rangoFechas } from "@/components/torneo/TorneoShell";
 import { nombreCorto } from "@/lib/torneo/categorias";
@@ -33,7 +34,7 @@ export default function TorneosPage() {
         </Link>
         <span className="flex-1" />
         <StaffChip />
-        <Logo compacto />
+        <LogoMenu />
       </header>
 
       <section className="glass relative mt-4 overflow-hidden rounded-[2rem] p-6 sm:p-10">

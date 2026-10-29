@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, BarChart3, CalendarClock, ClipboardCheck, Flag, GitFork, KeyRound, LayoutDashboard, Lock, Settings, Ticket, Users } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "@/components/Logo";
+import { LogoMenu } from "@/components/LogoMenu";
 import { StaffChip } from "@/components/StaffGate";
 import { useEsStaff } from "@/lib/store";
 import { useEsMesa } from "@/lib/arbitro";
@@ -165,7 +166,7 @@ export function TorneoShell({ id, children, ancho = "max-w-6xl" }: { id: string;
             <Settings className="size-5" />
           </Link>
         )}
-        <Logo compacto className="hidden sm:block" />
+        <LogoMenu />
       </header>
 
       {children(torneo)}

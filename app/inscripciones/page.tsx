@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Inbox, Settings2, Ticket, Trophy } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { LogoMenu } from "@/components/LogoMenu";
 import { MenuApp } from "@/components/MenuApp";
 import { StaffChip } from "@/components/StaffGate";
 import { EstadoTorneoBadge, rangoFechas } from "@/components/torneo/TorneoShell";
@@ -30,7 +31,7 @@ export default function InscripcionesPage() {
         </Link>
         <span className="flex-1" />
         <StaffChip />
-        <Logo compacto />
+        <LogoMenu />
         <MenuApp />
       </header>
 

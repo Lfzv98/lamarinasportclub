@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, Trophy } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Logo } from "@/components/Logo";
+import { LogoMenu } from "@/components/LogoMenu";
 import { MapaPistas } from "@/components/MapaPistas";
 import { StaffGate } from "@/components/StaffGate";
 import { Stepper } from "@/components/ui/Stepper";
@@ -128,7 +129,7 @@ function NuevoTorneo() {
         <Link href="/torneos" className="btn-ghost !p-2.5" aria-label="Volver">
           <ArrowLeft className="size-5" />
         </Link>
-        <Logo compacto />
+        <LogoMenu />
         <span className="w-10" />
       </header>
 

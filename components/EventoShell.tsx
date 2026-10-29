@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowLeft, LayoutGrid, ListOrdered, Tv } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { LogoMenu } from "@/components/LogoMenu";
 import { ModoBadge } from "@/components/ModoBadge";
 import { QRBoton } from "@/components/QRPopup";
 import { StaffChip } from "@/components/StaffGate";
@@ -68,7 +69,7 @@ export function EventoShell({ id, children }: { id: string; children: (evento: E
           <>
             <ModoBadge />
             <StaffChip />
-            <Logo compacto className="hidden sm:block" />
+            <LogoMenu />
           </>
         )}
       </header>

@@ -13,7 +13,7 @@ import { Leaderboard } from "@/components/Leaderboard";
 import { PistaLabel } from "@/components/PistaLabel";
 import { QR } from "@/components/QR";
 import { QRPopup, useUrlRanking } from "@/components/QRPopup";
-import { VallasTV } from "@/components/Vallas";
+import { BandaVallas } from "@/components/Vallas";
 import { useReloj } from "@/hooks/useReloj";
 import { ANCHO_ESTRECHO, Escenario, Reloj, useCursorOculto, useFullscreenYWakeLock, useLienzo, useVertical } from "@/components/Pantalla";
 import { categoriaLabel } from "@/lib/categories";
@@ -51,7 +51,9 @@ function TV({ evento }: { evento: EventoAmericano }) {
   // Filas que entran completas en la pantalla (sin cortar la última): alto del lienzo menos
   // márgenes, encabezado, vallas y título, dividido por el alto de una fila de la tabla.
   const altoFila = (evento.modalidad === "DUPLA_FIJA" ? 96 : 86) - (estrecho ? 10 : 0);
-  const altoTabla = vertical ? (terminado ? lienzo.alto - 600 : (lienzo.alto - 560) * 0.54 - 130) : lienzo.alto - 380;
+  // Banda publicitaria de abajo (corre como la valla de un estadio).
+  const altoBanda = estrecho ? 84 : 112;
+  const altoTabla = vertical ? (terminado ? lienzo.alto - 600 : (lienzo.alto - 560) * 0.54 - 130) : lienzo.alto - 340 - (altoBanda + 24);
   const calculadas = lienzo.desplaza ? FILAS_POR_PAGINA : Math.max(3, Math.floor(altoTabla / altoFila));
   // Respaldo: si igual algo se sale de la pantalla (otra letra, otro navegador), quita filas hasta que entre.
   const [menos, setMenos] = useState(0);
@@ -79,9 +81,8 @@ function TV({ evento }: { evento: EventoAmericano }) {
     return () => clearTimeout(t);
   }, [lienzo.desplaza, lienzo.listo, filasPorPagina, pagina, tabla.filas.length]);
   const espera = ronda ? enEspera(evento, ronda) : [];
-  // Vallas publicitarias: columna a la izquierda en una TV; en vertical o en un celular, franja arriba.
   // Celular acostado (la pantalla se desplaza): todo en una columna para que la tabla tenga el ancho completo.
-  const vallasEnFila = vertical || estrecho || lienzo.desplaza;
+  const unaColumna = vertical || estrecho || lienzo.desplaza;
 
   const ranking = (
     <div className="flex min-h-0 flex-col">
@@ -109,7 +110,10 @@ function TV({ evento }: { evento: EventoAmericano }) {
   return (
     <Escenario oculto={cursorOculto} lienzo={lienzo} marcaAgua>
       {/* Cabecera centrada: nombre del americano, QR y hora; las flechas quedan a un lado. */}
-      <header className="relative flex flex-wrap items-center justify-center gap-x-10 gap-y-4 px-28">
+      <header className={clsx("relative flex flex-wrap items-center justify-center gap-x-10 gap-y-4", estrecho ? "px-0" : "px-52")}>
+        {/* Logo de La Marina arriba a la izquierda (el grande difuminado sigue de fondo). */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/brand/logo.png" alt="La Marina Sport Club" className={clsx("w-auto", estrecho ? "h-14 basis-auto" : "absolute left-0 top-1/2 h-16 -translate-y-1/2")} />
         <div className="min-w-0 max-w-[48rem] text-center">
           <h1 className="truncate font-display text-4xl font-bold xl:text-5xl">{evento.nombre}</h1>
           <p className="text-xl text-white/55">
@@ -130,15 +134,14 @@ function TV({ evento }: { evento: EventoAmericano }) {
         </div>
       </header>
 
-      <div className={clsx("grid min-h-0 flex-1 gap-8", vallasEnFila ? "grid-cols-1 grid-rows-[auto_minmax(0,1fr)]" : "grid-cols-[15rem_minmax(0,1fr)]")}>
-        <VallasTV vallas={vallas} fila={vallasEnFila} className={vallasEnFila ? (estrecho ? "h-32" : "h-44") : undefined} />
+      <div className="flex min-h-0 flex-1 flex-col">
         <AnimatePresence mode="wait">
           {terminado ? (
-            <motion.section key="final" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} className="flex min-h-0 flex-col">
+            <motion.section key="final" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} className="flex min-h-0 flex-1 flex-col">
               {ranking}
             </motion.section>
           ) : (
-            <motion.section key="vivo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={clsx("grid min-h-0 gap-8", lienzo.desplaza && vallasEnFila ? "grid-cols-1" : vertical ? "grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(0,1.2fr)]" : estrecho ? "grid-cols-1" : "grid-cols-[minmax(0,0.75fr)_minmax(0,1.35fr)]")}>
+            <motion.section key="vivo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={clsx("grid min-h-0 flex-1 gap-8", lienzo.desplaza && unaColumna ? "grid-cols-1" : vertical ? "grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(0,1.2fr)]" : estrecho ? "grid-cols-1" : "grid-cols-[minmax(0,0.75fr)_minmax(0,1.35fr)]")}>
               <div className="flex min-h-0 flex-col gap-5">
                 <div className="glass flex items-center gap-6 rounded-[2rem] p-5">
                   {conReloj ? (
@@ -155,7 +158,7 @@ function TV({ evento }: { evento: EventoAmericano }) {
                     {ronda && conReloj && <p className="mt-2 text-xl text-white/50">Inicio {horaRonda(evento, ronda.numero)}</p>}
                   </div>
                 </div>
-                <div className={clsx("grid min-h-0 flex-1 gap-4", !lienzo.desplaza && "auto-rows-fr", (ronda?.partidos.length ?? 0) > (vertical ? 2 : 4) ? "grid-cols-2" : "grid-cols-1")}>
+                <div className={clsx("grid min-h-0 flex-1 gap-4", !lienzo.desplaza && "auto-rows-fr", (ronda?.partidos.length ?? 0) > 2 ? "grid-cols-2" : "grid-cols-1")}>
                   {ronda?.partidos.map((p) => <PistaTV key={p.id} partido={p} evento={evento} compacto={(ronda?.partidos.length ?? 0) > 2} />)}
                 </div>
                 {espera.length > 0 && (
@@ -179,6 +182,7 @@ function TV({ evento }: { evento: EventoAmericano }) {
           )}
         </AnimatePresence>
       </div>
+      <BandaVallas vallas={vallas} alto={altoBanda} />
     </Escenario>
   );
 }
