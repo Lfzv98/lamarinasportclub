@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /** Piezas de las pantallas grandes (Modo TV y pantallas de pista): escala fija, pantalla completa y sin que se apague. */
 
@@ -125,10 +125,23 @@ function medir(vertical: boolean, zoom: boolean): Lienzo {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const ajuste = Math.min(vw / bw, vh / bh);
-  // Sin `zoom` (Firefox viejo) no se puede desplazar un lienzo escalado: se ajusta entero a la pantalla.
-  const minimo = zoom ? ESCALA_MIN : 0;
-  const escala = Math.max(ajuste, minimo);
-  return { ancho: vw / escala, alto: vh / escala, escala, desplaza: ajuste < minimo, zoom, listo: true };
+  const escala = Math.max(ajuste, ESCALA_MIN);
+  return { ancho: vw / escala, alto: vh / escala, escala, desplaza: ajuste < ESCALA_MIN, zoom, listo: true };
+}
+
+/**
+ * ¿El navegador aplica de verdad `zoom`? Algunos (navegadores dentro de apps como WhatsApp en
+ * iPhone) dicen que sí pero lo ignoran, y el lienzo sale sin escalar y roto. Se mide un cuadro de
+ * prueba: si no se achica, se usa `transform`, que funciona en todos.
+ */
+function zoomFunciona(): boolean {
+  if (typeof CSS === "undefined" || !CSS.supports?.("zoom", "2")) return false;
+  const d = document.createElement("div");
+  d.style.cssText = "position:absolute;visibility:hidden;left:-9999px;top:0;width:200px;height:10px;zoom:0.5";
+  document.body.appendChild(d);
+  const w = d.getBoundingClientRect().width;
+  d.remove();
+  return Math.abs(w - 100) < 2;
 }
 
 /**
@@ -139,7 +152,7 @@ function medir(vertical: boolean, zoom: boolean): Lienzo {
 export function useLienzo(vertical: boolean): Lienzo {
   const [l, setL] = useState<Lienzo>(() => ({ ancho: vertical ? 1080 : 1920, alto: vertical ? 1920 : 1080, escala: 1, desplaza: false, zoom: true, listo: false }));
   useEffect(() => {
-    const z = typeof CSS !== "undefined" && !!CSS.supports?.("zoom", "2");
+    const z = zoomFunciona();
     const ajustar = () => setL(medir(vertical, z));
     ajustar();
     window.addEventListener("resize", ajustar);
@@ -163,16 +176,41 @@ export function Escenario({ oculto, lienzo, marcaAgua = false, children }: { ocu
           <img src="/brand/logo.png" alt="" className="w-[72vw] max-w-none opacity-[0.11] blur-[6px] saturate-[0.85]" />
         </div>
       )}
+      {zoom ? (
+        <div className="relative flex flex-col gap-6 p-10" style={{ width: ancho, height: desplaza ? "auto" : alto, minHeight: alto, zoom: escala }}>
+          {children}
+        </div>
+      ) : (
+        <Escalado ancho={ancho} alto={alto} escala={escala} desplaza={desplaza}>
+          {children}
+        </Escalado>
+      )}
+    </main>
+  );
+}
+
+/** Sin `zoom`: el lienzo se escala con `transform` y, si es más alto que la pantalla, una caja con su alto real deja desplazar. */
+function Escalado({ ancho, alto, escala, desplaza, children }: { ancho: number; alto: number; escala: number; desplaza: boolean; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [altoReal, setAltoReal] = useState(alto);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !desplaza) return;
+    const medir = () => setAltoReal(el.offsetHeight);
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [desplaza]);
+  return (
+    <div className="relative" style={{ width: ancho * escala, height: (desplaza ? altoReal : alto) * escala }}>
       <div
+        ref={ref}
         className="relative flex flex-col gap-6 p-10"
-        style={
-          zoom
-            ? { width: ancho, height: desplaza ? "auto" : alto, minHeight: alto, zoom: escala }
-            : { width: ancho, height: alto, transform: `scale(${escala})`, transformOrigin: "top left" }
-        }
+        style={{ width: ancho, height: desplaza ? "auto" : alto, minHeight: alto, transform: `scale(${escala})`, transformOrigin: "top left" }}
       >
         {children}
       </div>
-    </main>
+    </div>
   );
 }

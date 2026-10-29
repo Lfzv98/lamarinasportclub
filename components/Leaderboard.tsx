@@ -73,7 +73,8 @@ function Delta({ v, grande }: { v?: number; grande?: boolean }) {
 
 const COLS = "grid-cols-[1.75rem_minmax(0,1fr)_repeat(3,1.6rem)_2.1rem_2.3rem] sm:grid-cols-[2.75rem_minmax(0,1fr)_repeat(6,3rem)_3.5rem]";
 const COLS_TV = "grid-cols-[4.5rem_minmax(0,1fr)_repeat(6,4.75rem)_6.5rem]";
-const COLS_TV_ESTRECHO = "grid-cols-[3rem_minmax(0,1fr)_repeat(6,3.25rem)_4rem]";
+// Celular o tablet chica: sin PF ni PC para que el nombre tenga espacio (nunca menos de 9rem).
+const COLS_TV_ESTRECHO = "grid-cols-[3rem_minmax(9rem,1fr)_repeat(4,3.25rem)_4rem]";
 
 /** Tabla de posiciones con animación de cambio de posición (layout animations). */
 /** `estrecho`: modo TV en una pantalla angosta (celular), con columnas más justas. */
@@ -81,6 +82,7 @@ export function Leaderboard({ tabla, nombresPorFila, modoTV = false, estrecho = 
   const cambios = useCambios(tabla.filas);
   const filas = limite ? tabla.filas.slice(0, limite) : tabla.filas;
   const cols = modoTV ? (estrecho ? COLS_TV_ESTRECHO : COLS_TV) : COLS;
+  const sinPfPc = modoTV ? (estrecho ? "hidden" : undefined) : "hidden sm:block";
   const th = clsx("text-center font-semibold uppercase tracking-wider text-white/40", modoTV ? "text-lg" : "text-[10px] sm:text-[11px]");
 
   return (
@@ -91,8 +93,8 @@ export function Leaderboard({ tabla, nombresPorFila, modoTV = false, estrecho = 
         <span className={th}>PJ</span>
         <span className={th}>PG</span>
         <span className={th}>PP</span>
-        <span className={clsx(th, !modoTV && "hidden sm:block")}>PF</span>
-        <span className={clsx(th, !modoTV && "hidden sm:block")}>PC</span>
+        <span className={clsx(th, sinPfPc)}>PF</span>
+        <span className={clsx(th, sinPfPc)}>PC</span>
         <span className={th}>+/-</span>
         <span className={clsx(th, "!text-neon")}>PTS</span>
       </div>
@@ -127,7 +129,16 @@ export function Leaderboard({ tabla, nombresPorFila, modoTV = false, estrecho = 
                       ))}
                     </span>
                   ) : (
-                    <span className="min-w-0 truncate text-[13px] font-semibold sm:text-sm">{f.nombre}</span>
+                    nombresPorFila(f).length > 1 ? (
+                      // Dupla en el celular: un jugador por línea para que se lean completos.
+                      <span className="min-w-0 text-[13px] font-semibold leading-tight sm:text-sm">
+                        {nombresPorFila(f).map((n, i) => (
+                          <span key={i} className="block truncate">{n}</span>
+                        ))}
+                      </span>
+                    ) : (
+                      <span className="min-w-0 truncate text-[13px] font-semibold sm:text-sm">{f.nombre}</span>
+                    )
                   )}
                   {f.retirado && <span className="chip shrink-0 !px-2 !py-0.5 text-[10px] text-white/50">Retiro</span>}
                   {f.posicion === 1 && f.pj > 0 && <Crown className={clsx("shrink-0 text-neon", modoTV ? "size-7" : "size-4")} />}
@@ -136,8 +147,8 @@ export function Leaderboard({ tabla, nombresPorFila, modoTV = false, estrecho = 
                 <span className={td}>{f.pj}</span>
                 <span className={td}>{f.pg}</span>
                 <span className={clsx(td, "text-white/60")}>{f.pp}</span>
-                <span className={clsx(td, "text-white/60", !modoTV && "hidden sm:block")}>{f.puntosAFavor}</span>
-                <span className={clsx(td, "text-white/60", !modoTV && "hidden sm:block")}>{f.puntosEnContra}</span>
+                <span className={clsx(td, "text-white/60", sinPfPc)}>{f.puntosAFavor}</span>
+                <span className={clsx(td, "text-white/60", sinPfPc)}>{f.puntosEnContra}</span>
                 <span className={clsx(td, f.diferencia > 0 ? "text-neon" : f.diferencia < 0 ? "text-coral" : "text-white/50")}>
                   {f.diferencia > 0 ? `+${f.diferencia}` : f.diferencia}
                 </span>
