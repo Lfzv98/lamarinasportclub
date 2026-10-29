@@ -4,7 +4,7 @@ import clsx from "clsx";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { History, Info, ListOrdered, Scale } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Historial } from "@/components/Historial";
 import { Segmented } from "@/components/ui/Segmented";
 import { AvatarPareja } from "@/components/Avatar";
@@ -13,6 +13,9 @@ import { Leaderboard } from "@/components/Leaderboard";
 import { CompartirButton } from "@/components/CompartirButton";
 import { Confetti } from "@/components/ui/Confetti";
 import { BotonImagenPodio } from "@/components/ImagenPodio";
+import { BotonCaptura } from "@/components/BotonCaptura";
+import { marcarSoloRanking } from "@/components/SoloRanking";
+import { useEsStaff } from "@/lib/store";
 import { calcularTabla, explicacionRanking, nombresDeFila } from "@/lib/scoring";
 import type { EventoAmericano } from "@/types/americano";
 
@@ -31,11 +34,18 @@ function Tabla({ evento }: { evento: EventoAmericano }) {
   const orden = [podio[1], podio[0], podio[2]].filter(Boolean);
   const desempates = tabla.desempates ?? [];
   const alturas: Record<number, string> = { 1: "h-36", 2: "h-28", 3: "h-20" };
+  const esStaff = useEsStaff();
+  // Quien escanea el QR sin ser staff queda solo en esta pantalla.
+  useEffect(() => {
+    if (esStaff === false) marcarSoloRanking(`/evento/${evento.id}/tabla`);
+  }, [esStaff, evento.id]);
 
   return (
     <div className="mt-2">
       <Confetti activo={terminado} piezas={90} />
-      <BotonImagenPodio evento={evento} tabla={tabla} />
+      <div data-sin-captura>
+        <BotonImagenPodio evento={evento} tabla={tabla} />
+      </div>
       {hayJuego && vista === "TABLA" && (
         <div className="mb-6 flex items-end justify-center gap-3 sm:gap-6">
           {orden.map((f) => (
@@ -75,7 +85,8 @@ function Tabla({ evento }: { evento: EventoAmericano }) {
             onChange={setVista}
           />
         </div>
-        <div className="shrink-0">
+        <div className="flex shrink-0 gap-2" data-sin-captura>
+          <BotonCaptura objetivo="captura-ranking" archivo={`ranking-${evento.nombre}`.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + ".png"} />
           <CompartirButton titulo={`Ranking · ${evento.nombre}`} ruta={`/evento/${evento.id}/tabla`} />
         </div>
       </div>
