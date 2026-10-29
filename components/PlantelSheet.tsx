@@ -2,8 +2,8 @@
 
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
-import { Camera, Mars, RotateCcw, UserMinus, UserPlus, Venus, X } from "lucide-react";
-import { useState } from "react";
+import { Camera, Check, Mars, Pencil, RotateCcw, Trash2, UserMinus, UserPlus, Venus, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Avatar, AvatarPareja } from "@/components/Avatar";
 import { TomarFoto } from "@/components/Foto";
 import { toast } from "@/components/ui/Toaster";
@@ -11,10 +11,14 @@ import {
   activosEnEvento,
   agregarJugador,
   agregarPareja,
+  cambiarPareja,
   nuevoId,
+  parejaEnPistaAhora,
+  parejaSinJugar,
   primeraRondaEditable,
   reincorporarJugador,
   retirarJugador,
+  quitarPareja,
   retirarPareja,
 } from "@/lib/evento";
 import { vibrar } from "@/lib/feedback";
@@ -31,11 +35,14 @@ import type { EventoAmericano, Genero, Jugador, Pareja } from "@/types/americano
 export function PlantelSheet({
   evento,
   abierto,
+  parejaInicial,
   onClose,
   onCambio,
 }: {
   evento: EventoAmericano;
   abierto: boolean;
+  /** Dupla tocada en una pista: abre directo su edición. */
+  parejaInicial?: string | null;
   onClose: () => void;
   onCambio: (fn: (e: EventoAmericano) => EventoAmericano, mensaje: string) => void;
 }) {
@@ -48,6 +55,40 @@ export function PlantelSheet({
   const desde = primeraRondaEditable(evento);
   const sinRondasFuturas = desde > evento.totalRondas;
   const porId = new Map(evento.jugadores.map((j) => [j.id, j]));
+  // Dupla en edición (no vino y la reemplazan): sus dos nombres nuevos.
+  const [editando, setEditando] = useState<{ id: string; a: string; b: string } | null>(null);
+
+  function empezarCambio(p: Pareja) {
+    const [x, y] = p.jugadorIds.map((id) => porId.get(id));
+    setEditando({ id: p.id, a: [x?.nombre, x?.apellido].filter(Boolean).join(" "), b: [y?.nombre, y?.apellido].filter(Boolean).join(" ") });
+  }
+
+  useEffect(() => {
+    if (!abierto) return setEditando(null);
+    const p = parejaInicial ? evento.parejas.find((x) => x.id === parejaInicial) : null;
+    if (p) empezarCambio(p);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [abierto, parejaInicial]);
+
+  function quitar(p: Pareja) {
+    if (parejaEnPistaAhora(evento, p.id)) return toast("Esta dupla está en pista en la ronda actual. Usa “Guardar” con los nombres de quienes juegan en su lugar.", "error");
+    if (!p.retirada && activosEnEvento(evento) - 1 < 2) return toast("Deben quedar al menos 2 parejas.", "error");
+    if (!confirm(`¿Quitar a ${p.nombre}? Aún no jugó: sale del americano sin sumar ni perder nada.`)) return;
+    onCambio((e) => quitarPareja(e, p.id), `${p.nombre} quitada del americano`);
+    setEditando(null);
+  }
+
+  function guardarCambio() {
+    if (!editando) return;
+    if (!editando.a.trim() || !editando.b.trim()) return toast("Escribe los dos nombres de la dupla", "error");
+    const vieja = evento.parejas.find((p) => p.id === editando.id);
+    const previos = vieja?.jugadorIds.map((id) => porId.get(id));
+    const ja = nuevoJugador(editando.a, previos?.[0]?.genero ?? generoFijo ?? "M");
+    const jb = nuevoJugador(editando.b, previos?.[1]?.genero ?? generoFijo ?? "F");
+    onCambio((e) => cambiarPareja(e, editando.id, ja, jb), `Dupla cambiada: ${ja.nombre} / ${jb.nombre} juega en su lugar`);
+    setEditando(null);
+    vibrar(15);
+  }
 
   const nuevoJugador = (nombre: string, g: Genero): Jugador => {
     const [n, ...resto] = nombre.trim().split(/\s+/);
@@ -131,11 +172,55 @@ export function PlantelSheet({
 
             <ul className="mt-4 space-y-2">
               {dupla
-                ? evento.parejas.map((p) => (
+                ? evento.parejas.map((p) => {
+                    const sinJugar = parejaSinJugar(evento, p.id);
+                    if (editando?.id === p.id)
+                      return (
+                        <li key={p.id} className="glass flex flex-col gap-2 rounded-2xl border-neon/40 p-3 sm:flex-row" aria-label={`Cambiar ${p.nombre}`}>
+                          <input className="input" placeholder="Jugador 1" autoFocus value={editando.a} onChange={(e) => setEditando({ ...editando, a: e.target.value })} onKeyDown={(e) => e.key === "Enter" && guardarCambio()} aria-label="Nuevo jugador 1" />
+                          <input className="input" placeholder="Jugador 2" value={editando.b} onChange={(e) => setEditando({ ...editando, b: e.target.value })} onKeyDown={(e) => e.key === "Enter" && guardarCambio()} aria-label="Nuevo jugador 2" />
+                          <div className="flex shrink-0 gap-2">
+                            <button className="btn-neon flex-1" onClick={guardarCambio}>
+                              <Check className="size-4" /> Guardar
+                            </button>
+                            <button className="btn-ghost !p-2.5 text-coral" onClick={() => quitar(p)} aria-label={`Quitar la dupla ${p.nombre}`} title="Quitar la dupla">
+                              <Trash2 className="size-4" />
+                            </button>
+                            <button className="btn-ghost !p-2.5" onClick={() => setEditando(null)} aria-label="Cancelar cambio">
+                              <X className="size-4" />
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    return (
                     <li key={p.id} className={clsx("glass flex items-center gap-3 rounded-2xl px-3 py-2", p.retirada && "opacity-45")}>
                       <FotoPareja evento={evento} p={p} nombres={p.jugadorIds.map((id) => porId.get(id)?.nombre ?? "?")} fotos={p.jugadorIds.map((id) => porId.get(id)?.fotoUrl)} onCambio={onCambio} />
-                      <span className="flex-1 truncate text-sm font-medium">{p.nombre}</span>
-                      {p.retirada ? (
+                      {sinJugar ? (
+                        <button className="flex-1 truncate text-left text-sm font-medium hover:text-neon" onClick={() => empezarCambio(p)} title="Tocar para cambiar esta dupla">
+                          {p.nombre}
+                        </button>
+                      ) : (
+                        <span className="flex-1 truncate text-sm font-medium">{p.nombre}</span>
+                      )}
+                      {sinJugar && (
+                        <>
+                          <button
+                            className="btn-ghost !px-3 !py-1.5 text-xs"
+                            onClick={() => empezarCambio(p)}
+                            aria-label={`Cambiar la dupla ${p.nombre}`}
+                          >
+                            <Pencil className="size-3.5" /> Cambiar
+                          </button>
+                          <button
+                            className="btn-ghost !p-2 text-xs text-coral"
+                            aria-label={`Quitar la dupla ${p.nombre}`}
+                            onClick={() => quitar(p)}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </>
+                      )}
+                      {sinJugar ? null : p.retirada ? (
                         <span className="chip">Retirada</span>
                       ) : (
                         <button
@@ -152,7 +237,8 @@ export function PlantelSheet({
                         </button>
                       )}
                     </li>
-                  ))
+                    );
+                  })
                 : evento.jugadores.map((j) => (
                     <li key={j.id} className={clsx("glass flex items-center gap-3 rounded-2xl px-3 py-2", j.retirado && "opacity-45")}>
                       <FotoJugador evento={evento} j={j} onCambio={onCambio} />
