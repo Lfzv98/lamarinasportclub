@@ -80,7 +80,8 @@ function TV({ evento }: { evento: EventoAmericano }) {
   }, [lienzo.desplaza, lienzo.listo, filasPorPagina, pagina, tabla.filas.length]);
   const espera = ronda ? enEspera(evento, ronda) : [];
   // Vallas publicitarias: columna a la izquierda en una TV; en vertical o en un celular, franja arriba.
-  const vallasEnFila = vertical || estrecho;
+  // Celular acostado (la pantalla se desplaza): todo en una columna para que la tabla tenga el ancho completo.
+  const vallasEnFila = vertical || estrecho || lienzo.desplaza;
 
   const ranking = (
     <div className="flex min-h-0 flex-col">
