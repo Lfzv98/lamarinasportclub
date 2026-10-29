@@ -8,6 +8,7 @@ import { useMemo, useRef, useState } from "react";
 import { AvisoFotos, BotonFoto, FotoDelRegistro } from "@/components/FotosRegistro";
 import { Opcion, Paso } from "@/components/habibi/piezas";
 import { Logo } from "@/components/Logo";
+import { LogoMenu } from "@/components/LogoMenu";
 import { ReglasPuntuacion } from "@/components/ReglasPuntuacion";
 import { StaffGate } from "@/components/StaffGate";
 import { Segmented } from "@/components/ui/Segmented";
@@ -202,7 +203,7 @@ function NuevoHabibi() {
         <button onClick={() => (paso > 0 ? ir(paso - 1) : router.push("/habibi"))} className="btn-ghost !p-2.5" aria-label={paso > 0 ? `Volver a ${PASOS[paso - 1]}` : "Volver"}>
           <ArrowLeft className="size-5" />
         </button>
-        <Logo compacto />
+        <LogoMenu />
         <span className="w-10 text-right text-xs font-semibold text-white/40">
           {paso + 1}/{PASOS.length}
         </span>

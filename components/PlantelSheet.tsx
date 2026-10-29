@@ -12,6 +12,7 @@ import {
   agregarJugador,
   agregarPareja,
   cambiarPareja,
+  duplaRepetida,
   nuevoId,
   parejaEnPistaAhora,
   parejaSinJugar,
@@ -82,6 +83,8 @@ export function PlantelSheet({
     if (!editando) return;
     if (!editando.a.trim() || !editando.b.trim()) return toast("Escribe los dos nombres de la dupla", "error");
     const vieja = evento.parejas.find((p) => p.id === editando.id);
+    const repetida = duplaRepetida(evento.jugadores, editando.a, editando.b, vieja?.jugadorIds ?? []);
+    if (repetida) return toast(repetida, "error");
     const previos = vieja?.jugadorIds.map((id) => porId.get(id));
     const ja = nuevoJugador(editando.a, previos?.[0]?.genero ?? generoFijo ?? "M");
     const jb = nuevoJugador(editando.b, previos?.[1]?.genero ?? generoFijo ?? "F");
@@ -109,6 +112,8 @@ export function PlantelSheet({
     if (sinRondasFuturas) return toast("Ya no quedan rondas por sortear.", "error");
     if (dupla) {
       if (!a.trim() || !b.trim()) return toast("Escribe los dos nombres de la pareja", "error");
+      const repetida = duplaRepetida(evento.jugadores, a, b);
+      if (repetida) return toast(repetida, "error");
       const ja = nuevoJugador(a, generoFijo ?? "M");
       const jb = nuevoJugador(b, generoFijo ?? "F");
       onCambio((e) => agregarPareja(e, ja, jb), `Pareja ${ja.nombre} / ${jb.nombre} agregada desde la ronda ${desde}`);

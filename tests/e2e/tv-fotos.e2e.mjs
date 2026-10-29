@@ -94,9 +94,9 @@ ok(club.vallas?.length === 6 && club.vallas.filter((v) => v.img).length === 3 &&
 /* 3) Modo TV en vivo: sin logo arriba, logo de fondo, vallas a la izquierda, sin podio */
 await p.setViewportSize({ width: 1920, height: 1080 });
 await p.goto(`${U}/evento/${id}/tv`, { waitUntil: "networkidle" }); await espera(2000);
-ok(await p.locator("header img[alt='La Marina Sport Club']").count() === 0, "TV: sin logo arriba a la izquierda");
+ok(await p.locator("header img[alt='La Marina Sport Club']").count() === 1, "TV: logo arriba a la izquierda");
 ok(await p.locator("main > div[aria-hidden] img[src='/brand/logo.png']").count() === 1, "TV: logo grande difuminado de fondo");
-ok(await p.locator("aside[aria-label='Publicidad'] > div").count() === 6, "TV: 6 vallas publicitarias");
+ok(await p.locator("aside[aria-label='Publicidad'] .valla-cinta").count() === 1, "TV: banda publicitaria abajo que corre");
 ok(await p.locator("text=Podio").count() === 0, "TV: sin podio");
 await p.screenshot({ path: `${out}/tv-vivo.png` });
 

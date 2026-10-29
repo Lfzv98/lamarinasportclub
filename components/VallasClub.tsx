@@ -44,10 +44,10 @@ export function VallasClub({ valor, onChange }: { valor: Valla[] | undefined; on
         <Megaphone className="size-3.5" /> Publicidad del Modo TV (americanos)
       </h2>
       <p className="mb-3 text-xs text-white/50">
-        Vallas a la izquierda de la tabla, como las de un estadio: se reparten el alto de la pantalla y cambian de lugar cada 12 segundos. Usa imágenes anchas (ej. 1200 × 300). Si una valla queda vacía, sale el logo de La Marina.
+        Banda larga abajo de la pantalla que corre sin parar, como la valla de un estadio de fútbol: las marcas pasan una detrás de otra en este orden. Usa imágenes anchas (ej. 1200 × 300). Si una queda vacía, sale el logo de La Marina.
       </p>
       <div className="glass mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl p-3">
-        <span className="text-sm font-semibold">¿Cuántas vallas?</span>
+        <span className="text-sm font-semibold">¿Cuántas marcas?</span>
         <div className="flex gap-1 rounded-xl bg-white/5 p-1" role="radiogroup" aria-label="Cantidad de vallas">
           {Array.from({ length: MAX_VALLAS }, (_, i) => i + 1).map((k) => (
             <button

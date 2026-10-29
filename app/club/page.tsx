@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, AtSign, Copy, Flag, FlaskConical, KeyRound, MapPin, Megaphone, MessageCircle, Plus, Save, Sun, Trash2, Warehouse } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
+import { LogoMenu } from "@/components/LogoMenu";
 import { ArbitrosClub } from "@/components/ArbitrosClub";
 import { DatosPrueba } from "@/components/DatosPrueba";
 import { MenuApp } from "@/components/MenuApp";
@@ -57,7 +58,7 @@ function Club() {
         <Link href="/" className="btn-ghost !p-2.5" aria-label="Volver">
           <ArrowLeft className="size-5" />
         </Link>
-        <Logo compacto />
+        <LogoMenu />
         <MenuApp />
       </header>
 

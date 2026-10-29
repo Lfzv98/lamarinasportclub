@@ -35,7 +35,8 @@ export function GuardiaSoloRanking() {
     } catch {
       return;
     }
-    if (!ruta || pathname === ruta) return;
+    // Otro QR (otro americano) también es una pantalla pública de ranking: se permite.
+    if (!ruta || pathname === ruta || /^\/evento\/[^/]+\/tabla$/.test(pathname)) return;
     if (new URLSearchParams(location.search).get("staff") === "1") {
       setPedirLogin(true);
       return;

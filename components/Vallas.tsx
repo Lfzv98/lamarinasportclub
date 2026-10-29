@@ -82,3 +82,36 @@ function Anuncio({ valla }: { valla: Valla | null }) {
     <img src="/brand/logo.png" alt="La Marina Sport Club" className="max-h-[58%] max-w-full object-contain opacity-90" />
   );
 }
+
+/**
+ * Banda publicitaria de abajo, como la valla LED de un estadio de fútbol: una sola cinta larga
+ * que corre sin parar con todas las marcas (las que eligió el staff, 1 a 6) una detrás de otra.
+ * Sin marcas cargadas, corre el logo de La Marina.
+ */
+export function BandaVallas({ vallas, alto, className }: { vallas?: Valla[]; alto: number; className?: string }) {
+  const n = Math.min(MAX_VALLAS, Math.max(1, vallas?.length || MAX_VALLAS));
+  const marcas = Array.from({ length: n }, (_, i) => (tieneContenido(vallas?.[i]) ? vallas![i] : null));
+  // Siempre al menos 8 piezas por vuelta para que la cinta llene pantallas anchas; se duplica para el bucle sin saltos.
+  const vuelta = Array.from({ length: Math.max(8, Math.ceil(8 / marcas.length) * marcas.length) }, (_, i) => marcas[i % marcas.length]);
+  const segundos = vuelta.length * 4;
+  return (
+    <aside
+      aria-label="Publicidad"
+      className={clsx("relative shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-[#04060d] shadow-[inset_0_0_28px_rgba(0,0,0,0.85),0_0_24px_-8px_rgba(166,232,74,0.25)]", className)}
+      style={{ height: alto }}
+    >
+      <div className="valla-cinta flex h-full w-max" style={{ animationDuration: `${segundos}s` }}>
+        {[0, 1].map((copia) => (
+          <div key={copia} className="flex h-full" aria-hidden={copia === 1 || undefined}>
+            {vuelta.map((v, i) => (
+              <div key={i} className="flex h-full items-center justify-center border-r border-white/10 px-10" style={{ width: alto * 3.4 }}>
+                <Anuncio valla={v} />
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      <div className="valla-led pointer-events-none absolute inset-0" />
+    </aside>
+  );
+}

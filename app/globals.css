@@ -223,12 +223,20 @@ body {
   to { transform: translateX(400%) skewX(-20deg); }
 }
 .valla-brillo { animation: valla-brillo 7s ease-in-out infinite; }
+/* Banda de abajo: una cinta larga que corre sin parar (va duplicada, así el bucle no salta). */
+@keyframes valla-correr {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+.valla-cinta { animation: valla-correr 32s linear infinite; will-change: transform; }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  /* La valla de la TV sigue corriendo: es publicidad, no decoración. */
+  .pantalla .valla-cinta { animation-duration: 40s !important; }
 }
 
 /* En noche, los acentos índigo pasan a lima para que se lean sobre el azul. */

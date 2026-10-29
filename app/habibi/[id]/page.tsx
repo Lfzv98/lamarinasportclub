@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { Llave, PodioHabibi, TablaGrupo } from "@/components/habibi/piezas";
 import { EstadoBadge } from "@/components/EventoCard";
 import { Logo } from "@/components/Logo";
+import { LogoMenu } from "@/components/LogoMenu";
 import { ModoBadge } from "@/components/ModoBadge";
 import { QRBoton } from "@/components/QRPopup";
 import { ScoreModal } from "@/components/ScoreModal";
@@ -138,7 +139,7 @@ function Torneo({ llave }: { llave: EventoAmericano }) {
         </div>
         <ModoBadge />
         <StaffChip />
-        <Logo compacto className="hidden sm:block" />
+        <LogoMenu />
       </header>
 
       {/* Dónde va el torneo */}

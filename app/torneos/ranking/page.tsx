@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ClipboardPaste, ExternalLink, FileUp, RefreshCw, Search } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { LogoMenu } from "@/components/LogoMenu";
 import { StaffChip, StaffGate } from "@/components/StaffGate";
 import { Hoja } from "@/components/ui/Hoja";
 import { toast } from "@/components/ui/Toaster";
@@ -86,7 +87,7 @@ function RankingFvp() {
         </Link>
         <span className="flex-1" />
         <StaffChip />
-        <Logo compacto />
+        <LogoMenu />
       </header>
 
       <section className="glass relative mt-2 overflow-hidden rounded-[2rem] p-5 sm:p-7">
