@@ -243,7 +243,7 @@ body {
 .tema-noche .text-marca { color: var(--tx-neon); }
 
 /* Páginas legales: títulos y listas legibles. */
-.legal h2 { margin-top: 2rem; font-family: var(--font-display), sans-serif; font-size: 1.25rem; font-weight: 700; color: #fff; }
+.legal h2 { margin-top: 0; font-family: var(--font-display), sans-serif; font-size: 1.25rem; font-weight: 700; color: #fff; }
 .legal ul { list-style: disc; padding-left: 1.25rem; }
 .legal li { margin-top: 0.4rem; }
 .legal a { color: var(--tx-neon, #cff35b); text-decoration: underline; }
