@@ -73,6 +73,10 @@ export function validarEvento(x: unknown): string[] {
       if (!["OCTAVOS", "CUARTOS", "SEMIS"].includes(h.inicio as string)) err("habibi.inicio inválido.");
     } else err("habibi.rol inválido.");
   }
+  if (e.pistasSuspendidas !== undefined) {
+    if (!Array.isArray(e.pistasSuspendidas) || e.pistasSuspendidas.length > 12) err("pistasSuspendidas debe ser una lista.");
+    else if (e.pistasSuspendidas.some((s) => !s || !esEntero(s.numero, 1, 999) || !esTexto(s.motivo, 40))) err("Hay una pista suspendida mal formada.");
+  }
   if (!Array.isArray(e.jugadores)) return [...errores, "jugadores debe ser una lista."];
   if (!Array.isArray(e.rondas)) return [...errores, "rondas debe ser una lista."];
   if (!Array.isArray(e.parejas)) return [...errores, "parejas debe ser una lista."];

@@ -4,7 +4,7 @@ import clsx from "clsx";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Coffee, Maximize, Minimize, Trophy } from "lucide-react";
+import { ArrowLeft, CloudRain, Coffee, Maximize, Minimize, Trophy } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AvatarPareja } from "@/components/Avatar";
 import { Cronometro, MarcadorRonda } from "@/components/Cronometro";
@@ -17,7 +17,7 @@ import { BandaVallas } from "@/components/Vallas";
 import { useReloj } from "@/hooks/useReloj";
 import { ANCHO_ESTRECHO, Escenario, Reloj, useCursorOculto, useFullscreenYWakeLock, useLienzo, useVertical } from "@/components/Pantalla";
 import { categoriaLabel } from "@/lib/categories";
-import { horaRonda } from "@/lib/horarios";
+import { horaRonda, nombrePista } from "@/lib/horarios";
 import { calcularTabla, fotoDeDupla, ganador, nombreCompleto, nombresCompletosDeFila } from "@/lib/scoring";
 import { useAmericanos, useEvento } from "@/lib/store";
 import type { EventoAmericano, Partido } from "@/types/americano";
@@ -156,6 +156,11 @@ function TV({ evento }: { evento: EventoAmericano }) {
                       <span className="text-4xl text-white/30">/{evento.totalRondas}</span>
                     </p>
                     {ronda && conReloj && <p className="mt-2 text-xl text-white/50">Inicio {horaRonda(evento, ronda.numero)}</p>}
+                    {!!evento.pistasSuspendidas?.length && (
+                      <p className="mt-2 flex items-center gap-2 text-xl font-semibold text-sky-200">
+                        <CloudRain className="size-6 shrink-0" /> {evento.pistasSuspendidas.map((x) => nombrePista(evento, x.numero)).join(", ")} suspendida{evento.pistasSuspendidas.length > 1 ? "s" : ""} ({evento.pistasSuspendidas[0].motivo.toLowerCase()})
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className={clsx("grid min-h-0 flex-1 gap-4", !lienzo.desplaza && "auto-rows-fr", (ronda?.partidos.length ?? 0) > 2 ? "grid-cols-2" : "grid-cols-1")}>

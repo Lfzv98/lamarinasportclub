@@ -233,6 +233,8 @@ export function CruceCard({
           <span className="flex items-center gap-1 text-neon">
             <span className="size-1.5 animate-pulse rounded-full bg-neon" /> En juego
           </span>
+        ) : p?.suspendido ? (
+          <span className="text-sky-200">En espera{p.suspendido.marcador ? ` · iban ${p.suspendido.marcador}` : ""}</span>
         ) : listo ? (
           <span>Por jugar</span>
         ) : null}

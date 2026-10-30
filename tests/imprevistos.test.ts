@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { proponerFormato } from "../lib/torneo/cuadro.ts";
 import { CONFIG_CUADRO_BASE, catNivel } from "../lib/torneo/categorias.ts";
-import { agregarSede, partidosSuspendidos, quitarSede, reanudarPistas, suspenderPistas, suspensionesActivas } from "../lib/torneo/imprevistos.ts";
+import { agregarSede, partidosSuspendidos, quitarSede, reanudarPista, reanudarPistas, suspenderPistas, suspensionesActivas } from "../lib/torneo/imprevistos.ts";
 import { programarTorneo } from "../lib/torneo/programacion.ts";
 import { crearTorneo, iniciarPartido, inscribirDupla, publicarCategoria, sortearCategoria, todosLosPartidos } from "../lib/torneo/torneo.ts";
 import { CLUB_POR_DEFECTO } from "../lib/horarios.ts";
@@ -97,4 +97,16 @@ test("sede de apoyo: su horario limita sus pistas y no se quita con partidos en 
     const ok = quitarSede(t, sedeId, { ahora: ms("2026-11-07", "08:00") });
     assert.ok(!("error" in ok) && ok.torneo.canchas.filter((c) => c.sedeId).every((c) => !c.activa));
   }
+});
+
+test("lluvia: el botón de la pista reactiva solo esa pista y las demás siguen suspendidas", () => {
+  let t = torneo(12);
+  const ahora = ms("2026-11-07", "10:00");
+  t = suspenderPistas(t, { pistas: [2, 3], motivo: "Lluvia", ahora, hastaMs: null }).torneo;
+  const r = reanudarPista(t, 2, { ahora: ahora + 3600_000 });
+  const activas = suspensionesActivas(r.torneo, ahora + 3600_000);
+  assert.deepEqual(activas.flatMap((s) => s.pistas), [3]);
+  const despues = jugables(r.torneo).filter((p) => p.programacion && p.estado === "PENDIENTE" && inicio(p) >= ahora + 3600_000);
+  assert.ok(despues.some((p) => p.programacion!.pista === 2), "la pista 2 vuelve a recibir partidos");
+  assert.ok(despues.every((p) => p.programacion!.pista !== 3), "la 3 sigue suspendida");
 });

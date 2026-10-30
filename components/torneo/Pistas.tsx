@@ -3,7 +3,7 @@
 import clsx from "clsx";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { CloudRain, Flag, Megaphone, MonitorPlay, UserRoundX } from "lucide-react";
+import { CloudRain, Flag, Megaphone, MonitorPlay, Play, UserRoundX } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "@/components/ui/Toaster";
 import { listarArbitros, type ArbitroLista } from "@/lib/arbitro";
@@ -12,7 +12,10 @@ import { MarcadorMini } from "@/components/torneo/vivo";
 import { sonar, vibrar } from "@/lib/feedback";
 import { nombreCorto } from "@/lib/torneo/categorias";
 import { turnoEnPista } from "@/lib/torneo/arbitros";
-import { nombrePista, pistaCorta } from "@/lib/torneo/imprevistos";
+import { nombrePista, pistaCorta, reanudarPista, suspenderPistas } from "@/lib/torneo/imprevistos";
+import { calcularMarcador, setsFinales } from "@/lib/torneo/marcador";
+import { textoSets } from "@/lib/torneo/tabla";
+import { useEsStaff } from "@/lib/store";
 import { limiteWO, type EstadoPista } from "@/lib/torneo/programacion";
 import { categoria, dupla, nombreDupla } from "@/lib/torneo/torneo";
 import { useMarcador, useTorneos } from "@/lib/torneosStore";
@@ -41,6 +44,8 @@ export function TarjetaPista({
   onAbrir: (partidoId: string) => void;
 }) {
   const accionPartido = useTorneos((s) => s.accionPartido);
+  const guardar = useTorneos((s) => s.guardar);
+  const esStaff = useEsStaff();
   const nombreArbitro = useNombresArbitros(mesa);
   const actual = c.enJuego ?? c.llamado;
   const cat = actual ? categoria(torneo, actual.categoriaId) : null;
@@ -56,6 +61,21 @@ export function TarjetaPista({
     const err = await accionPartido(torneo.id, p.id, { accion: "llamar", pista: c.numero });
     if (err) return toast(err, "error");
     toast(`A ${nombrePista(torneo, c.numero)}: ${nombreDupla(torneo, dupla(torneo, p.duplaA))} vs ${nombreDupla(torneo, dupla(torneo, p.duplaB))}`);
+  };
+  // Lluvia: un toque suspende esta pista hasta nuevo aviso (lo que se juega guarda su marcador y se reprograma).
+  const suspender = () => {
+    if (!confirm(`¿Suspender ${c.nombre} por lluvia? ${c.enJuego ? "El partido queda con su marcador y sigue después en otra pista. " : ""}Todo se reprograma solo.`)) return;
+    const marcadores: Record<string, string> = {};
+    for (const [id, x] of Object.entries(useTorneos.getState().marcadores)) if (x.torneoId === torneo.id && !x.finalizado) marcadores[id] = textoSets(setsFinales(calcularMarcador(x)).filter((s) => s.a + s.b > 0));
+    const r = suspenderPistas(torneo, { pistas: [c.numero], motivo: "Lluvia", hastaMs: null, marcadores, por: "Staff" });
+    guardar(r.torneo);
+    vibrar([10, 30, 10]);
+    toast(`${c.nombre} suspendida · ${r.programacion.programados} partidos reacomodados${r.programacion.sinLugar.length ? ` · ${r.programacion.sinLugar.length} sin lugar: suma un día o una sede en Imprevistos` : ""}`);
+  };
+  const reactivar = () => {
+    const r = reanudarPista(torneo, c.numero, { por: "Staff" });
+    guardar(r.torneo);
+    toast(`${c.nombre} activa otra vez · ${r.programacion.programados} partidos reacomodados`);
   };
   const wo = async (p: PartidoTorneo, noVino: "A" | "B") => {
     const nombre = nombreDupla(torneo, dupla(torneo, noVino === "A" ? p.duplaA : p.duplaB));
@@ -86,6 +106,16 @@ export function TarjetaPista({
             {c.enJuego ? `En juego · ${nombreCorto(cat!.categoria)} · ${c.enJuego.etiqueta}` : c.llamado ? `Llamado · ${nombreCorto(cat!.categoria)}` : c.suspendida ? `Suspendida · ${c.suspendida}` : "Libre"}
           </p>
         </div>
+        {esStaff &&
+          (c.suspendida ? (
+            <button className="btn-neon !px-2.5 !py-2 text-xs" onClick={reactivar} title="Reactivar esta pista">
+              <Play className="size-3.5" /> Reactivar
+            </button>
+          ) : (
+            <button className="btn-ghost !p-2 text-sky-200" onClick={suspender} title="Suspender esta pista (lluvia)" aria-label={`Suspender ${c.nombre}`}>
+              <CloudRain className="size-4" />
+            </button>
+          ))}
         <Link href={`/torneos/${torneo.id}/pista/${c.numero}`} className="btn-ghost !p-2" title="Pantalla de esta pista" aria-label={`Pantalla de ${c.nombre}`}>
           <MonitorPlay className="size-4" />
         </Link>
