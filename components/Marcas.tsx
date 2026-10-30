@@ -4,6 +4,9 @@ import { siInstagram, siWhatsapp } from "simple-icons";
 /** Contacto oficial del club: WhatsApp de reservas (CRM) e Instagram. */
 export const WHATSAPP_RESERVAS = "584245968373";
 export const WHATSAPP_VISIBLE = "+58 424 596 8373";
+/** WhatsApp de atención al cliente (preguntas, datos personales, reclamos). */
+export const WHATSAPP_ATENCION = "584248302078";
+export const WHATSAPP_ATENCION_VISIBLE = "+58 424 830 2078";
 export const INSTAGRAM_CLUB = "lamarinasportclub";
 
 const Icono = ({ path, className }: { path: string; className?: string }) => (
@@ -15,11 +18,13 @@ const Icono = ({ path, className }: { path: string; className?: string }) => (
 export const IconoWhatsApp = ({ className }: { className?: string }) => <Icono path={siWhatsapp.path} className={className} />;
 export const IconoInstagram = ({ className }: { className?: string }) => <Icono path={siInstagram.path} className={className} />;
 
-/** Botón de WhatsApp para reservar pistas (verde oficial). */
-export function BotonWhatsApp({ className, texto = "Reserva tu pista" }: { className?: string; texto?: string }) {
+/** Botón de WhatsApp (verde oficial): reservas por defecto; `atencion` va a atención al cliente. */
+export function BotonWhatsApp({ className, texto = "Reserva tu pista", atencion = false }: { className?: string; texto?: string; atencion?: boolean }) {
+  const numero = atencion ? WHATSAPP_ATENCION : WHATSAPP_RESERVAS;
+  const mensaje = atencion ? "¡Hola La Marina! Tengo una pregunta." : "¡Hola La Marina! Quiero reservar una pista.";
   return (
     <a
-      href={`https://wa.me/${WHATSAPP_RESERVAS}?text=${encodeURIComponent("¡Hola La Marina! Quiero reservar una pista.")}`}
+      href={`https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`}
       target="_blank"
       rel="noopener noreferrer"
       className={clsx("inline-flex items-center gap-2.5 rounded-2xl bg-[#25D366] px-4 py-3 font-semibold text-[#0b1f12] shadow-[0_10px_30px_-12px_rgba(37,211,102,0.9)] transition hover:brightness-105 active:scale-[0.98]", className)}
@@ -27,7 +32,7 @@ export function BotonWhatsApp({ className, texto = "Reserva tu pista" }: { class
       <IconoWhatsApp className="size-5" />
       <span className="flex flex-col leading-tight">
         <span>{texto}</span>
-        <span className="text-xs font-medium opacity-75">{WHATSAPP_VISIBLE}</span>
+        <span className="text-xs font-medium opacity-75">{atencion ? WHATSAPP_ATENCION_VISIBLE : WHATSAPP_VISIBLE}</span>
       </span>
     </a>
   );

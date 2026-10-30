@@ -71,7 +71,7 @@ export function PaginaLegal({
             <p className="font-display text-lg font-bold">¿Alguna pregunta?</p>
             <p className="text-sm text-white/55">Te responde el equipo del Club.</p>
           </div>
-          <BotonWhatsApp texto="Escríbenos" />
+          <BotonWhatsApp texto="Atención al cliente" atencion />
         </section>
       </div>
       <PieDePagina />
