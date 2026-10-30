@@ -79,8 +79,9 @@ ok(foto && (await ctx.request.get(`${U}${foto}`)).headers()["content-type"]?.sta
 const clubAntes = (await (await ctx.request.get(`${U}/api/club`)).json()).club;
 await ctx.request.post(`${U}/api/club`, { data: { club: { ...clubAntes, vallas: [], actualizadoEn: new Date(Date.now() + 1000).toISOString() } } });
 await p.goto(`${U}/americanos/ajustes`, { waitUntil: "networkidle" }); await espera(1500);
-const marcas = [["PADEL PRO", "#d62828"], ["POLAR", "#1d3fa8"], ["BANESCO", "#0b8a5b"]];
-await p.locator("input[aria-label='Subir logos de marcas']").setInputFiles(await Promise.all(marcas.map(async ([n, c]) => ({ ...(await imagen(1200, 300, c, n, "image/png")), name: `${n}.png` }))));
+// Dos piezas de 1700 × 500 (cubren su tramo) y un logo de otra medida (centrado sobre negro).
+const marcas = [["PADEL PRO", "#d62828", 1700, 500], ["POLAR", "#1d3fa8", 1700, 500], ["BANESCO", "#0b8a5b", 1200, 300]];
+await p.locator("input[aria-label='Subir logos de marcas']").setInputFiles(await Promise.all(marcas.map(async ([n, c, w, h]) => ({ ...(await imagen(w, h, c, n, "image/png")), name: `${n}.png` }))));
 await p.waitForFunction(() => document.querySelectorAll("input[aria-label^='Nombre de la marca']").length === 3, null, { timeout: 15_000 });
 await p.locator("button:has-text('Marca sin logo')").click();
 await p.getByLabel("Nombre de la marca 4").fill("Head");
@@ -88,6 +89,8 @@ await p.screenshot({ path: `${out}/ajustes-vallas.png`, fullPage: false });
 await p.locator("footer button:has-text('Guardar cambios')").click(); await espera(1500);
 const club = (await (await ctx.request.get(`${U}/api/club`)).json()).club;
 ok(club.vallas?.length === 4 && club.vallas.filter((v) => v.img).length === 3 && club.vallas[3].nombre === "Head", "club guardado con 4 marcas (3 con logo, 1 solo nombre)");
+ok(club.vallas[0].pieza === true && club.vallas[1].pieza === true && club.vallas[2].pieza === false, "1700 × 500 queda como pieza completa; otra medida, como logo");
+ok(await p.locator("text=Pieza completa").count() === 2 && await p.locator("text=1700 × 500 px exactos").count() === 1, "Ajustes: medida pedida y etiqueta de cada marca");
 
 /* 3) Modo TV en vivo: sin logo arriba, logo de fondo, vallas a la izquierda, sin podio */
 await p.setViewportSize({ width: 1920, height: 1080 });
@@ -97,6 +100,7 @@ ok(await p.locator("main > div[aria-hidden] img[src='/brand/logo.png']").count()
 ok(await p.locator("aside[aria-label='Publicidad'] .valla-cinta").count() === 1, "TV: banda publicitaria abajo que corre");
 ok(await p.locator("text=Podio").count() === 0, "TV: sin podio");
 await p.screenshot({ path: `${out}/tv-vivo.png` });
+ok(await p.locator("aside[aria-label='Publicidad'] .valla-cinta img.object-cover").count() > 0, "TV: las piezas cubren su tramo de borde a borde");
 
 // Termina el americano con marcadores (más alto para la dupla 1).
 const ev = await evento(id);

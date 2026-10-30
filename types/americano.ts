@@ -281,6 +281,8 @@ export interface Valla {
   nombre: string;
   /** URL de la imagen subida en Ajustes (/api/club/vallas/:id?v=). */
   img?: string | null;
+  /** La imagen es una pieza de 1700 × 500 (3,4 : 1): cubre su tramo de la banda de borde a borde. */
+  pieza?: boolean;
 }
 
 /** Configuración del club. `dias` va indexado como Date#getDay(): 0 = domingo … 6 = sábado. */
