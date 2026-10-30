@@ -1,5 +1,6 @@
 "use client";
 
+import { BotonAjustes } from "@/components/BotonAjustes";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, ChevronRight, Plus, Swords, Trophy, Tv, Users } from "lucide-react";
@@ -44,6 +45,7 @@ export default function HabibiInicio() {
           <InstallButton />
           <ModoBadge />
           <StaffChip />
+          <BotonAjustes href="/habibi/ajustes" titulo="Ajustes del Americano Torneo: publicidad TV, pistas y rondas" />
         </header>
         <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="relative mx-auto mt-2 flex max-w-5xl justify-center px-6 sm:mt-6">
           <Logo className="!h-auto max-h-[22svh] w-full max-w-[20rem] object-contain sm:max-w-sm" />

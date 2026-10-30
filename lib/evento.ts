@@ -14,7 +14,7 @@ import type {
   Resultado,
   Ronda,
 } from "@/types/americano";
-import { generarRondasDuplaFija, generarRondasIndividual } from "./rotation.ts";
+import { crearParejaRotativa, generarRondasDuplaFija, generarRondasIndividual } from "./rotation.ts";
 import { normalizarResultado } from "./scoring.ts";
 
 export interface NuevoEventoInput {
@@ -312,6 +312,56 @@ export function quitarPareja(e: EventoAmericano, parejaId: string): EventoAmeric
     rondas: e.rondas.map((r) => ({ ...r, descansanIds: r.descansanIds.filter((id) => id !== parejaId) })),
   };
   return reSortear({ ...out, jugadores: sinHuerfanos(out, vieja.jugadorIds) });
+}
+
+/* ---------- americano individual y mixto: cambiar o quitar a un jugador que aún no jugó ---------- */
+
+const juegaEn = (p: Partido, jugadorId: string) => p.parejaA.jugadorIds.includes(jugadorId) || p.parejaB.jugadorIds.includes(jugadorId);
+
+/** El jugador aún no tiene ningún marcador cargado (ni terminado ni a medias). */
+export function jugadorSinJugar(e: EventoAmericano, jugadorId: string): boolean {
+  return !e.rondas.some((r) => r.partidos.some((p) => juegaEn(p, jugadorId) && (p.estado === "FINALIZADO" || !!p.resultado)));
+}
+
+/** El jugador está en pista en la ronda que ya empezó. */
+export function jugadorEnPistaAhora(e: EventoAmericano, jugadorId: string): boolean {
+  const desde = primeraRondaEditable(e);
+  return e.rondas.some((r) => r.numero < desde && r.partidos.some((p) => juegaEn(p, jugadorId)));
+}
+
+/**
+ * Cambia a un jugador que aún no jugó (no vino, entra otro): el nuevo ocupa su mismo lugar en
+ * todas las rondas, con los mismos compañeros y rivales, sin sumar ni perder nada. Si estaba retirado, vuelve.
+ */
+export function cambiarJugador(e: EventoAmericano, jugadorId: string, nuevo: Jugador): EventoAmericano {
+  const viejo = e.jugadores.find((j) => j.id === jugadorId);
+  if (!viejo) return e;
+  const jugadores = e.jugadores.map((j) => (j.id === jugadorId ? nuevo : j));
+  const porId = new Map(jugadores.map((j) => [j.id, j]));
+  const ahora = new Date().toISOString();
+  const rehacer = (par: Pareja): Pareja => {
+    const [x, y] = par.jugadorIds.map((id) => porId.get(id === jugadorId ? nuevo.id : id));
+    return x && y ? crearParejaRotativa(x, y) : par;
+  };
+  const out: EventoAmericano = {
+    ...e,
+    jugadores,
+    rondas: e.rondas.map((r) => ({
+      ...r,
+      descansanIds: r.descansanIds.map((id) => (id === jugadorId ? nuevo.id : id)),
+      partidos: r.partidos.map((p) => (juegaEn(p, jugadorId) ? { ...p, parejaA: rehacer(p.parejaA), parejaB: rehacer(p.parejaB), actualizadoEn: ahora } : p)),
+    })),
+  };
+  return viejo.retirado ? reSortear(out) : tocar(out);
+}
+
+/** Borra a un jugador que aún no jugó ni está en pista: como si nunca se hubiera inscrito. */
+export function quitarJugador(e: EventoAmericano, jugadorId: string): EventoAmericano {
+  return reSortear({
+    ...e,
+    jugadores: e.jugadores.filter((j) => j.id !== jugadorId),
+    rondas: e.rondas.map((r) => ({ ...r, descansanIds: r.descansanIds.filter((id) => id !== jugadorId) })),
+  });
 }
 
 /** Cuántos pueden jugar ahora (sin retirados). */

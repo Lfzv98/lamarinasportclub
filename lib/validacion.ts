@@ -4,6 +4,9 @@
  * en una Edge Function o en el backend de PadelReserve.
  */
 import type { ConfigClub, EventoAmericano } from "@/types/americano";
+
+/** Marcas que caben en la banda publicitaria del Modo TV. */
+export const MAX_VALLAS = 30;
 import { LIMITES_SUMA } from "./categories.ts";
 import { LIMITES, validarResultado } from "./scoring.ts";
 
@@ -136,7 +139,7 @@ export function validarClub(x: unknown): string[] {
   if (!Array.isArray(c.pistas) || c.pistas.length < 1 || c.pistas.length > 6) errores.push("pistas debe tener entre 1 y 6 elementos.");
   else if (new Set(c.pistas.map((p) => p.numero)).size !== c.pistas.length) errores.push("Números de pista repetidos.");
   if (c.vallas != null) {
-    if (!Array.isArray(c.vallas) || c.vallas.length > 6) errores.push("vallas: máximo 6.");
+    if (!Array.isArray(c.vallas) || c.vallas.length > MAX_VALLAS) errores.push(`vallas: máximo ${MAX_VALLAS}.`);
     else if (c.vallas.some((v) => !v || typeof v.id !== "string" || typeof v.nombre !== "string" || v.nombre.length > 80 || (v.img != null && (typeof v.img !== "string" || !v.img.startsWith("/api/club/vallas/")))))
       errores.push("Cada valla necesita id, nombre (hasta 80 letras) y, si tiene imagen, la subida en Ajustes.");
   }

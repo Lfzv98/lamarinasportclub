@@ -9,6 +9,7 @@ import { useState } from "react";
 import { CruceCard, PodioHabibi, TablaGrupo, useCruces } from "@/components/habibi/piezas";
 import { ANCHO_ESTRECHO, Escenario, Reloj, useCursorOculto, useFullscreenYWakeLock, useLienzo, useVertical } from "@/components/Pantalla";
 import { QR } from "@/components/QR";
+import { BandaVallas } from "@/components/Vallas";
 import { QRPopup, useUrlRanking } from "@/components/QRPopup";
 import { categoriaLabel } from "@/lib/categories";
 import { infoLlave, NOMBRE_FASE, pendientesGrupos } from "@/lib/habibi";
@@ -35,7 +36,7 @@ export default function HabibiTVPage() {
 }
 
 /**
- * Modo TV del Americano HABIBI: el logo del club va grande y difuminado de fondo
+ * Modo TV del Americano Torneo: el logo del club va grande y difuminado de fondo
  * (sin logo arriba) y la información con letra grande para verse desde el bar.
  * Fase de grupos: las dos tablas lado a lado. Llave: la ronda en juego en grande y
  * el camino a la final al costado. Al terminar: campeones.
@@ -49,6 +50,7 @@ function TV({ llave }: { llave: EventoAmericano }) {
   const lienzo = useLienzo(vertical);
   const estrecho = lienzo.ancho < ANCHO_ESTRECHO;
   const cursorOculto = useCursorOculto();
+  const vallas = useAmericanos((s) => s.club.vallas);
   const lista = useCruces(llave);
   const porId = new Map(llave.jugadores.map((j) => [j.id, j]));
   const armada = !!info.armadaEn;
@@ -150,6 +152,9 @@ function TV({ llave }: { llave: EventoAmericano }) {
           </motion.section>
         )}
       </AnimatePresence>
+
+      {/* Banda de publicidad abajo, la misma de los americanos (Ajustes → Publicidad). */}
+      <BandaVallas vallas={vallas} alto={estrecho ? 84 : 112} className="relative z-10" />
     </Escenario>
   );
 }

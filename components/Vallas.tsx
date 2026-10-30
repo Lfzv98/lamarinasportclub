@@ -3,9 +3,12 @@
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { MAX_VALLAS } from "@/lib/validacion";
 import type { Valla } from "@/types/americano";
 
-export const MAX_VALLAS = 6;
+export { MAX_VALLAS };
+/** VallasTV (paneles al costado) usa hasta 6. */
+const MAX_PANELES = 6;
 /** Cada cuánto las vallas cambian de lugar, como el giro de anuncios en las vallas de un estadio. */
 const SEGUNDOS_POR_GIRO = 12;
 
@@ -18,7 +21,7 @@ const tieneContenido = (v?: Valla | null): v is Valla => !!v && (!!v.img || !!v.
  */
 export function VallasTV({ vallas, fila = false, className }: { vallas?: Valla[]; fila?: boolean; className?: string }) {
   // Cuántas vallas eligió el staff en Ajustes (1 a 6); sin configurar, 6. Se reparten el espacio exacto.
-  const n = Math.min(MAX_VALLAS, Math.max(1, vallas?.length || MAX_VALLAS));
+  const n = Math.min(MAX_PANELES, Math.max(1, vallas?.length || MAX_PANELES));
   const lista = Array.from({ length: n }, (_, i) => (tieneContenido(vallas?.[i]) ? vallas![i] : null));
   const hay = n > 1 && lista.some(Boolean);
   const [giro, setGiro] = useState(0);
@@ -69,31 +72,39 @@ function PanelValla({ valla, indice }: { valla: Valla | null; indice: number }) 
   );
 }
 
-function Anuncio({ valla }: { valla: Valla | null }) {
+/** `letra`: tamaño del nombre (px) cuando la marca no tiene imagen; en la banda va según su alto. */
+function Anuncio({ valla, letra }: { valla: Valla | null; letra?: number }) {
   if (valla?.img)
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img src={valla.img} alt={valla.nombre} className="max-h-[72%] max-w-full object-contain" />
     );
   if (valla)
-    return <span className="break-words text-center font-display text-3xl font-black uppercase leading-tight tracking-wide text-white">{valla.nombre}</span>;
+    return (
+      <span className={clsx("break-words text-center font-display font-black uppercase leading-tight tracking-wide text-white", !letra && "text-3xl")} style={letra ? { fontSize: letra } : undefined}>
+        {valla.nombre}
+      </span>
+    );
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img src="/brand/logo.png" alt="La Marina Sport Club" className="max-h-[58%] max-w-full object-contain opacity-90" />
   );
 }
 
+/** Segundos que tarda cada marca en avanzar su propio ancho: con 30 marcas la vuelta completa dura 2 minutos. */
+const SEGUNDOS_POR_MARCA = 4;
+
 /**
  * Banda publicitaria de abajo, como la valla LED de un estadio de fútbol: una sola cinta larga
- * que corre sin parar con todas las marcas (las que eligió el staff, 1 a 6) una detrás de otra.
- * Sin marcas cargadas, corre el logo de La Marina.
+ * que corre sin parar con todas las marcas (hasta 30, en el orden de Ajustes) una detrás de otra.
+ * Todas pasan por la pantalla en cada vuelta. Sin marcas cargadas, corre el logo de La Marina.
  */
 export function BandaVallas({ vallas, alto, className }: { vallas?: Valla[]; alto: number; className?: string }) {
-  const n = Math.min(MAX_VALLAS, Math.max(1, vallas?.length || MAX_VALLAS));
-  const marcas = Array.from({ length: n }, (_, i) => (tieneContenido(vallas?.[i]) ? vallas![i] : null));
+  const cargadas = (vallas ?? []).slice(0, MAX_VALLAS).filter(tieneContenido);
+  const marcas: (Valla | null)[] = cargadas.length ? cargadas : [null];
   // Siempre al menos 8 piezas por vuelta para que la cinta llene pantallas anchas; se duplica para el bucle sin saltos.
   const vuelta = Array.from({ length: Math.max(8, Math.ceil(8 / marcas.length) * marcas.length) }, (_, i) => marcas[i % marcas.length]);
-  const segundos = vuelta.length * 4;
+  const segundos = vuelta.length * SEGUNDOS_POR_MARCA;
   return (
     <aside
       aria-label="Publicidad"
@@ -104,8 +115,8 @@ export function BandaVallas({ vallas, alto, className }: { vallas?: Valla[]; alt
         {[0, 1].map((copia) => (
           <div key={copia} className="flex h-full" aria-hidden={copia === 1 || undefined}>
             {vuelta.map((v, i) => (
-              <div key={i} className="flex h-full items-center justify-center border-r border-white/10 px-10" style={{ width: alto * 3.4 }}>
-                <Anuncio valla={v} />
+              <div key={i} className="flex h-full items-center justify-center border-r border-white/10" style={{ width: alto * 3.4, paddingInline: alto * 0.36 }}>
+                <Anuncio valla={v} letra={alto * 0.3} />
               </div>
             ))}
           </div>
