@@ -22,7 +22,7 @@ export const GET = manejar(async () => {
  */
 export const POST = manejar(async (req: Request) => {
   if (!TENIS_ACTIVO) throw new ErrorApi(404, "Tenis no está activo en este club.");
-  const staff = sesionDe(req);
+  const staff = await sesionDe(req);
   const arbitro = staff ? null : await sesionValida(arbitroDe(req));
   if (!staff && !arbitro) throw new ErrorApi(401, "Solo el staff o los árbitros del club.");
   const body = (await leerJson(req)) as { torneo?: unknown } | null;

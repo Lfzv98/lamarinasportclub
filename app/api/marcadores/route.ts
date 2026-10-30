@@ -38,7 +38,7 @@ export const POST = manejar(async (req: Request) => {
   let entrante = body!.marcador as MarcadorVivo;
   const repo = getTorneosRepository();
   const existente = await repo.obtenerMarcador(entrante.id);
-  const staff = sesionDe(req);
+  const staff = await sesionDe(req);
   let quien: { id: string; nombre: string };
   if (staff) quien = { id: "staff", nombre: staff.nombre };
   else {

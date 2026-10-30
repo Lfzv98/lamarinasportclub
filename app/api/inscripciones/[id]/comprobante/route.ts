@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 /** GET /api/inscripciones/:torneoId/comprobante?i=<inscripcionId> → la foto del comprobante (staff). */
 export const GET = manejar(async (req: Request, ctx: { params: Promise<{ id: string }> }) => {
-  exigirStaff(req);
+  await exigirStaff(req);
   const { id } = await ctx.params;
   const i = new URL(req.url).searchParams.get("i");
   if (!i) throw new ErrorApi(400, "Falta la inscripción.");

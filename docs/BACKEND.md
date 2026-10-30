@@ -19,6 +19,8 @@ La app funciona sola en **modo DEMO** (en memoria del servidor y en el `localSto
 | `STAFF_SECRET` | Secreto (≥16 caracteres) para firmar la sesión de staff. **Obligatorio en producción** |
 | `STAFF_EMAILS` | Opcional: correos con permiso de staff, separados por coma |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Opcional: se usa para el login con usuario de PadelReserve (si falta, usa la service role) |
+| `PADELRESERVE_AUTH_URL` | Opcional: URL del Supabase del CRM de PadelReserve, si los usuarios del staff viven en otro proyecto que los datos de esta app |
+| `PADELRESERVE_AUTH_KEY` | Opcional: anon key de ese Supabase del CRM |
 | `SUPABASE_RANKING_TABLE` | Opcional, por defecto `ranking_fvp` |
 | `CRON_SECRET` | Recomendado: Vercel lo manda a la sincronización diaria del ranking FVP. Sin él, `/api/ranking-fvp/sync` acepta una llamada cada 10 min |
 | `FVP_SHEET_ID` / `FVP_SHEET_GIDS` | Opcional: otra hoja o pestañas (separadas por coma) si la FVP cambia el enlace |
@@ -54,6 +56,7 @@ Puntos de enganche útiles:
 - **Escritura solo staff:** `POST/PUT/DELETE /api/americanos*` y `POST /api/club` responden `401` sin sesión.
 - **Sesión:** `POST /api/staff/login` con `{ pin }` o `{ email, password }` deja una cookie `lm_staff` httpOnly, firmada con HMAC (`STAFF_SECRET`), válida 12 h. `GET /api/staff/me` dice quién es y qué métodos de ingreso hay; `POST /api/staff/logout` la borra.
 - **Usuario de PadelReserve:** se valida contra Supabase Auth (`/auth/v1/token?grant_type=password`). Entra quien tenga `app_metadata.role` (o `roles`) igual a `staff` o `admin`, o cuyo correo esté en `STAFF_EMAILS`. Para dar acceso a alguien: `update auth.users set raw_app_meta_data = raw_app_meta_data || '{"role":"staff"}' where email = '…';`
+- **Seguridad del staff (Ajustes → Seguridad):** solo una sesión con usuario de PadelReserve puede cambiarla (con el PIN no). Permite apagar el PIN compartido (las sesiones con PIN caen al instante), autorizar correos de PadelReserve sin tocar Vercel, cerrar la sesión en todos los dispositivos y ver los últimos 200 ingresos e intentos fallidos. Se guarda en `eventos_extras` (`staff:politica`, `staff:accesos`).
 - **Fuerza bruta:** 5 intentos fallidos por IP cada 10 minutos (luego `429`). En Vercel la memoria es por instancia; si quieres un límite global, muévelo a una tabla o a Upstash.
 - Si el staff pierde la sesión estando sin señal, sus cambios quedan pendientes en el dispositivo y se suben al volver a ingresar.
 

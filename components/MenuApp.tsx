@@ -69,7 +69,7 @@ const SECCIONES: { titulo: string; items: Item[] }[] = [
     titulo: "Ajustes",
     items: [
       { href: "/club#datos-prueba", titulo: "Modo prueba", sub: "Torneo o americano de prueba, todo lleno, en un toque", Icono: FlaskConical, staff: true },
-      { href: "/club", titulo: "Mi club", sub: "Pistas, horarios y contacto", Icono: Settings, staff: true },
+      { href: "/club", titulo: "Mi club", sub: "Seguridad, pistas, horarios y contacto", Icono: Settings, staff: true },
       { href: "/club#arbitros", titulo: "Árbitros del club", sub: "PIN de árbitros y plantel", Icono: Flag, staff: true },
       { href: "/club#claves", titulo: "Claves de torneos", sub: "Acceso de los participantes", Icono: KeyRound, staff: true },
     ],

@@ -33,7 +33,7 @@ export const POST = manejar(async (req: Request) => {
   const tipo = b.tipo as TipoFoto;
   const ev = await eventoDeFoto(b.eventoId);
   if (!ev) throw new ErrorApi(404, "Evento no encontrado.");
-  const staff = sesionDe(req);
+  const staff = await sesionDe(req);
   let por = staff?.nombre;
   if ("torneo" in ev) {
     const t = ev.torneo;
@@ -71,7 +71,7 @@ export const DELETE = manejar(async (req: Request) => {
   if (!eventoId || !id || (tipo !== "dupla" && tipo !== "jugador")) throw new ErrorApi(400, "Faltan eventoId, tipo e id.");
   const ev = await eventoDeFoto(eventoId);
   if (!ev) throw new ErrorApi(404, "Evento no encontrado.");
-  const ok = !!sesionDe(req) || ("torneo" in ev && tipo === "dupla" && !!(await arbitroValido(ev.torneo, (await visorDe(req)).arbitro)));
+  const ok = !!(await sesionDe(req)) || ("torneo" in ev && tipo === "dupla" && !!(await arbitroValido(ev.torneo, (await visorDe(req)).arbitro)));
   if (!ok) throw new ErrorApi(401, "Sin permiso.");
   await getTorneosRepository().borrarExtra(idFoto(eventoId, tipo, id));
   return NextResponse.json({ ok: true });

@@ -28,8 +28,9 @@ export function StaffLogin() {
     if (!abierto) return;
     setPin("");
     setError(null);
-    setModo(metodos.pin ? "pin" : "cuenta");
-  }, [abierto, metodos.pin]);
+    // Con usuario personal primero: así queda registrado quién entra.
+    setModo(metodos.padelreserve || !metodos.pin ? "cuenta" : "pin");
+  }, [abierto, metodos.pin, metodos.padelreserve]);
 
   async function enviar(datos: { pin: string } | { email: string; password: string }) {
     setCargando(true);
@@ -93,9 +94,9 @@ export function StaffLogin() {
 
             {metodos.pin && metodos.padelreserve && (
               <div className="glass mt-5 flex rounded-xl p-1 text-sm font-semibold">
-                {(["pin", "cuenta"] as const).map((m) => (
+                {(["cuenta", "pin"] as const).map((m) => (
                   <button key={m} onClick={() => setModo(m)} className={clsx("flex-1 rounded-lg py-2 transition", modo === m ? "bg-neon text-noche" : "text-white/60")}>
-                    {m === "pin" ? "PIN del club" : "PadelReserve"}
+                    {m === "pin" ? "PIN del club" : "Mi usuario PadelReserve"}
                   </button>
                 ))}
               </div>

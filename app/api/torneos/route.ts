@@ -28,7 +28,7 @@ export const GET = manejar(async (req: Request) => {
  * Las duplas nuevas o cambiadas se vuelven a chequear con el ranking FVP (ver lib/ranking/fvp.ts).
  */
 export const POST = manejar(async (req: Request) => {
-  const sesion = exigirStaff(req);
+  const sesion = await exigirStaff(req);
   const body = (await leerJson(req)) as { torneo?: unknown } | null;
   const errores = validarTorneo(body?.torneo);
   if (errores.length) throw new ErrorApi(422, "Torneo inválido.", errores);

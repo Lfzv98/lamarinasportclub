@@ -16,7 +16,7 @@ const MAX_CEDULAS = 300;
  *   ?q=texto         → { resumen, resultados: AtletaFvp[] } (nombre o cédula, máx. 25)
  */
 export const GET = manejar(async (req: Request) => {
-  exigirStaff(req);
+  await exigirStaff(req);
   const params = new URL(req.url).searchParams;
   const cedulas = params.get("cedulas");
   const q = params.get("q")?.trim();
@@ -38,7 +38,7 @@ export const GET = manejar(async (req: Request) => {
  * Una lista mucho más corta que la vigente se rechaza salvo `forzar`.
  */
 export const POST = manejar(async (req: Request) => {
-  const sesion = exigirStaff(req);
+  const sesion = await exigirStaff(req);
   const body = (await leerJson(req, 5_000_000)) as { accion?: string; texto?: unknown; archivo?: unknown; forzar?: unknown } | null;
   if (body?.accion === "sincronizar") return NextResponse.json({ resumen: resumen(await sincronizarHoja()) });
   if (typeof body?.texto !== "string") throw new ErrorApi(400, "Falta el contenido de la lista.");

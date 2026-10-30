@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 /** GET /api/arbitros/pin (staff) → { pin } del registro de árbitros del club (null si está cerrado). */
 export const GET = manejar(async (req: Request) => {
-  if (!sesionDe(req)) throw new ErrorApi(401, "Solo el staff.");
+  if (!(await sesionDe(req))) throw new ErrorApi(401, "Solo el staff.");
   return NextResponse.json({ pin: (await leerPlantel()).pin });
 });
 
@@ -17,7 +17,7 @@ export const GET = manejar(async (req: Request) => {
  * Cambiarlo cierra las sesiones abiertas: los árbitros vuelven a entrar con su nombre y su código.
  */
 export const POST = manejar(async (req: Request) => {
-  if (!sesionDe(req)) throw new ErrorApi(401, "Solo el staff.");
+  if (!(await sesionDe(req))) throw new ErrorApi(401, "Solo el staff.");
   const b = ((await leerJson(req)) ?? {}) as { pin?: unknown };
   let pin: string | null;
   if (b.pin === null) pin = null;
