@@ -49,7 +49,7 @@ await inputs.nth(0).fill("8"); await inputs.nth(1).fill("6");
 await p.screenshot({ path: `${out}/lluvia-2-hoja.png` });
 await p.getByRole("button", { name: "Suspender pista", exact: true }).click(); await espera(1500);
 await p.screenshot({ path: `${out}/lluvia-3-despues.png`, fullPage: true });
-ok(await p.locator("text=Reactivar Pista 3").count() === 1, "la pista 3 queda suspendida con botón Reactivar");
+ok(await p.locator("[aria-label='Reactivar Pista 3']").count() === 1, "la pista 3 queda suspendida con botón Reactivar");
 ok(await p.locator("text=iban 8-6").count() > 0, "el partido queda en espera con su marcador");
 ok(await p.locator("text=siguen primero en la ronda 2").count() > 0, "dice cuándo y dónde sigue");
 
@@ -73,7 +73,7 @@ ok(await tv.locator("text=Pista 3 suspendida (lluvia)").count() === 1, "la TV av
 await tv.screenshot({ path: `${out}/lluvia-5-tv.png` });
 
 // Reactivar
-await p.locator("button:has-text('Reactivar Pista 3')").click(); await espera(2500);
+await p.locator("[aria-label='Reactivar Pista 3']").click(); await espera(2500);
 const e2 = await servidor();
 ok(!e2.pistasSuspendidas?.length, "se reactiva la pista");
 ok(e2.rondas.filter((x) => x.numero >= 3).some((x) => x.partidos.some((y) => y.pista === 3)), "las rondas que faltan vuelven a usar la pista 3");

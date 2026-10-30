@@ -427,11 +427,11 @@ function PistaCard({
         enJuego && "border-neon/25",
       )}
     >
-      <div className="flex items-center justify-between px-2 pb-2 pt-1">
-        <span className="flex min-w-0 items-center gap-2">
-          <PistaLabel evento={evento} numero={partido.pista} className="text-sm tracking-[0.2em]" />
+      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 px-2 pb-2 pt-1">
+        <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          <PistaLabel evento={evento} numero={partido.pista} className="whitespace-nowrap text-sm tracking-[0.2em]" />
           {partido.suspendido && !terminado && (
-            <span className="chip !border-sky-300/40 !py-0.5 !text-[10px] !text-sky-100" title={`Venía de ${nombrePista(evento, partido.suspendido.pista)} (${partido.suspendido.motivo.toLowerCase()})`}>
+            <span className="chip whitespace-nowrap !border-sky-300/40 !py-0.5 !text-[10px] !text-sky-100" title={`Venía de ${nombrePista(evento, partido.suspendido.pista)} (${partido.suspendido.motivo.toLowerCase()})`}>
               <CloudRain className="size-3" /> Sigue{partido.suspendido.marcador ? ` · iban ${partido.suspendido.marcador}` : ""}
             </span>
           )}
@@ -443,11 +443,11 @@ function PistaCard({
             {res?.tieBreak && <span className="ml-1 text-white/60">(tie {res.tieBreak.a}-{res.tieBreak.b})</span>}
           </span>
         ) : enJuego ? (
-          <span className="chip">
+          <span className="chip whitespace-nowrap">
             <span className="size-1.5 animate-pulse rounded-full bg-neon" /> Jugando
           </span>
         ) : (
-          <span className="chip text-white/50">Por jugar</span>
+          <span className="chip whitespace-nowrap text-white/50">Por jugar</span>
         )}
       </div>
       <Lado lado="A" />

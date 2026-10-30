@@ -151,15 +151,16 @@ export function PanelLluvia({ evento, esStaff, lluvia }: { evento: EventoAmerica
   if (evento.estado === "FINALIZADO" && !suspendidas.size) return null;
   return (
     <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className={clsx("glass mt-4 rounded-3xl p-4", (suspendidas.size > 0 || espera.length > 0) && "border-sky-300/25")}>
-      <div className="mb-3 flex items-center justify-between gap-2">
+      <div className="mb-3 flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
         <p className="flex items-center gap-2 font-display text-base font-bold text-sky-200">
           <CloudRain className="size-4" /> {suspendidas.size ? "Pistas suspendidas" : "¿Llueve en una pista?"}
         </p>
-        {esStaff && !suspendidas.size && <span className="text-right text-[11px] text-white/40">Tócala y el cuadro se acomoda solo</span>}
+        {esStaff && <span className={clsx("text-[11px] text-white/40 sm:text-right", suspendidas.size > 0 && "sm:hidden")}>{suspendidas.size ? "En azul, suspendidas: tócalas para reactivar" : "Toca la pista y el cuadro se acomoda solo"}</span>}
       </div>
 
       {esStaff && (
-        <div className="flex flex-wrap gap-1.5">
+        // En el celular, de a dos por fila para que 4 o 6 pistas no hagan una columna larga.
+        <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap">
           {pistas.map((n) => {
             const s = suspendidas.get(n);
             const info = pistaInfo(evento, n);
@@ -167,16 +168,24 @@ export function PanelLluvia({ evento, esStaff, lluvia }: { evento: EventoAmerica
               <button
                 key={n}
                 type="button"
-                className="chip !border-sky-300/50 !bg-sky-300/15 !py-1.5 !text-sky-100"
+                aria-label={`Reactivar ${nombrePista(evento, n)}`}
+                className="chip justify-center min-w-0 !border-sky-300/50 !bg-sky-300/15 !px-2 !py-1.5 !text-sky-100 sm:!px-3"
                 onClick={() => {
                   if (confirm(`¿Reactivar ${nombrePista(evento, n)}? Lo que falta del evento la vuelve a usar.`)) lluvia.reactivar(n);
                 }}
               >
-                <Play className="size-3" /> Reactivar {nombrePista(evento, n)}
+                <Play className="size-3 shrink-0" /> <span className="truncate">
+                  <span className="hidden sm:inline">Reactivar </span>
+                  {nombrePista(evento, n)}
+                </span>
               </button>
             ) : (
-              <button key={n} type="button" className="chip !py-1.5" onClick={() => lluvia.pedir(n)}>
-                {info && !info.techada ? <Sun className="size-3 text-amber-300" /> : <CloudRain className="size-3" />} Suspender {nombrePista(evento, n)}
+              <button key={n} type="button" className="chip justify-center min-w-0 !px-2 !py-1.5 sm:!px-3" onClick={() => lluvia.pedir(n)}>
+                {info && !info.techada ? <Sun className="size-3 shrink-0 text-amber-300" /> : <CloudRain className="size-3 shrink-0" />}
+                <span className="truncate">
+                  <span className="hidden sm:inline">Suspender </span>
+                  {nombrePista(evento, n)}
+                </span>
               </button>
             );
           })}
