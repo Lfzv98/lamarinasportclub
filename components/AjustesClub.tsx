@@ -3,12 +3,11 @@
 import clsx from "clsx";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, AtSign, ShieldCheck, Copy, Flag, FlaskConical, KeyRound, MapPin, Megaphone, MessageCircle, Plus, Save, Sun, Trash2, Warehouse } from "lucide-react";
+import { ArrowLeft, AtSign, ShieldCheck, Copy, Flag, KeyRound, MapPin, Megaphone, MessageCircle, Plus, Save, Sun, Trash2, Warehouse } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { LogoMenu } from "@/components/LogoMenu";
 import { ArbitrosClub } from "@/components/ArbitrosClub";
-import { DatosPrueba } from "@/components/DatosPrueba";
 import { MenuApp } from "@/components/MenuApp";
 import { ClavesTorneos } from "@/components/torneo/ClavesTorneos";
 import { SeguridadStaff } from "@/components/SeguridadStaff";
@@ -22,8 +21,8 @@ import { useAmericanos } from "@/lib/store";
 import type { ConfigClub, ContactoClub, HorarioDia, PistaClub } from "@/types/americano";
 
 /** Bloques de ajustes; cada módulo muestra solo los suyos y /club los muestra todos. */
-export type SeccionAjustes = "seguridad" | "prueba" | "pistas" | "horarios" | "rondas" | "contacto" | "publicidad" | "claves" | "arbitros";
-export const TODAS_LAS_SECCIONES: SeccionAjustes[] = ["seguridad", "prueba", "pistas", "horarios", "rondas", "contacto", "publicidad", "claves", "arbitros"];
+export type SeccionAjustes = "seguridad" | "pistas" | "horarios" | "rondas" | "contacto" | "publicidad" | "claves" | "arbitros";
+export const TODAS_LAS_SECCIONES: SeccionAjustes[] = ["seguridad", "pistas", "horarios", "rondas", "contacto", "publicidad", "claves", "arbitros"];
 
 /** Ajustes del club (solo staff). `secciones` elige qué bloques se ven; `volver` es a dónde lleva la flecha. */
 export function AjustesClub({
@@ -51,14 +50,13 @@ function Club({ titulo, descripcion, secciones, volver }: { titulo: string; desc
   const hidratado = useAmericanos((s) => s.hidratado);
   const guardarClub = useAmericanos((s) => s.guardarClub);
   const [borrador, setBorrador] = useState<ConfigClub>(() => ({ ...club, vallas: club.vallas?.filter((v) => v.img || v.nombre.trim()) }));
-  const [demo, setDemo] = useState(0);
 
   useEffect(() => {
     // Las vallas vacías de antes (se guardaban 6 fijas) no se muestran: solo las marcas cargadas.
     if (hidratado) setBorrador({ ...club, vallas: club.vallas?.filter((v) => v.img || v.nombre.trim()) });
   }, [hidratado, club]);
 
-  // Llegó desde el menú a una sección (#datos-prueba, #arbitros, #claves): la muestra.
+  // Llegó desde el menú a una sección (#arbitros, #claves): la muestra.
   useEffect(() => {
     const id = decodeURIComponent(location.hash.slice(1));
     if (!id) return;
@@ -83,14 +81,11 @@ function Club({ titulo, descripcion, secciones, volver }: { titulo: string; desc
 
       <h1 className="mt-6 font-display text-3xl font-bold tracking-tight">{titulo}</h1>
       <p className="mt-2 text-white/50">
-        {descripcion ?? `Solo staff. Seguridad del staff, pistas, horarios, contacto y publicidad de la TV de ${borrador.nombre}, claves de torneos, árbitros del club y modo prueba.`}
+        {descripcion ?? `Solo staff. Seguridad del staff, pistas, horarios, contacto y publicidad de la TV de ${borrador.nombre}, claves de torneos y árbitros del club.`}
       </p>
       {secciones.length === TODAS_LAS_SECCIONES.length && <div className="mt-4 flex flex-wrap gap-2">
         <a href="#seguridad" className="chip hover:border-neon/40 hover:text-white">
           <ShieldCheck className="size-3" /> Seguridad del staff
-        </a>
-        <a href="#datos-prueba" className="chip hover:border-neon/40 hover:text-white">
-          <FlaskConical className="size-3" /> Modo prueba
         </a>
         <a href="#arbitros" className="chip hover:border-neon/40 hover:text-white">
           <Flag className="size-3" /> Árbitros del club
@@ -104,8 +99,6 @@ function Club({ titulo, descripcion, secciones, volver }: { titulo: string; desc
       </div>}
 
       {ver("seguridad") && <SeguridadStaff />}
-
-      {ver("prueba") && <DatosPrueba onCambio={() => setDemo((n) => n + 1)} />}
 
       {ver("publicidad") && secciones[0] === "publicidad" && <VallasClub valor={borrador.vallas} onChange={(vallas) => setBorrador((b) => ({ ...b, vallas }))} />}
 
@@ -244,7 +237,7 @@ function Club({ titulo, descripcion, secciones, volver }: { titulo: string; desc
 
       {ver("claves") && <ClavesTorneos />}
 
-      {ver("arbitros") && <ArbitrosClub key={demo} />}
+      {ver("arbitros") && <ArbitrosClub />}
 
       {conGuardar && <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-white/5 bg-fondo/85 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur-xl">
         <div className="mx-auto max-w-2xl px-4 sm:px-6">
