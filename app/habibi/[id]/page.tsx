@@ -127,7 +127,7 @@ function Torneo({ llave }: { llave: EventoAmericano }) {
     <div className="mx-auto min-h-dvh max-w-6xl px-4 pb-28 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6">
       <Confetti activo={terminado} piezas={90} />
       <header className="flex items-center gap-3 py-3">
-        <Link href="/habibi" className="btn-ghost !p-2.5" aria-label="Americano HABIBI">
+        <Link href="/habibi" className="btn-ghost !p-2.5" aria-label="Americano Torneo">
           <ArrowLeft className="size-5" />
         </Link>
         <div className="min-w-0 flex-1">

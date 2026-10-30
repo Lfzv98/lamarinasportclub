@@ -56,12 +56,12 @@ export default function HabibiInicio() {
             <div className="pointer-events-none absolute -right-20 -top-20 size-60 rounded-full bg-marca-2/30 blur-3xl" />
             <p className="label relative !text-neon">La Marina · Torneo recreativo</p>
             <h1 className="relative max-w-2xl font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl">
-              Americano <span className="text-marca">HABIBI</span> Tournament
+              Americano <span className="text-marca">Torneo</span>
             </h1>
             <p className="relative mt-4 max-w-lg text-white/60">Dos grupos juegan su americano y los mejores se cruzan en una llave eliminatoria hasta la gran final.</p>
             <div className="relative mt-8 flex flex-wrap gap-3">
               <Link href="/habibi/nuevo" onClick={soloStaff} className="btn-neon animate-pulse-neon text-base">
-                <Plus className="size-5" /> Nuevo Americano HABIBI
+                <Plus className="size-5" /> Nuevo Americano Torneo
               </Link>
               {activos[0] && (
                 <Link href={`/habibi/${activos[0].id}/tv`} className="btn-ghost text-base">

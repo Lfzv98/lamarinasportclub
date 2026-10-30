@@ -61,7 +61,7 @@ export function EventoShell({ id, children }: { id: string; children: (evento: E
           <h1 className="truncate font-display text-lg font-bold leading-tight sm:text-xl">{evento.nombre}</h1>
           <div className="mt-1 flex items-center gap-2">
             <EstadoBadge estado={evento.estado} />
-            {grupoHabibi && <span className="chip border-neon/30 text-neon">HABIBI · Grupo {grupoHabibi.letra}</span>}
+            {grupoHabibi && <span className="chip border-neon/30 text-neon">Americano Torneo · Grupo {grupoHabibi.letra}</span>}
             <span className="hidden text-xs text-white/50 sm:inline">{categoriaLabel(evento.categoria)}</span>
           </div>
         </div>
