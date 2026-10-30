@@ -369,3 +369,53 @@ test("Americano Torneo: en la llave el cruce suspendido pasa a otra pista con su
   assert.equal(llave.rondas.flatMap((r) => r.partidos).find((p) => p.id === enPista3.id)?.pista, 3);
   assert.deepEqual(validarEvento(llave), []);
 });
+
+/* ---------- todas las combinaciones: modalidad × puntuación × pistas ---------- */
+
+import type { ConfigPuntuacion, Resultado } from "../types/americano.ts";
+
+const PUNTUACIONES: { cfg: ConfigPuntuacion; res: Resultado }[] = [
+  { cfg: { metodo: "PUNTOS_TOTALES", puntosPorPartido: 24 }, res: { puntosA: 14, puntosB: 10 } },
+  { cfg: { metodo: "GAMES_PUNTO_ORO", gamesPorPartido: 6 }, res: { puntosA: 6, puntosB: 4 } },
+  { cfg: { metodo: "SETS_CORTOS", gamesPorPartido: 4, setsMaximos: 3 }, res: { puntosA: 0, puntosB: 0, sets: [{ a: 4, b: 2 }, { a: 4, b: 3 }] } },
+];
+
+test("lluvia en todas las combinaciones: dupla fija, individual y mixto × puntos, games y sets × 1 a 6 pistas", () => {
+  let casos = 0;
+  for (const { cfg, res } of PUNTUACIONES)
+    for (const modalidad of ["DUPLA_FIJA", "INDIVIDUAL", "MIXTO"] as const)
+      for (let pistas = 1; pistas <= 6; pistas++) {
+        // Cantidades justas y con gente en espera (impares incluidas).
+        const cantidades = modalidad === "DUPLA_FIJA" ? [pistas * 2, pistas * 2 + 3] : [pistas * 4, pistas * 4 + 3];
+        for (const n of cantidades) {
+          const base = modalidad === "DUPLA_FIJA" ? duplaFija(n, pistas, 3, Math.min(planRondas(n, "DUPLA_FIJA", pistas).rondas, 5)) : individual(n, pistas, modalidad === "MIXTO", 3);
+          let e: EventoAmericano = { ...base, puntuacion: cfg, totalRondas: Math.min(base.totalRondas, 5), rondas: base.rondas.slice(0, 5) };
+          const msg = `${cfg.metodo} ${modalidad} ${n} en ${pistas} pistas:`;
+          const ronda1 = iniciarRonda(e);
+          const mojada = ronda(ronda1).partidos.at(-1)!;
+          // Se suspende en plena ronda 1 (con 1 pista se suspenden todas y se reactiva enseguida).
+          e = suspenderPista(ronda1, mojada.pista, { marcador: "3-2" });
+          if (!canchasActivas(e).length) {
+            assert.equal(ronda(e, 1).estado, "PAUSADA", msg);
+            e = reactivarPista(e, mojada.pista);
+          }
+          invariantes(e, msg);
+          assert.equal(partidosEnEspera(e).length, 1, msg);
+          let vueltas = 0;
+          while (e.estado !== "FINALIZADO" && vueltas++ < 20) {
+            if (ronda(e).estado !== "EN_JUEGO") e = iniciarRonda(e);
+            for (const p of ronda(e).partidos) if (p.estado !== "FINALIZADO") e = cargarResultado(e, p.id, res);
+            if (e.rondaActual === 3 && e.pistasSuspendidas?.length) e = reactivarPista(e, mojada.pista);
+            e = avanzarRonda(e);
+          }
+          assert.equal(e.estado, "FINALIZADO", msg);
+          invariantes(e, msg);
+          if (modalidad === "DUPLA_FIJA") sinCrucesRepetidos(e, msg);
+          const fin = e.rondas.flatMap((r) => r.partidos).find((p) => p.id === mojada.id);
+          assert.equal(fin?.estado, "FINALIZADO", `${msg} el suspendido se terminó`);
+          assert.equal(fin?.suspendido?.marcador, "3-2", msg);
+          casos++;
+        }
+      }
+  assert.equal(casos, 108);
+});

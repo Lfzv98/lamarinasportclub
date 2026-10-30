@@ -113,7 +113,10 @@ function SuspenderHoja({
       </div>
       {enJuego && (
         <div className="mt-4 rounded-2xl bg-white/[0.04] p-3">
-          <p className="text-xs text-white/55">Se estaba jugando. ¿Cómo iban? (opcional, para seguir donde quedaron)</p>
+          <p className="text-xs text-white/55">
+            Se estaba jugando. ¿Cómo iban? En{" "}
+            {enJuego.e.puntuacion.metodo === "PUNTOS_TOTALES" ? "puntos" : enJuego.e.puntuacion.metodo === "GAMES_PUNTO_ORO" ? "games" : "games del set en juego"} (opcional, para seguir donde quedaron)
+          </p>
           {(["A", "B"] as const).map((lado) => (
             <label key={lado} className="mt-2 flex items-center gap-3 text-sm">
               <span className="min-w-0 flex-1 truncate font-semibold">{nombrePar(enJuego.e, (lado === "A" ? enJuego.p.parejaA : enJuego.p.parejaB).jugadorIds)}</span>

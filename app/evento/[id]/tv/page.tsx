@@ -53,7 +53,7 @@ function TV({ evento }: { evento: EventoAmericano }) {
   const altoFila = (evento.modalidad === "DUPLA_FIJA" ? 96 : 86) - (estrecho ? 10 : 0);
   // Banda publicitaria de abajo (corre como la valla de un estadio).
   const altoBanda = estrecho ? 84 : 112;
-  const altoTabla = vertical ? (terminado ? lienzo.alto - 600 : (lienzo.alto - 560) * 0.54 - 130) : lienzo.alto - 340 - (altoBanda + 24);
+  const altoTabla = vertical ? (terminado ? lienzo.alto - 600 : (lienzo.alto - 560) * 0.44 - 130) : lienzo.alto - 340 - (altoBanda + 24);
   const calculadas = lienzo.desplaza ? FILAS_POR_PAGINA : Math.max(3, Math.floor(altoTabla / altoFila));
   // Respaldo: si igual algo se sale de la pantalla (otra letra, otro navegador), quita filas hasta que entre.
   const [menos, setMenos] = useState(0);
@@ -110,7 +110,7 @@ function TV({ evento }: { evento: EventoAmericano }) {
   return (
     <Escenario oculto={cursorOculto} lienzo={lienzo} marcaAgua>
       {/* Cabecera centrada: nombre del americano, QR y hora; las flechas quedan a un lado. */}
-      <header className={clsx("relative flex flex-wrap items-center justify-center gap-x-10 gap-y-4", estrecho ? "px-0" : "px-52")}>
+      <header className={clsx("relative flex flex-wrap items-center justify-center gap-x-10 gap-y-4", estrecho ? "pl-0 pr-28" : "px-52")}>
         {/* Logo de La Marina arriba a la izquierda (el grande difuminado sigue de fondo). */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/brand/logo.png" alt="La Marina Sport Club" className={clsx("w-auto", estrecho ? "h-14 basis-auto" : "absolute left-0 top-1/2 h-16 -translate-y-1/2")} />
@@ -141,7 +141,7 @@ function TV({ evento }: { evento: EventoAmericano }) {
               {ranking}
             </motion.section>
           ) : (
-            <motion.section key="vivo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={clsx("grid min-h-0 flex-1 gap-8", lienzo.desplaza && unaColumna ? "grid-cols-1" : vertical ? "grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(0,1.2fr)]" : estrecho ? "grid-cols-1" : "grid-cols-[minmax(0,0.75fr)_minmax(0,1.35fr)]")}>
+            <motion.section key="vivo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className={clsx("grid min-h-0 flex-1 gap-8", lienzo.desplaza && unaColumna ? "grid-cols-1" : vertical ? "grid-cols-1 grid-rows-[minmax(0,1.25fr)_minmax(0,1fr)]" : estrecho ? "grid-cols-1" : "grid-cols-[minmax(0,0.75fr)_minmax(0,1.35fr)]")}>
               <div className="flex min-h-0 flex-col gap-5">
                 <div className="glass flex items-center gap-6 rounded-[2rem] p-5">
                   {conReloj ? (
@@ -165,12 +165,12 @@ function TV({ evento }: { evento: EventoAmericano }) {
                 </div>
                 <div className={clsx("grid min-h-0 flex-1 gap-4", !lienzo.desplaza && "auto-rows-fr", (ronda?.partidos.length ?? 0) > 4 ? "grid-cols-3" : (ronda?.partidos.length ?? 0) > 2 ? "grid-cols-2" : "grid-cols-1")}>
                   {ronda?.partidos.map((p) => (
-                    <PistaTV key={p.id} partido={p} evento={evento} compacto={(ronda?.partidos.length ?? 0) > 2} denso={(ronda?.partidos.length ?? 0) > 4} />
+                    <PistaTV key={p.id} partido={p} evento={evento} compacto={(ronda?.partidos.length ?? 0) > 2} denso={(ronda?.partidos.length ?? 0) > 4 || (vertical && (ronda?.partidos.length ?? 0) > 2)} />
                   ))}
                 </div>
                 {espera.length > 0 &&
                   (espera.length <= 4 ? (
-                    <div className="glass flex shrink-0 items-center gap-5 rounded-[2rem] border-amber-300/20 px-6 py-4">
+                    <div data-espera-tv className="glass flex shrink-0 items-center gap-5 rounded-[2rem] border-amber-300/20 px-6 py-4">
                       <p className="flex shrink-0 items-center gap-3 font-display text-2xl font-bold text-amber-200">
                         <Coffee className="size-7" /> {evento.modalidad === "DUPLA_FIJA" ? "En espera" : "Descansan"}
                       </p>
@@ -184,20 +184,9 @@ function TV({ evento }: { evento: EventoAmericano }) {
                       </div>
                     </div>
                   ) : (
-                    // Muchos en espera (ej. 16 duplas en 4 pistas): lista compacta en columnas para no tapar las pistas.
-                    <div className="glass shrink-0 rounded-[2rem] border-amber-300/20 px-6 py-3">
-                      <p className="mb-1.5 flex items-center gap-2.5 font-display text-xl font-bold text-amber-200">
-                        <Coffee className="size-6" /> {evento.modalidad === "DUPLA_FIJA" ? "En espera" : "Descansan"} <span className="text-base font-medium text-white/40">· {espera.length}</span>
-                      </p>
-                      <div className={clsx("grid gap-x-6 gap-y-0.5", espera.length > 8 ? "grid-cols-3 text-base" : "grid-cols-2 text-lg")}>
-                        {espera.map((e) => (
-                          <span key={e.id} className="flex min-w-0 items-center gap-2">
-                            <span className="truncate font-semibold text-white/90">{e.completo}</span>
-                            {e.vuelve && <span className="shrink-0 text-sm text-white/40">→ R{e.vuelve}</span>}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
+                    // Muchos en espera (ej. 16 duplas en 4 pistas o 30 jugadores en 6): lista compacta en columnas
+                    // (hasta 4 filas) para no tapar las pistas; con más de 16 se muestran 15 y "y N más".
+                    <ListaEspera evento={evento} espera={espera} />
                   ))}
               </div>
               {ranking}
@@ -207,6 +196,30 @@ function TV({ evento }: { evento: EventoAmericano }) {
       </div>
       <BandaVallas vallas={vallas} alto={altoBanda} />
     </Escenario>
+  );
+}
+
+function ListaEspera({ evento, espera }: { evento: EventoAmericano; espera: ReturnType<typeof enEspera> }) {
+  const n = espera.length;
+  const cols = n > 12 ? 4 : n > 8 ? 3 : 2;
+  const caben = cols * 4;
+  const visibles = n > caben ? espera.slice(0, caben - 1) : espera;
+  const corto = cols > 2;
+  return (
+    <div data-espera-tv className="glass shrink-0 rounded-[2rem] border-amber-300/20 px-6 py-3">
+      <p className="mb-1.5 flex items-center gap-2.5 font-display text-xl font-bold text-amber-200">
+        <Coffee className="size-6" /> {evento.modalidad === "DUPLA_FIJA" ? "En espera" : "Descansan"} <span className="text-base font-medium text-white/40">· {n}</span>
+      </p>
+      <div className={clsx("grid gap-x-5 gap-y-0.5", cols === 4 ? "grid-cols-4 text-base" : cols === 3 ? "grid-cols-3 text-base" : "grid-cols-2 text-lg")}>
+        {visibles.map((e) => (
+          <span key={e.id} className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate font-semibold text-white/90">{corto ? (evento.modalidad === "DUPLA_FIJA" ? e.nombres.join(" / ") : e.nombre) : e.completo}</span>
+            {e.vuelve && <span className="shrink-0 text-sm text-white/40">→ R{e.vuelve}</span>}
+          </span>
+        ))}
+        {visibles.length < n && <span className="font-semibold text-white/50">y {n - visibles.length} más</span>}
+      </div>
+    </div>
   );
 }
 
@@ -227,7 +240,7 @@ function PistaTV({ partido, evento, compacto = false, denso = false }: { partido
         <AvatarPareja nombres={nombres} fotos={par.jugadorIds.map((id) => porId.get(id)?.fotoUrl)} dupla={fotoDeDupla(evento, par.id)} size={denso ? 32 : compacto ? 40 : 52} />
         <div className="min-w-0 flex-1">
           {nombres.map((n, i) => (
-            <p key={i} className={clsx("font-semibold leading-tight", denso ? "truncate text-base" : compacto ? "break-words text-lg" : "break-words text-2xl")}>
+            <p key={i} className={clsx("font-semibold leading-tight", denso ? "truncate text-base" : compacto ? "truncate text-lg" : "truncate text-2xl")}>
               {n}
             </p>
           ))}
@@ -237,14 +250,16 @@ function PistaTV({ partido, evento, compacto = false, denso = false }: { partido
     );
   };
   return (
-    <motion.div layout className={clsx("glass flex min-h-0 flex-col justify-center rounded-[2rem]", denso ? "gap-1 px-3.5 py-3" : compacto ? "gap-1.5 p-4" : "gap-3 p-6", partido.estado === "FINALIZADO" && "border-neon/30")}>
+    <motion.div layout data-pista-tv className={clsx("glass flex min-h-0 flex-col justify-center rounded-[2rem]", denso ? "gap-1 px-3.5 py-3" : compacto ? "gap-1.5 p-4" : "gap-3 p-6", partido.estado === "FINALIZADO" && "border-neon/30")}>
       <div className="flex items-center justify-between">
         <PistaLabel evento={evento} numero={partido.pista} className={denso ? "text-base tracking-[0.18em]" : "text-xl tracking-[0.25em]"} icono={denso ? "size-4" : "size-5"} />
         {partido.estado === "FINALIZADO" ? (
           <span className={clsx("font-semibold text-neon", denso ? "text-base" : "text-lg")}>Final</span>
         ) : partido.estado === "EN_JUEGO" ? (
           <span className="flex items-center gap-2 text-lg text-white/60">
-            <span className="size-2.5 animate-pulse rounded-full bg-neon" /> {!denso && "En juego"}
+            {partido.suspendido && <CloudRain className="size-5 text-sky-200" aria-label="Sigue el partido suspendido" />}
+            {partido.suspendido?.marcador && !denso && <span className="text-sky-200">iban {partido.suspendido.marcador}</span>}
+            <span className="size-2.5 animate-pulse rounded-full bg-neon" /> {!denso && !partido.suspendido && "En juego"}
           </span>
         ) : null}
       </div>
