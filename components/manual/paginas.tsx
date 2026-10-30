@@ -502,6 +502,9 @@ const CONTENIDO: Pagina[] = [
           <b>En espera:</b> quién descansa y en qué ronda vuelve.
         </li>
         <li>
+          <b>Lluvia:</b> <B>Suspender</B> en la tarjeta de la pista. El partido queda en espera con cómo iban y se termina primero en la ronda siguiente; el resto del cuadro se acomoda solo en las pistas que quedan, sin repetir cruces. Al escampar, <B>Reactivar</B>.
+        </li>
+        <li>
           Con todo cargado, <B>Siguiente</B>. En la última, <B>Finalizar</B>.
         </li>
       </ul>

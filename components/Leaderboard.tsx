@@ -78,6 +78,13 @@ const COLS_TV_ESTRECHO = "grid-cols-[3rem_minmax(9rem,1fr)_repeat(4,3.25rem)_4re
 
 /** Tabla de posiciones con animación de cambio de posición (layout animations). */
 /** `estrecho`: modo TV en una pantalla angosta (celular), con columnas más justas. */
+/** Tamaño del nombre en la TV según lo largo que sea, para que cada jugador quepa en una línea. */
+function tamanoNombreTV(nombres: string[], estrecho: boolean): string {
+  const largo = Math.max(0, ...nombres.map((n) => n.length));
+  if (estrecho) return largo > 24 ? "text-base" : largo > 18 ? "text-lg" : nombres.length > 1 ? "text-xl" : "text-2xl";
+  return largo > 24 ? "text-[1.2rem]" : largo > 18 ? "text-[1.45rem]" : nombres.length > 1 ? "text-[1.7rem]" : "text-[2rem]";
+}
+
 export function Leaderboard({ tabla, nombresPorFila, modoTV = false, estrecho = false, limite }: { tabla: TablaPosiciones; nombresPorFila: (f: FilaPosicion) => string[]; modoTV?: boolean; estrecho?: boolean; limite?: number }) {
   const cambios = useCambios(tabla.filas);
   const filas = limite ? tabla.filas.slice(0, limite) : tabla.filas;
@@ -122,8 +129,9 @@ export function Leaderboard({ tabla, nombresPorFila, modoTV = false, estrecho = 
                 <span className={clsx("flex min-w-0 items-center", modoTV ? "gap-3" : "gap-2")}>
                   <AvatarPareja nombres={nombresPorFila(f)} fotos={f.fotoUrls} dupla={f.fotoDupla} size={modoTV ? (estrecho ? 48 : 54) : 28} />
                   {modoTV ? (
-                    // En la TV va el nombre completo de cada jugador, uno por línea, sin cortar.
-                    <span className={clsx("min-w-0 break-words font-semibold leading-tight", estrecho ? (nombresPorFila(f).length > 1 ? "text-xl" : "text-2xl") : nombresPorFila(f).length > 1 ? "text-[1.7rem]" : "text-[2rem]")}>
+                    // En la TV va el nombre completo de cada jugador, uno por línea, sin cortar: los nombres largos
+                    // bajan de tamaño para no partirse en dos líneas (la fila tiene alto fijo y paginado).
+                    <span className={clsx("min-w-0 break-words font-semibold leading-tight", tamanoNombreTV(nombresPorFila(f), estrecho))}>
                       {nombresPorFila(f).map((n, i) => (
                         <span key={i} className="block">{n}</span>
                       ))}

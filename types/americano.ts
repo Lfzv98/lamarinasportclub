@@ -96,6 +96,30 @@ export interface Partido {
   estado: EstadoPartido;
   resultado?: Resultado | null;
   actualizadoEn?: string;
+  /**
+   * Partido cortado por una pista suspendida (lluvia, falla de luz…): queda en espera y se
+   * termina en otra pista, primero en la ronda siguiente. `marcador`: cómo iban, ej. "8-6".
+   */
+  suspendido?: PartidoSuspendido | null;
+}
+
+export interface PartidoSuspendido {
+  /** ISO de cuándo se suspendió. */
+  en: string;
+  motivo: string;
+  /** Pista donde se estaba jugando. */
+  pista: number;
+  /** Ronda en la que empezó. */
+  ronda: number;
+  marcador?: string | null;
+}
+
+/** Pista suspendida durante el evento: no recibe partidos hasta que el staff la reactive. */
+export interface PistaSuspendida {
+  numero: number;
+  motivo: string;
+  /** ISO */
+  desde: string;
 }
 
 export interface Ronda {
@@ -303,6 +327,8 @@ export interface EventoAmericano {
   /** Solo en DUPLA_FIJA. */
   parejas: Pareja[];
   rondas: Ronda[];
+  /** Pistas suspendidas ahora (lluvia…): el cuadro se reacomoda en las que quedan. */
+  pistasSuspendidas?: PistaSuspendida[];
   /** Semilla del generador de rotaciones (reproducible). */
   semilla: number;
   creadoEn: string;

@@ -12,6 +12,7 @@ import { Logo } from "@/components/Logo";
 import { LogoMenu } from "@/components/LogoMenu";
 import { ModoBadge } from "@/components/ModoBadge";
 import { QRBoton } from "@/components/QRPopup";
+import { PanelLluvia, useLluvia } from "@/components/Lluvia";
 import { ScoreModal } from "@/components/ScoreModal";
 import { StaffChip } from "@/components/StaffGate";
 import { Segmented } from "@/components/ui/Segmented";
@@ -71,6 +72,7 @@ function Torneo({ llave }: { llave: EventoAmericano }) {
   const esStaff = useEsStaff();
   const setPedirLogin = useAmericanos((s) => s.setPedirLogin);
   const router = useRouter();
+  const lluvia = useLluvia(llave);
   const grupos = info.grupos.map((g) => eventos[g.eventoId]).filter((g): g is EventoAmericano => !!g && !g.eliminado);
   const armada = !!info.armadaEn;
   const [vista, setVista] = useState<"GRUPOS" | "LLAVE">(armada ? "LLAVE" : "GRUPOS");
@@ -259,6 +261,9 @@ function Torneo({ llave }: { llave: EventoAmericano }) {
           </button>
         </div>
       )}
+
+      {!terminado && <PanelLluvia evento={llave} esStaff={!!esStaff} lluvia={lluvia} />}
+      {lluvia.hoja}
 
       {esStaff && (
         <div className="mt-10 flex flex-wrap gap-2 border-t border-white/10 pt-4">

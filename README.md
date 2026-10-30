@@ -52,6 +52,7 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 - **Categorías:** Femenino, Masculino y Mixto en 7ma, 6ta, 5ta, 4ta, 3ra y Open (Open Mixto).
 - **Formatos:** Individual (americano tradicional, cambias de pareja cada ronda), Dupla fija (todos contra todos) y Mixto (como Individual, pero cada pareja es siempre hombre + mujer). Internamente Mixto = `INDIVIDUAL_ROTATIVO` + categoría `MIXTO`.
 - **Puntuación:** Puntos totales (16/21/24/32), Games con punto de oro (4/6/9) y Sets cortos a 4 (1 set o mejor de 3).
+- **Lluvia / pista suspendida** (`lib/evento.ts`, `lib/lluvia.ts`): el staff toca **Suspender** en una pista del cuadro vivo. El partido que se jugaba ahí queda en espera con su marcador y entra primero en la ronda siguiente, en otra pista; las rondas que faltan se vuelven a sortear con las pistas que quedan, sin repetir cruces (si era la última ronda, se agrega una para terminarlo). **Reactivar** devuelve la pista. En el Americano Torneo se aplica a los grupos y a la llave a la vez; en Torneos, el botón de la tarjeta de cada pista hace lo mismo que Imprevistos para esa pista.
 - **Rotación balanceada** (`lib/rotation.ts`): nadie repite compañero mientras sea posible, se minimizan rivales repetidos, se equilibra el nivel entre parejas, los descansos se reparten parejo y en Mixto cada pareja es hombre + mujer. Es determinista por semilla.
 
 ## Americano HABIBI Tournament

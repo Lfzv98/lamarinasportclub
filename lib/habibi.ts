@@ -28,7 +28,7 @@ import type {
   Resultado,
   Ronda,
 } from "@/types/americano";
-import { crearEvento, despues, nuevoId } from "./evento.ts";
+import { canchasActivas, canchasDelEvento, crearEvento, despues, nuevoId, type OpcionesSuspension } from "./evento.ts";
 import { planRondas, rondasSugeridas } from "./rotation.ts";
 import { calcularTabla, ganador, normalizarResultado } from "./scoring.ts";
 
@@ -496,14 +496,17 @@ export function propagar(llave: EventoAmericano): EventoAmericano {
   const info = infoLlave(llave);
   if (!info) return llave;
   const lista = cruces(llave);
-  const canchas = llave.canchas?.length ? llave.canchas.map((c) => c.numero) : Array.from({ length: llave.pistas }, (_, i) => i + 1);
+  // Pistas suspendidas (lluvia): lo que aún no se juega pasa a las que quedan; si están todas suspendidas, espera.
+  const activas = canchasActivas(llave);
+  const canchas = activas.length ? activas : canchasDelEvento(llave);
+  const mojada = (n?: number) => activas.length > 0 && !activas.includes(n ?? -1);
   const rondas = llave.rondas.map((r) => {
     const deFase = lista.filter((c) => c.fase === r.fase);
     const partidos: Partido[] = deFase
       .filter((c) => c.parejaA && c.parejaB)
       .map((c) => {
         const pista = c.fase === "FINAL" || c.fase === "TERCER_PUESTO" ? canchas[c.fase === "FINAL" ? 0 : Math.min(1, canchas.length - 1)] : canchas[c.indice % canchas.length];
-        if (c.partido) return { ...c.partido, rondaNumero: r.numero, pista: c.partido.pista ?? pista };
+        if (c.partido) return { ...c.partido, rondaNumero: r.numero, pista: c.partido.estado !== "FINALIZADO" && mojada(c.partido.pista) ? pista : (c.partido.pista ?? pista) };
         return { id: c.id, rondaNumero: r.numero, pista, parejaA: c.parejaA!, parejaB: c.parejaB!, estado: "PENDIENTE" as const, resultado: null };
       });
     const completa = deFase.length > 0 && partidos.length === deFase.length && partidos.every((p) => p.estado === "FINALIZADO");
@@ -594,4 +597,34 @@ export function podio(llave: EventoAmericano): { lugar: number; pareja: Pareja }
 export function semillaDe(llave: EventoAmericano, parejaId: string): string | null {
   const s = infoLlave(llave)?.siembra ?? {};
   return Object.keys(s).find((k) => s[k] === parejaId) ?? null;
+}
+
+/* ---------- lluvia en la llave ---------- */
+
+/**
+ * Suspende una pista de la llave: el cruce que se jugaba ahí queda en espera con su marcador y,
+ * como todo lo que aún no se juega en esa pista, pasa a otra pista activa (sigue cuando se libere).
+ */
+export function suspenderPistaLlave(llave: EventoAmericano, numero: number, opts: OpcionesSuspension = {}): EventoAmericano {
+  if (!canchasDelEvento(llave).includes(numero) || llave.pistasSuspendidas?.some((s) => s.numero === numero)) return llave;
+  const en = new Date(opts.ahora ?? Date.now()).toISOString();
+  const motivo = opts.motivo?.trim() || "Lluvia";
+  const rondas = llave.rondas.map((r) => ({
+    ...r,
+    partidos: r.partidos.map((p) =>
+      p.pista === numero && p.estado === "EN_JUEGO"
+        ? { ...p, estado: "PENDIENTE" as const, suspendido: { en, motivo, pista: numero, ronda: r.numero, marcador: opts.marcador?.trim() || p.suspendido?.marcador || null }, actualizadoEn: despues(p.actualizadoEn ?? llave.actualizadoEn) }
+        : p,
+    ),
+  }));
+  return propagar({ ...llave, rondas, pistasSuspendidas: [...(llave.pistasSuspendidas ?? []), { numero, motivo, desde: en }], actualizadoEn: despues(llave.actualizadoEn) });
+}
+
+/** Reactiva una pista de la llave: los cruces que aún no se juegan vuelven a repartirse contando con ella. */
+export function reactivarPistaLlave(llave: EventoAmericano, numero: number): EventoAmericano {
+  if (!llave.pistasSuspendidas?.some((s) => s.numero === numero)) return llave;
+  const resto = llave.pistasSuspendidas.filter((s) => s.numero !== numero);
+  // Los cruces que no empezaron vuelven a su pista de siempre (pista -1: propagar la asigna de nuevo).
+  const rondas = llave.rondas.map((r) => ({ ...r, partidos: r.partidos.map((p) => (p.estado === "PENDIENTE" ? { ...p, pista: -1 } : p)) }));
+  return propagar({ ...llave, rondas, pistasSuspendidas: resto.length ? resto : undefined, actualizadoEn: despues(llave.actualizadoEn) });
 }

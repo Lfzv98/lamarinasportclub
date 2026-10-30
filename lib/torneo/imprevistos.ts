@@ -149,6 +149,24 @@ export function reanudarPistas(t: Torneo, suspensionId: string, opts: { ahora?: 
   return { torneo: programacion.torneo, suspendidos: [], programacion };
 }
 
+/**
+ * Reactiva una sola pista (botón de la tarjeta de la pista): termina desde ahora todas sus
+ * suspensiones, deja las demás pistas como estaban y reprograma lo pendiente.
+ */
+export function reanudarPista(t: Torneo, numero: number, opts: { ahora?: number; por?: string } = {}): ResultadoImprevisto {
+  const ahora = opts.ahora ?? Date.now();
+  const { fecha, hora } = fechaHoraLocal(ahora);
+  const bloqueos = t.bloqueos.flatMap((b) => {
+    if (!b.suspensionId || b.pista !== numero) return [b];
+    if (b.fecha > fecha || (b.fecha === fecha && b.inicio >= hora)) return [];
+    if (b.fecha === fecha && b.fin > hora) return [{ ...b, fin: hora }];
+    return [b];
+  });
+  const out = tocar({ ...t, bloqueos }, `Se reactiva ${nombrePista(t, numero)}.`, opts.por);
+  const programacion = programarTorneo(out, { desde: new Date(redondearArriba(ahora)).toISOString() });
+  return { torneo: programacion.torneo, suspendidos: [], programacion };
+}
+
 /** Partidos suspendidos que esperan reanudarse. */
 export const partidosSuspendidos = (t: Torneo) => todosLosPartidos(t).filter((p) => p.suspendido && p.estado === "PENDIENTE");
 

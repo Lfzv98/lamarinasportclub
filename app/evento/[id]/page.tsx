@@ -3,13 +3,14 @@
 import clsx from "clsx";
 import { useParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronRight, Eye, LockKeyhole, Flag, Pause, Pencil, Play, RotateCcw, Trash2, Trophy, UserCog, Users } from "lucide-react";
+import { Check, ChevronRight, CloudRain, Eye, LockKeyhole, Flag, Pause, Pencil, Play, RotateCcw, Trash2, Trophy, UserCog, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { PlantelSheet } from "@/components/PlantelSheet";
 import { useEffect, useRef, useState } from "react";
 import { AvatarPareja } from "@/components/Avatar";
 import { Cronometro, MarcadorRonda } from "@/components/Cronometro";
 import { EnEspera } from "@/components/EnEspera";
+import { PanelLluvia, useLluvia } from "@/components/Lluvia";
 import { EventoShell } from "@/components/EventoShell";
 import { ScoreModal } from "@/components/ScoreModal";
 import { Confetti } from "@/components/ui/Confetti";
@@ -52,6 +53,7 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
   // Dupla tocada en una pista para cambiarla o quitarla (abre "Editar parejas" sobre ella).
   const [parejaElegida, setParejaElegida] = useState<string | null>(null);
   const router = useRouter();
+  const lluvia = useLluvia(evento);
   const rondaPrevia = useRef(evento.rondaActual);
 
   // Sigue a la ronda actual cuando avanza (también si avanza desde otro dispositivo).
@@ -262,6 +264,7 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
                   porId={porId}
                   index={i}
                   soloLectura={!esStaff}
+                  onSuspender={esStaff && esActual && p.estado !== "FINALIZADO" ? () => lluvia.pedir(p.pista) : undefined}
                   onEditarPareja={
                     esStaff && evento.modalidad === "DUPLA_FIJA"
                       ? (id) => {
@@ -290,8 +293,11 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
             <p className="mt-4 text-center text-xs text-white/40">Toca una pista para cargar el marcador · {pendientes} pendiente(s)</p>
           )}
           <EnEspera evento={evento} ronda={ronda} />
+          <PanelLluvia evento={evento} esStaff={!!esStaff} lluvia={lluvia} />
         </section>
       </div>
+
+      {lluvia.hoja}
 
       <PlantelSheet
         evento={evento}
@@ -345,6 +351,7 @@ function PistaCard({
   index,
   onClick,
   onEditarPareja,
+  onSuspender,
   soloLectura = false,
 }: {
   partido: Partido;
@@ -353,6 +360,8 @@ function PistaCard({
   index: number;
   onClick: () => void;
   onEditarPareja?: (parejaId: string) => void;
+  /** Staff: suspender esta pista (lluvia…). */
+  onSuspender?: () => void;
   soloLectura?: boolean;
 }) {
   const res = partido.resultado;
@@ -419,7 +428,14 @@ function PistaCard({
       )}
     >
       <div className="flex items-center justify-between px-2 pb-2 pt-1">
-        <PistaLabel evento={evento} numero={partido.pista} className="text-sm tracking-[0.2em]" />
+        <span className="flex min-w-0 items-center gap-2">
+          <PistaLabel evento={evento} numero={partido.pista} className="text-sm tracking-[0.2em]" />
+          {partido.suspendido && !terminado && (
+            <span className="chip !border-sky-300/40 !py-0.5 !text-[10px] !text-sky-100" title={`Venía de ${nombrePista(evento, partido.suspendido.pista)} (${partido.suspendido.motivo.toLowerCase()})`}>
+              <CloudRain className="size-3" /> Sigue{partido.suspendido.marcador ? ` · iban ${partido.suspendido.marcador}` : ""}
+            </span>
+          )}
+        </span>
         {terminado ? (
           <span className="chip border-neon/30 text-neon">
             <Check className="size-3" /> Final
@@ -441,8 +457,31 @@ function PistaCard({
       </div>
       <Lado lado="B" />
       {!soloLectura && (
-        <div className="mt-2 flex items-center justify-center gap-1.5 rounded-xl bg-white/[0.03] py-2 text-xs font-semibold text-white/50 transition group-hover:bg-neon group-hover:text-noche">
-          <Pencil className="size-3.5" /> {terminado ? "Editar marcador" : "Cargar marcador"}
+        <div className="mt-2 flex gap-2">
+          <div className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white/[0.03] py-2 text-xs font-semibold text-white/50 transition group-hover:bg-neon group-hover:text-noche">
+            <Pencil className="size-3.5" /> {terminado ? "Editar marcador" : "Cargar marcador"}
+          </div>
+          {onSuspender && (
+            <span
+              role="button"
+              tabIndex={0}
+              aria-label={`Suspender ${nombrePista(evento, partido.pista)}`}
+              title="Suspender esta pista (lluvia, falla de luz…)"
+              className="flex items-center gap-1.5 rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/60 transition hover:border-sky-300/60 hover:text-sky-200"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSuspender();
+              }}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter" && e.key !== " ") return;
+                e.preventDefault();
+                e.stopPropagation();
+                onSuspender();
+              }}
+            >
+              <CloudRain className="size-3.5" /> Suspender
+            </span>
+          )}
         </div>
       )}
     </motion.button>

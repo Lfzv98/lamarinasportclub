@@ -40,35 +40,76 @@ export interface NuevoEventoInput {
 export const nuevoId = (prefijo = "") =>
   prefijo + (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36));
 
-export function generarRondas(
-  e: Pick<EventoAmericano, "modalidad" | "jugadores" | "parejas" | "pistas" | "totalRondas" | "semilla" | "categoria" | "canchas">,
-): Ronda[] {
+export function generarRondas(e: BaseCuadro): Ronda[] {
   return generarRondasDesde(e, 1, []);
 }
 
-function generarRondasDesde(
-  e: Pick<EventoAmericano, "modalidad" | "jugadores" | "parejas" | "pistas" | "totalRondas" | "semilla" | "categoria" | "canchas">,
-  desde: number,
-  previas: Ronda[],
-  sufijo?: string,
-): Ronda[] {
-  const opts = {
-    pistas: e.pistas,
-    rondas: Math.max(0, e.totalRondas - desde + 1),
-    semilla: e.semilla + desde * 7919,
-    mixto: e.categoria.rama === "MIXTO",
-    suma: e.categoria.suma ?? undefined,
-    previas,
-    desde,
-    sufijo,
+type BaseCuadro = Pick<EventoAmericano, "modalidad" | "jugadores" | "parejas" | "pistas" | "totalRondas" | "semilla" | "categoria" | "canchas" | "pistasSuspendidas">;
+
+/** Pistas físicas del evento, en orden de prioridad. */
+export function canchasDelEvento(e: Pick<EventoAmericano, "pistas" | "canchas">): number[] {
+  return e.canchas?.length ? e.canchas.slice(0, e.pistas).map((c) => c.numero) : Array.from({ length: e.pistas }, (_, i) => i + 1);
+}
+
+/** Pistas que se pueden usar ahora (sin las suspendidas por lluvia u otro motivo). */
+export function canchasActivas(e: Pick<EventoAmericano, "pistas" | "canchas" | "pistasSuspendidas">): number[] {
+  const fuera = new Set((e.pistasSuspendidas ?? []).map((s) => s.numero));
+  return canchasDelEvento(e).filter((n) => !fuera.has(n));
+}
+
+/** Ids que juegan un partido: jugadores en individual, duplas en dupla fija. */
+const idsDe = (e: Pick<EventoAmericano, "modalidad">, p: Partido) =>
+  e.modalidad === "DUPLA_FIJA" ? [p.parejaA.id, p.parejaB.id] : [...p.parejaA.jugadorIds, ...p.parejaB.jugadorIds];
+
+function generarRondasDesde(e: BaseCuadro, desde: number, previas: Ronda[], sufijo?: string, enEspera: Partido[] = []): Ronda[] {
+  const canchas = canchasActivas(e);
+  const generar = (pistas: number, rondas: number, n: number, historial: Ronda[], fuera = new Set<string>()) => {
+    const opts = {
+      pistas,
+      rondas,
+      semilla: e.semilla + n * 7919,
+      mixto: e.categoria.rama === "MIXTO",
+      suma: e.categoria.suma ?? undefined,
+      previas: historial,
+      desde: n,
+      sufijo,
+    };
+    return e.modalidad === "DUPLA_FIJA"
+      ? generarRondasDuplaFija(e.parejas.filter((p) => !p.retirada && !fuera.has(p.id)), opts)
+      : generarRondasIndividual(e.jugadores.filter((j) => !j.retirado && !fuera.has(j.id)), opts);
   };
-  const rondas =
-    e.modalidad === "DUPLA_FIJA"
-      ? generarRondasDuplaFija(e.parejas.filter((p) => !p.retirada), opts)
-      : generarRondasIndividual(e.jugadores.filter((j) => !j.retirado), opts);
-  if (!e.canchas?.length) return rondas;
-  // El generador numera 1..N; se traduce a la pista física asignada.
-  return rondas.map((r) => ({ ...r, partidos: r.partidos.map((p) => ({ ...p, pista: e.canchas![p.pista - 1]?.numero ?? p.pista })) }));
+  // El generador numera 1..N; se traduce a la pista física (sin las suspendidas).
+  const aCancha = (r: Ronda, offset = 0): Ronda => ({ ...r, partidos: r.partidos.map((p) => ({ ...p, pista: canchas[offset + p.pista - 1] ?? p.pista })) });
+
+  // Partidos suspendidos: van primero, en las primeras pistas libres de las rondas siguientes.
+  const out: Ronda[] = [];
+  const historial = [...previas];
+  const cola = [...enEspera];
+  let n = desde;
+  while (cola.length && canchas.length) {
+    const fijos = cola.splice(0, canchas.length).map((p, i): Partido => ({ ...p, rondaNumero: n, pista: canchas[i], estado: "PENDIENTE", resultado: null }));
+    const fuera = new Set(fijos.flatMap((p) => idsDe(e, p)));
+    // Una ronda agregada solo para terminar suspendidos no suma partidos nuevos.
+    const libres = n <= e.totalRondas ? canchas.length - fijos.length : 0;
+    // El partido suspendido cuenta como jugado: así nadie lo repite ni repite compañero con él.
+    const conFijos: Ronda = { numero: n, estado: "PENDIENTE", partidos: fijos, descansanIds: [] };
+    const resto = libres > 0 ? generar(libres, 1, n, [...historial, conFijos], fuera)[0] : undefined;
+    const activos = e.modalidad === "DUPLA_FIJA" ? e.parejas.filter((p) => !p.retirada).map((p) => p.id) : e.jugadores.filter((j) => !j.retirado).map((j) => j.id);
+    const ronda: Ronda = {
+      numero: n,
+      estado: "PENDIENTE",
+      partidos: [...fijos, ...(resto ? aCancha(resto, fijos.length).partidos : [])],
+      descansanIds: resto ? resto.descansanIds : activos.filter((id) => !fuera.has(id)),
+      inicioEn: null,
+      segundosAcumulados: 0,
+    };
+    out.push(ronda);
+    historial.push(ronda);
+    n++;
+  }
+  const quedan = Math.max(0, e.totalRondas - n + 1);
+  if (!quedan) return out;
+  return [...out, ...generar(canchas.length, quedan, n, historial).map((r) => aCancha(r))];
 }
 
 export function crearEvento(input: NuevoEventoInput): EventoAmericano {
@@ -209,13 +250,75 @@ export function primeraRondaEditable(e: EventoAmericano): number {
   return empezada ? e.rondaActual + 1 : e.rondaActual;
 }
 
-/** Vuelve a sortear las rondas que aún no empiezan, teniendo en cuenta lo ya jugado. */
+/** Partido cortado por una pista suspendida que espera volver a pista (si ya se reanudó, está EN_JUEGO). */
+export const enEsperaPorPista = (p: Partido) => !!p.suspendido && p.estado === "PENDIENTE";
+
+/**
+ * Vuelve a sortear las rondas que aún no empiezan, teniendo en cuenta lo ya jugado.
+ * Los partidos suspendidos (lluvia) se sacan de su ronda y entran primero en la siguiente;
+ * si ya no quedan rondas se agrega una. Con todas las pistas suspendidas no se mueve nada.
+ */
 export function reSortear(e: EventoAmericano): EventoAmericano {
+  if (!canchasActivas(e).length) return tocar(e);
   const desde = primeraRondaEditable(e);
-  if (desde > e.totalRondas) return tocar(e);
-  const previas = e.rondas.filter((r) => r.numero < desde);
-  const nuevas = generarRondasDesde(e, desde, previas, Date.now().toString(36));
-  return tocar({ ...e, rondas: [...previas, ...nuevas] });
+  const activos = new Set(e.modalidad === "DUPLA_FIJA" ? e.parejas.filter((p) => !p.retirada).map((p) => p.id) : e.jugadores.filter((j) => !j.retirado).map((j) => j.id));
+  const suspendidos = e.rondas.flatMap((r) => r.partidos).filter(enEsperaPorPista);
+  // Si alguien del partido suspendido se retiró, ese partido ya no se termina.
+  const enEspera = suspendidos.filter((p) => idsDe(e, p).every((id) => activos.has(id)));
+  if (desde > e.totalRondas && !enEspera.length) return tocar(e);
+  const fuera = new Set(suspendidos.map((p) => p.id));
+  const previas = e.rondas.filter((r) => r.numero < desde).map((r) => (r.partidos.some((p) => fuera.has(p.id)) ? { ...r, partidos: r.partidos.filter((p) => !fuera.has(p.id)) } : r));
+  const nuevas = generarRondasDesde(e, desde, previas, Date.now().toString(36), enEspera);
+  const totalRondas = Math.max(e.totalRondas, nuevas.at(-1)?.numero ?? 0);
+  return tocar({ ...e, totalRondas, rondas: [...previas, ...nuevas] });
+}
+
+/* ---------- pistas suspendidas (lluvia, falla de luz…) ---------- */
+
+export interface OpcionesSuspension {
+  motivo?: string;
+  /** Cómo iba el partido de esa pista, ej. "8-6" (opcional). */
+  marcador?: string | null;
+  ahora?: number;
+}
+
+/**
+ * Suspende una pista en pleno evento: el partido que se jugaba ahí queda en espera con su
+ * marcador y entra primero en la ronda siguiente, en otra pista; las rondas que faltan se
+ * vuelven a sortear con las pistas que quedan, sin repetir cruces. El resto sigue jugando.
+ */
+export function suspenderPista(e: EventoAmericano, numero: number, opts: OpcionesSuspension = {}): EventoAmericano {
+  if (!canchasDelEvento(e).includes(numero) || e.pistasSuspendidas?.some((s) => s.numero === numero)) return e;
+  const en = new Date(opts.ahora ?? Date.now()).toISOString();
+  const motivo = opts.motivo?.trim() || "Lluvia";
+  const marcador = opts.marcador?.trim() || null;
+  let out: EventoAmericano = {
+    ...e,
+    pistasSuspendidas: [...(e.pistasSuspendidas ?? []), { numero, motivo, desde: en }],
+    rondas: e.rondas.map((r) => ({
+      ...r,
+      partidos: r.partidos.map((p) =>
+        p.pista === numero && p.estado === "EN_JUEGO"
+          ? { ...p, estado: "PENDIENTE" as const, suspendido: { en, motivo, pista: numero, ronda: p.suspendido?.ronda ?? r.numero, marcador: marcador ?? p.suspendido?.marcador ?? null }, actualizadoEn: despues(p.actualizadoEn ?? e.actualizadoEn) }
+          : p,
+      ),
+    })),
+  };
+  // Sin pistas para jugar: la ronda se pausa y todo espera a que se reactive alguna.
+  if (!canchasActivas(out).length) out = pausarRonda(out);
+  return reSortear(out);
+}
+
+/** Reactiva una pista suspendida: lo que falta se vuelve a repartir contando con ella. */
+export function reactivarPista(e: EventoAmericano, numero: number): EventoAmericano {
+  if (!e.pistasSuspendidas?.some((s) => s.numero === numero)) return e;
+  const resto = e.pistasSuspendidas.filter((s) => s.numero !== numero);
+  return reSortear({ ...e, pistasSuspendidas: resto.length ? resto : undefined });
+}
+
+/** Partidos suspendidos que esperan terminarse, con la ronda y la pista donde siguen. */
+export function partidosEnEspera(e: EventoAmericano): Partido[] {
+  return e.rondas.flatMap((r) => r.partidos).filter(enEsperaPorPista);
 }
 
 export function retirarJugador(e: EventoAmericano, jugadorId: string): EventoAmericano {
