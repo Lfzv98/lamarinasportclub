@@ -1,5 +1,6 @@
 "use client";
 
+import { BotonAjustes } from "@/components/BotonAjustes";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, CalendarDays, ChevronRight, KeyRound, Layers, ListChecks, Plus, Ticket, Users } from "lucide-react";
@@ -34,6 +35,7 @@ export default function TorneosPage() {
         </Link>
         <span className="flex-1" />
         <StaffChip />
+        <BotonAjustes href="/torneos/ajustes" titulo="Ajustes de Torneos: claves, pistas y horarios" />
         <LogoMenu />
       </header>
 

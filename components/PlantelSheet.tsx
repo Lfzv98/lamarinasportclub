@@ -11,14 +11,19 @@ import {
   activosEnEvento,
   agregarJugador,
   agregarPareja,
+  cambiarJugador,
   cambiarPareja,
   duplaRepetida,
+  jugadorEnPistaAhora,
+  jugadorSinJugar,
+  jugadorYaInscrito,
   nuevoId,
   parejaEnPistaAhora,
   parejaSinJugar,
   primeraRondaEditable,
   reincorporarJugador,
   retirarJugador,
+  quitarJugador,
   quitarPareja,
   retirarPareja,
 } from "@/lib/evento";
@@ -58,6 +63,8 @@ export function PlantelSheet({
   const porId = new Map(evento.jugadores.map((j) => [j.id, j]));
   // Dupla en edición (no vino y la reemplazan): sus dos nombres nuevos.
   const [editando, setEditando] = useState<{ id: string; a: string; b: string } | null>(null);
+  // Individual y mixto: jugador en edición (no vino y entra otro) con su nombre nuevo.
+  const [editandoJ, setEditandoJ] = useState<{ id: string; nombre: string } | null>(null);
 
   function empezarCambio(p: Pareja) {
     const [x, y] = p.jugadorIds.map((id) => porId.get(id));
@@ -65,7 +72,10 @@ export function PlantelSheet({
   }
 
   useEffect(() => {
-    if (!abierto) return setEditando(null);
+    if (!abierto) {
+      setEditandoJ(null);
+      return setEditando(null);
+    }
     const p = parejaInicial ? evento.parejas.find((x) => x.id === parejaInicial) : null;
     if (p) empezarCambio(p);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -93,12 +103,33 @@ export function PlantelSheet({
     vibrar(15);
   }
 
+  function quitarJ(j: Jugador) {
+    const nombre = `${j.nombre}${j.apellido ? ` ${j.apellido}` : ""}`;
+    if (jugadorEnPistaAhora(evento, j.id)) return toast(`${j.nombre} está en pista en la ronda actual. Usa “Guardar” con el nombre de quien juega en su lugar.`, "error");
+    const motivo = j.retirado ? null : puedeQuedar(j.id);
+    if (motivo) return toast(motivo, "error");
+    if (!confirm(`¿Quitar a ${nombre}? Aún no jugó: sale del americano sin sumar ni perder nada.`)) return;
+    onCambio((e) => quitarJugador(e, j.id), `${nombre} quitado del americano`);
+    setEditandoJ(null);
+  }
+
+  function guardarCambioJ() {
+    if (!editandoJ) return;
+    if (!editandoJ.nombre.trim()) return toast("Escribe el nombre de quien entra", "error");
+    if (jugadorYaInscrito(evento.jugadores, editandoJ.nombre, [editandoJ.id]))
+      return toast(`${editandoJ.nombre.trim()} ya está inscrito en este americano. Si es otra persona, agrega su apellido.`, "error");
+    const viejo = porId.get(editandoJ.id);
+    // Mismo género que el que sale: el mixto sigue parejo.
+    const nuevo = nuevoJugador(editandoJ.nombre, viejo?.genero ?? generoFijo ?? genero);
+    onCambio((e) => cambiarJugador(e, editandoJ.id, nuevo), `${nuevo.nombre} juega en lugar de ${viejo?.nombre ?? "el jugador"}`);
+    setEditandoJ(null);
+    vibrar(15);
+  }
+
   const nuevoJugador = (nombre: string, g: Genero): Jugador => {
     const [n, ...resto] = nombre.trim().split(/\s+/);
     return { id: nuevoId("jug_"), nombre: n, apellido: resto.join(" ") || undefined, genero: g, nivel: evento.categoria.suma ? nivelParaSuma(evento.categoria.suma) : evento.categoria.nivel, fotoUrl: null };
   };
-
-  const nombreRepetido = (n: string) => evento.jugadores.some((j) => !j.retirado && `${j.nombre} ${j.apellido ?? ""}`.trim().toLowerCase() === n.trim().toLowerCase());
 
   function puedeQuedar(sinId: string): string | null {
     if (dupla) return activosEnEvento(evento) - 1 < 2 ? "Deben quedar al menos 2 parejas." : null;
@@ -119,7 +150,7 @@ export function PlantelSheet({
       onCambio((e) => agregarPareja(e, ja, jb), `Pareja ${ja.nombre} / ${jb.nombre} agregada desde la ronda ${desde}`);
     } else {
       if (!a.trim()) return toast("Escribe el nombre", "error");
-      if (nombreRepetido(a)) return toast(`Ya hay un jugador llamado ${a.trim()}`, "error");
+      if (jugadorYaInscrito(evento.jugadores, a)) return toast(`${a.trim()} ya está inscrito en este americano. Si es otra persona, agrega su apellido.`, "error");
       const j = nuevoJugador(a, generoFijo ?? genero);
       onCambio((e) => agregarJugador(e, j), `${j.nombre} entra desde la ronda ${desde}`);
     }
@@ -244,13 +275,47 @@ export function PlantelSheet({
                     </li>
                     );
                   })
-                : evento.jugadores.map((j) => (
+                : evento.jugadores.map((j) => {
+                    const sinJugar = jugadorSinJugar(evento, j.id);
+                    const nombre = `${j.nombre}${j.apellido ? ` ${j.apellido}` : ""}`;
+                    if (editandoJ?.id === j.id)
+                      return (
+                        <li key={j.id} className="glass flex flex-col gap-2 rounded-2xl border-neon/40 p-3 sm:flex-row" aria-label={`Cambiar a ${nombre}`}>
+                          <input className="input" placeholder={`Entra en lugar de ${j.nombre}`} autoFocus value={editandoJ.nombre} onChange={(e) => setEditandoJ({ ...editandoJ, nombre: e.target.value })} onKeyDown={(e) => e.key === "Enter" && guardarCambioJ()} aria-label="Nuevo jugador" />
+                          <div className="flex shrink-0 gap-2">
+                            <button className="btn-neon flex-1" onClick={guardarCambioJ}>
+                              <Check className="size-4" /> Guardar
+                            </button>
+                            <button className="btn-ghost !p-2.5 text-coral" onClick={() => quitarJ(j)} aria-label={`Quitar a ${nombre}`} title="Quitar del americano">
+                              <Trash2 className="size-4" />
+                            </button>
+                            <button className="btn-ghost !p-2.5" onClick={() => setEditandoJ(null)} aria-label="Cancelar cambio">
+                              <X className="size-4" />
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    return (
                     <li key={j.id} className={clsx("glass flex items-center gap-3 rounded-2xl px-3 py-2", j.retirado && "opacity-45")}>
                       <FotoJugador evento={evento} j={j} onCambio={onCambio} />
-                      <span className="flex-1 truncate text-sm font-medium">
-                        {j.nombre} {j.apellido}
-                      </span>
-                      {j.retirado ? (
+                      {sinJugar ? (
+                        <button className="flex-1 truncate text-left text-sm font-medium hover:text-neon" onClick={() => setEditandoJ({ id: j.id, nombre })} title="Tocar para cambiar a este jugador">
+                          {nombre}
+                        </button>
+                      ) : (
+                        <span className="flex-1 truncate text-sm font-medium">{nombre}</span>
+                      )}
+                      {sinJugar && (
+                        <>
+                          <button className="btn-ghost !px-3 !py-1.5 text-xs" onClick={() => setEditandoJ({ id: j.id, nombre })} aria-label={`Cambiar a ${nombre}`}>
+                            <Pencil className="size-3.5" /> Cambiar
+                          </button>
+                          <button className="btn-ghost !p-2 text-xs text-coral" aria-label={`Quitar a ${nombre}`} onClick={() => quitarJ(j)}>
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </>
+                      )}
+                      {sinJugar && !j.retirado ? null : j.retirado ? (
                         <button
                           className="btn-ghost !px-3 !py-1.5 text-xs"
                           disabled={sinRondasFuturas}
@@ -273,7 +338,8 @@ export function PlantelSheet({
                         </button>
                       )}
                     </li>
-                  ))}
+                    );
+                  })}
             </ul>
           </motion.div>
         </>

@@ -1,8 +1,9 @@
 "use client";
 
+import { BotonAjustes } from "@/components/BotonAjustes";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Settings, Plus, Sparkles, Timer, Trophy, Tv } from "lucide-react";
+import { ArrowLeft, Plus, Sparkles, Timer, Trophy, Tv } from "lucide-react";
 import { EventoCard } from "@/components/EventoCard";
 import { InstallButton } from "@/components/InstallButton";
 import { Logo } from "@/components/Logo";
@@ -56,9 +57,7 @@ export default function Americanos() {
           <InstallButton />
           <ModoBadge />
           <StaffChip />
-          <Link href="/club" onClick={soloStaff} className="btn-ghost !p-2.5" aria-label="Mi club" title="Mi club: pistas y horarios">
-            <Settings className="size-4" />
-          </Link>
+          <BotonAjustes href="/americanos/ajustes" titulo="Ajustes de Americanos: publicidad TV, pistas y rondas" />
         </header>
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}

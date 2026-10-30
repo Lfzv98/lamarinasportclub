@@ -38,6 +38,48 @@ export async function comprimirFoto(file: File, lado = 900): Promise<string> {
  * Imagen de una valla publicitaria: hasta 1400 × 360 px, conservando la transparencia del logo
  * (WebP o PNG) y, si pesa mucho, JPEG sobre el fondo oscuro de las vallas.
  */
+/**
+ * Recorta los márgenes vacíos del logo (transparentes o del mismo color del fondo), para que en la
+ * banda de la TV la marca ocupe su espacio completo y todas se vean del mismo tamaño. Deja un 4 % de aire.
+ */
+function bordeUtil(img: HTMLImageElement, ancho: number, alto: number) {
+  const todo = { x: 0, y: 0, w: ancho, h: alto };
+  const k = Math.min(1, 400 / Math.max(ancho, alto));
+  const cw = Math.max(1, Math.round(ancho * k));
+  const ch = Math.max(1, Math.round(alto * k));
+  const c = document.createElement("canvas");
+  c.width = cw;
+  c.height = ch;
+  const ctx = c.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return todo;
+  ctx.drawImage(img, 0, 0, cw, ch);
+  let d: Uint8ClampedArray;
+  try {
+    d = ctx.getImageData(0, 0, cw, ch).data;
+  } catch {
+    return todo;
+  }
+  const [r0, g0, b0, a0] = [d[0], d[1], d[2], d[3]];
+  const vacio = (i: number) =>
+    a0 < 16 ? d[i + 3] < 16 : d[i + 3] > 200 && Math.abs(d[i] - r0) < 18 && Math.abs(d[i + 1] - g0) < 18 && Math.abs(d[i + 2] - b0) < 18;
+  let x0 = cw, y0 = ch, x1 = -1, y1 = -1;
+  for (let y = 0; y < ch; y++)
+    for (let x = 0; x < cw; x++)
+      if (!vacio((y * cw + x) * 4)) {
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
+      }
+  if (x1 < 0) return todo;
+  const aire = Math.round(Math.max(x1 - x0, y1 - y0) * 0.04);
+  x0 = Math.max(0, x0 - aire);
+  y0 = Math.max(0, y0 - aire);
+  x1 = Math.min(cw - 1, x1 + aire);
+  y1 = Math.min(ch - 1, y1 + aire);
+  return { x: x0 / k, y: y0 / k, w: (x1 - x0 + 1) / k, h: (y1 - y0 + 1) / k };
+}
+
 export async function comprimirBanner(file: File): Promise<string> {
   const url = URL.createObjectURL(file);
   try {
@@ -47,12 +89,16 @@ export async function comprimirBanner(file: File): Promise<string> {
       i.onerror = mal;
       i.src = url;
     });
-    const escala = Math.min(1, 1400 / img.naturalWidth, 360 / img.naturalHeight);
+    // Un SVG sin tamaño propio se dibuja a 1200 × 300.
+    const ancho = img.naturalWidth || 1200;
+    const altoImg = img.naturalHeight || 300;
+    const { x, y, w, h } = bordeUtil(img, ancho, altoImg);
+    const escala = Math.min(1, 1400 / w, 360 / h);
     const c = document.createElement("canvas");
-    c.width = Math.max(1, Math.round(img.naturalWidth * escala));
-    c.height = Math.max(1, Math.round(img.naturalHeight * escala));
+    c.width = Math.max(1, Math.round(w * escala));
+    c.height = Math.max(1, Math.round(h * escala));
     const ctx = c.getContext("2d")!;
-    ctx.drawImage(img, 0, 0, c.width, c.height);
+    ctx.drawImage(img, x, y, w, h, 0, 0, c.width, c.height);
     let out = c.toDataURL("image/webp", 0.88);
     if (!out.startsWith("data:image/webp")) out = c.toDataURL("image/png");
     if (out.length > 450_000) {

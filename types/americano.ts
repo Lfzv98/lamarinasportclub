@@ -267,7 +267,7 @@ export interface ConfigClub {
   minutosEntreRondas: number;
   pistas: PistaClub[];
   contacto: ContactoClub;
-  /** Hasta 6 vallas publicitarias para el Modo TV de americanos. */
+  /** Hasta 30 marcas en la banda publicitaria del Modo TV de americanos. */
   vallas?: Valla[];
   actualizadoEn: string;
 }

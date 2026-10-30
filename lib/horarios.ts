@@ -1,5 +1,6 @@
 /** Horarios del club y franja horaria de los eventos. */
 import type { ConfigClub, EventoAmericano, HorarioDia, PistaClub } from "@/types/americano";
+import { MAX_VALLAS } from "./validacion.ts";
 
 export const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 /** Orden de visualización: lunes primero. */
@@ -85,7 +86,7 @@ export function normalizarClub(c: Partial<ConfigClub> | undefined): ConfigClub {
     pistas: c?.pistas?.length ? c.pistas : CLUB_POR_DEFECTO.pistas,
     contacto: { ...CLUB_POR_DEFECTO.contacto, ...c?.contacto },
     dias: c?.dias?.length === 7 ? c.dias : CLUB_POR_DEFECTO.dias,
-    vallas: Array.isArray(c?.vallas) ? c.vallas.slice(0, 6) : [],
+    vallas: Array.isArray(c?.vallas) ? c.vallas.slice(0, MAX_VALLAS) : [],
   };
 }
 

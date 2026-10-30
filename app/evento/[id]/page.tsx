@@ -225,7 +225,7 @@ function CuadroVivo({ evento }: { evento: EventoAmericano }) {
 
           {esStaff && <div className="mt-6 flex w-full gap-2">
             <button className="btn-ghost flex-1 !px-3 text-xs" onClick={() => setPlantel(true)}>
-              <Users className="size-3.5" /> {evento.modalidad === "DUPLA_FIJA" ? "Editar parejas y fotos" : "Jugadores y fotos"}
+              <Users className="size-3.5" /> {evento.modalidad === "DUPLA_FIJA" ? "Editar parejas y fotos" : "Editar jugadores y fotos"}
             </button>
             {!evento.habibi && <button
               className="btn-ghost !px-3 text-xs text-coral"

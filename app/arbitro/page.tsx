@@ -1,5 +1,6 @@
 "use client";
 
+import { BotonAjustes } from "@/components/BotonAjustes";
 import clsx from "clsx";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -70,7 +71,10 @@ export default function ArbitroPage() {
               <LogOut className="size-3.5" /> Salir ({arbitro.nombre.split(" ")[0]})
             </button>
           ) : (
-            <StaffChip />
+            <>
+              <StaffChip />
+              <BotonAjustes href="/arbitro/ajustes" titulo="Ajustes de Árbitros" />
+            </>
           )}
         </header>
         <div className="relative mx-auto max-w-xl px-6 pt-4">

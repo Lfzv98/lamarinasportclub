@@ -75,21 +75,19 @@ ok(e?.parejas.filter((x) => x.fotoUrl).length === 3, `las fotos se subieron sola
 const foto = e?.parejas.find((x) => x.fotoUrl)?.fotoUrl;
 ok(foto && (await ctx.request.get(`${U}${foto}`)).headers()["content-type"]?.startsWith("image/"), "la foto de la dupla se sirve como imagen");
 
-/* 2) Ajustes → Publicidad del Modo TV: 6 vallas, 3 con imagen y 1 solo con nombre */
-await p.goto(`${U}/club#publicidad`, { waitUntil: "networkidle" }); await espera(1000);
-await p.locator("[aria-label='Cantidad de vallas'] button:has-text('6')").click(); await espera(300);
+/* 2) Ajustes de Americanos → Publicidad del Modo TV: 3 logos subidos de una vez y 1 marca solo con nombre */
+const clubAntes = (await (await ctx.request.get(`${U}/api/club`)).json()).club;
+await ctx.request.post(`${U}/api/club`, { data: { club: { ...clubAntes, vallas: [], actualizadoEn: new Date(Date.now() + 1000).toISOString() } } });
+await p.goto(`${U}/americanos/ajustes`, { waitUntil: "networkidle" }); await espera(1500);
 const marcas = [["PADEL PRO", "#d62828"], ["POLAR", "#1d3fa8"], ["BANESCO", "#0b8a5b"]];
-for (const [i, [n, c]] of marcas.entries()) {
-  await p.locator(`button[aria-label='Imagen de la valla ${i + 1}']`).click();
-  await p.locator("input[type=file][accept*='image/png']").setInputFiles(await imagen(1200, 300, c, n, "image/png"));
-  await p.waitForSelector(`button[aria-label='Imagen de la valla ${i + 1}'] img`, { timeout: 10_000 });
-  await p.getByLabel(`Marca de la valla ${i + 1}`).fill(n);
-}
-await p.getByLabel("Marca de la valla 4").fill("Head");
+await p.locator("input[aria-label='Subir logos de marcas']").setInputFiles(await Promise.all(marcas.map(async ([n, c]) => ({ ...(await imagen(1200, 300, c, n, "image/png")), name: `${n}.png` }))));
+await p.waitForFunction(() => document.querySelectorAll("input[aria-label^='Nombre de la marca']").length === 3, null, { timeout: 15_000 });
+await p.locator("button:has-text('Marca sin logo')").click();
+await p.getByLabel("Nombre de la marca 4").fill("Head");
 await p.screenshot({ path: `${out}/ajustes-vallas.png`, fullPage: false });
 await p.locator("footer button:has-text('Guardar cambios')").click(); await espera(1500);
 const club = (await (await ctx.request.get(`${U}/api/club`)).json()).club;
-ok(club.vallas?.length === 6 && club.vallas.filter((v) => v.img).length === 3 && club.vallas[3].nombre === "Head", "club guardado con 6 vallas (3 con imagen, 1 solo nombre)");
+ok(club.vallas?.length === 4 && club.vallas.filter((v) => v.img).length === 3 && club.vallas[3].nombre === "Head", "club guardado con 4 marcas (3 con logo, 1 solo nombre)");
 
 /* 3) Modo TV en vivo: sin logo arriba, logo de fondo, vallas a la izquierda, sin podio */
 await p.setViewportSize({ width: 1920, height: 1080 });
