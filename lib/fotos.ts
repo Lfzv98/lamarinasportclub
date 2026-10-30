@@ -35,10 +35,6 @@ export async function comprimirFoto(file: File, lado = 900): Promise<string> {
 }
 
 /**
- * Imagen de una valla publicitaria: hasta 1400 × 360 px, conservando la transparencia del logo
- * (WebP o PNG) y, si pesa mucho, JPEG sobre el fondo oscuro de las vallas.
- */
-/**
  * Recorta los márgenes vacíos del logo (transparentes o del mismo color del fondo), para que en la
  * banda de la TV la marca ocupe su espacio completo y todas se vean del mismo tamaño. Deja un 4 % de aire.
  */
@@ -80,7 +76,17 @@ function bordeUtil(img: HTMLImageElement, ancho: number, alto: number) {
   return { x: x0 / k, y: y0 / k, w: (x1 - x0 + 1) / k, h: (y1 - y0 + 1) / k };
 }
 
-export async function comprimirBanner(file: File): Promise<string> {
+/** Medida de la pieza de valla que se pide a las marcas: cubre su tramo de la banda sin bordes. */
+export const PIEZA_VALLA = { ancho: 1700, alto: 500 };
+const PROPORCION_PIEZA = PIEZA_VALLA.ancho / PIEZA_VALLA.alto;
+
+/**
+ * Imagen de una valla publicitaria. Si mide 3,4 : 1 (1700 × 500, con un 6 % de tolerancia) es una
+ * pieza completa: se lleva a 1700 × 500 sin recortar márgenes, para que cubra su tramo de borde a
+ * borde. Si no, es un logo: se recortan sus márgenes vacíos y se deja hasta 1700 × 500 conservando
+ * la transparencia (WebP o PNG) y, si pesa mucho, JPEG sobre el fondo oscuro de las vallas.
+ */
+export async function comprimirBanner(file: File): Promise<{ img: string; pieza: boolean }> {
   const url = URL.createObjectURL(file);
   try {
     const img = await new Promise<HTMLImageElement>((ok, mal) => {
@@ -92,8 +98,23 @@ export async function comprimirBanner(file: File): Promise<string> {
     // Un SVG sin tamaño propio se dibuja a 1200 × 300.
     const ancho = img.naturalWidth || 1200;
     const altoImg = img.naturalHeight || 300;
+    if (Math.abs(ancho / altoImg / PROPORCION_PIEZA - 1) <= 0.06) {
+      const c = document.createElement("canvas");
+      c.width = PIEZA_VALLA.ancho;
+      c.height = PIEZA_VALLA.alto;
+      const ctx = c.getContext("2d")!;
+      ctx.fillStyle = "#04060d";
+      ctx.fillRect(0, 0, c.width, c.height);
+      // Cubre el lienzo: lo que sobre de la tolerancia se recorta parejo por los lados.
+      const k = Math.max(c.width / ancho, c.height / altoImg);
+      ctx.drawImage(img, (c.width - ancho * k) / 2, (c.height - altoImg * k) / 2, ancho * k, altoImg * k);
+      let q = 0.92;
+      let out = c.toDataURL("image/jpeg", q);
+      while (out.length > 850_000 && q > 0.5) out = c.toDataURL("image/jpeg", (q -= 0.08));
+      return { img: out, pieza: true };
+    }
     const { x, y, w, h } = bordeUtil(img, ancho, altoImg);
-    const escala = Math.min(1, 1400 / w, 360 / h);
+    const escala = Math.min(1, PIEZA_VALLA.ancho / w, PIEZA_VALLA.alto / h);
     const c = document.createElement("canvas");
     c.width = Math.max(1, Math.round(w * escala));
     c.height = Math.max(1, Math.round(h * escala));
@@ -101,13 +122,13 @@ export async function comprimirBanner(file: File): Promise<string> {
     ctx.drawImage(img, x, y, w, h, 0, 0, c.width, c.height);
     let out = c.toDataURL("image/webp", 0.88);
     if (!out.startsWith("data:image/webp")) out = c.toDataURL("image/png");
-    if (out.length > 450_000) {
+    if (out.length > 850_000) {
       ctx.globalCompositeOperation = "destination-over";
       ctx.fillStyle = "#04060d";
       ctx.fillRect(0, 0, c.width, c.height);
       out = c.toDataURL("image/jpeg", 0.85);
     }
-    return out;
+    return { img: out, pieza: false };
   } finally {
     URL.revokeObjectURL(url);
   }

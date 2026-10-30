@@ -74,6 +74,11 @@ function PanelValla({ valla, indice }: { valla: Valla | null; indice: number }) 
 
 /** `letra`: tamaño del nombre (px) cuando la marca no tiene imagen; en la banda va según su alto. */
 function Anuncio({ valla, letra }: { valla: Valla | null; letra?: number }) {
+  if (valla?.img && valla.pieza && letra)
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={valla.img} alt={valla.nombre} className="size-full object-cover" />
+    );
   if (valla?.img)
     return (
       // eslint-disable-next-line @next/next/no-img-element
@@ -114,8 +119,9 @@ export function BandaVallas({ vallas, alto, className }: { vallas?: Valla[]; alt
       <div className="valla-cinta flex h-full w-max" style={{ animationDuration: `${segundos}s` }}>
         {[0, 1].map((copia) => (
           <div key={copia} className="flex h-full" aria-hidden={copia === 1 || undefined}>
+            {/* Tramos de 3,4 : 1 pegados, sin líneas: una pieza de 1700 × 500 lo cubre entero. */}
             {vuelta.map((v, i) => (
-              <div key={i} className="flex h-full items-center justify-center border-r border-white/10" style={{ width: alto * 3.4, paddingInline: alto * 0.36 }}>
+              <div key={i} className="flex h-full shrink-0 items-center justify-center" style={{ width: alto * 3.4, paddingInline: v?.img && v.pieza ? 0 : alto * 0.36 }}>
                 <Anuncio valla={v} letra={alto * 0.3} />
               </div>
             ))}
