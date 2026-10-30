@@ -9,7 +9,7 @@ export type Visor = { staff: boolean; accesos: Record<string, number>; arbitro?:
 /** Quién mira. La sesión de árbitro solo cuenta si sigue valiendo en el plantel del club. */
 export async function visorDe(req: Request): Promise<Visor> {
   const s = arbitroDe(req);
-  return { staff: !!sesionDe(req), accesos: leerAccesos(req), arbitro: s && (await sesionValida(s)) ? s : null };
+  return { staff: !!(await sesionDe(req)), accesos: leerAccesos(req), arbitro: s && (await sesionValida(s)) ? s : null };
 }
 
 /** Un árbitro del club (sesión ya validada en `visorDe`) ve y anota cualquier torneo vigente. */

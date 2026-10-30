@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
  * { accion: "cargar" | "borrar" }: el paquete completo. { accion: "torneo" | "americano" }: uno listo para jugar, devuelve su id.
  */
 export const POST = manejar(async (req: Request) => {
-  if (!sesionDe(req)) throw new ErrorApi(401, "Solo el staff.");
+  if (!(await sesionDe(req))) throw new ErrorApi(401, "Solo el staff.");
   const b = (await leerJson(req)) as { accion?: unknown } | null;
   if (b?.accion === "cargar") return NextResponse.json({ ok: true, ...(await cargarDemo()) });
   if (b?.accion === "torneo") return NextResponse.json({ ok: true, id: (await crearTorneoPrueba()).id });

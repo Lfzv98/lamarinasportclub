@@ -39,7 +39,7 @@ export const GET = manejar(async (req: Request, ctx: { params: Promise<{ id: str
   const { id } = await ctx.params;
   const t = await torneoDe(id);
   const q = new URL(req.url).searchParams;
-  const staff = !!sesionDe(req);
+  const staff = !!(await sesionDe(req));
 
   const codigo = q.get("codigo")?.trim().toUpperCase();
   if (codigo) {
@@ -139,7 +139,7 @@ export const POST = manejar(async (req: Request, ctx: { params: Promise<{ id: st
  *   → { inscripcion, torneo? }
  */
 export const PATCH = manejar(async (req: Request, ctx: { params: Promise<{ id: string }> }) => {
-  const sesion = exigirStaff(req);
+  const sesion = await exigirStaff(req);
   const { id } = await ctx.params;
   const b = (await leerJson(req)) as { id?: unknown; accion?: unknown; nota?: unknown } | null;
   if (typeof b?.id !== "string" || typeof b.accion !== "string") throw new ErrorApi(400, "Envía { id, accion }.");

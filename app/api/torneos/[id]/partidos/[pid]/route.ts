@@ -28,7 +28,7 @@ export const POST = manejar(async (req: Request, ctx: { params: Promise<{ id: st
   const t = await repo.obtener(id);
   if (!t || t.eliminado) throw new ErrorApi(404, "Torneo no encontrado.");
   const v = await visorDe(req);
-  const staff = sesionDe(req);
+  const staff = await sesionDe(req);
   const arbitro = staff ? null : await arbitroValido(t, v.arbitro);
   if (!staff && !arbitro) throw new ErrorApi(401, "Solo el staff o los árbitros de este torneo pueden anotar.");
   const p = partido(t, pid);

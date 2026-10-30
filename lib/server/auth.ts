@@ -1,6 +1,7 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { ErrorApi } from "./http";
+import { getTorneosRepository } from "./repository";
 
 /**
  * Sesión de staff.
@@ -8,9 +9,12 @@ import { ErrorApi } from "./http";
  * Todas las escrituras (POST/PUT/DELETE) exigen una cookie `lm_staff` firmada
  * con HMAC. Se obtiene en POST /api/staff/login con:
  *   - PIN del club (`STAFF_PIN`). En modo DEMO, si no se define, el PIN es 1234.
- *   - Usuario y contraseña de PadelReserve (Supabase Auth), si Supabase está
- *     configurado. Solo entra quien tenga rol staff/admin en app_metadata o cuyo
- *     email esté en `STAFF_EMAILS`.
+ *   - Usuario y contraseña de PadelReserve (Supabase Auth del CRM), si está
+ *     configurado. Solo entra quien tenga rol staff/admin en app_metadata, cuyo
+ *     email esté en `STAFF_EMAILS` o en la lista de correos de Ajustes → Seguridad.
+ * Política del club (Ajustes → Seguridad, solo con usuario de PadelReserve): apagar el
+ * PIN compartido, la lista de correos y "cerrar sesión en todos los dispositivos"
+ * (sube la versión y las sesiones viejas dejan de valer).
  * La lectura (ranking, Modo TV, QR) es pública.
  */
 
@@ -22,12 +26,22 @@ export interface SesionStaff {
   sub: string;
   nombre: string;
   metodo: "PIN" | "PADELRESERVE";
+  /** Correo del usuario de PadelReserve. */
+  correo?: string;
+  /** Entró solo por estar en la lista de correos de Ajustes (si lo quitan, su sesión cae). */
+  porLista?: boolean;
+  /** Versión de la política al entrar: "cerrar sesión en todos los dispositivos" la sube. */
+  v?: number;
   exp: number;
 }
 
 const supabaseUrl = () => process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = () => process.env.SUPABASE_SERVICE_ROLE_KEY;
 export const supabaseActivo = () => !!(supabaseUrl() && supabaseKey());
+/** Usuarios de PadelReserve: el Supabase del CRM, que puede ser otro proyecto que el de los datos. */
+const authUrl = () => process.env.PADELRESERVE_AUTH_URL || supabaseUrl();
+const authKey = () => process.env.PADELRESERVE_AUTH_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || supabaseKey();
+export const padelReserveActivo = () => !!(authUrl() && authKey());
 
 export function pinConfigurado(): string | null {
   if (process.env.STAFF_PIN) return process.env.STAFF_PIN;
@@ -71,15 +85,105 @@ function cookieDe(req: Request): string | null {
   return m ? decodeURIComponent(m.slice(COOKIE.length + 1)) : null;
 }
 
-export function sesionDe(req: Request): SesionStaff | null {
-  return leerToken(cookieDe(req));
+/* ---------- política de seguridad del club ---------- */
+
+export interface PoliticaStaff {
+  /** PIN compartido apagado: solo se entra con usuario de PadelReserve. */
+  pinApagado: boolean;
+  /** Correos de PadelReserve con permiso de staff (además de los que tienen rol en el CRM). */
+  correos: string[];
+  /** Sube con "cerrar sesión en todos los dispositivos". */
+  version: number;
+  actualizadoEn: string;
+  por?: string;
+}
+
+const ID_POLITICA = "staff:politica";
+const POLITICA_VACIA: PoliticaStaff = { pinApagado: false, correos: [], version: 0, actualizadoEn: "" };
+const CACHE_MS = 15_000;
+const cachePolitica = globalThis as unknown as { __politicaStaff?: { p: PoliticaStaff; hasta: number } };
+
+export async function leerPolitica(fresca = false): Promise<PoliticaStaff> {
+  const c = cachePolitica.__politicaStaff;
+  if (!fresca && c && c.hasta > Date.now()) return c.p;
+  const x = await getTorneosRepository().obtenerExtra(ID_POLITICA);
+  const p = { ...POLITICA_VACIA, ...((x?.data as Partial<PoliticaStaff> | undefined) ?? {}) };
+  cachePolitica.__politicaStaff = { p, hasta: Date.now() + CACHE_MS };
+  return p;
+}
+
+export async function guardarPolitica(p: PoliticaStaff): Promise<PoliticaStaff> {
+  await getTorneosRepository().guardarExtra({ id: ID_POLITICA, torneoId: "club", tipo: "staff", data: p, actualizadoEn: p.actualizadoEn });
+  cachePolitica.__politicaStaff = { p, hasta: Date.now() + CACHE_MS };
+  return p;
+}
+
+const normalizarCorreo = (c: string) => c.trim().toLowerCase();
+const correosEnv = () => (process.env.STAFF_EMAILS ?? "").split(",").map(normalizarCorreo).filter(Boolean);
+
+/** ¿La sesión sigue valiendo con la política actual? */
+function vigente(s: SesionStaff, p: PoliticaStaff): boolean {
+  if ((s.v ?? 0) !== p.version) return false;
+  if (s.metodo === "PIN") return !p.pinApagado && !!pinConfigurado();
+  if (s.porLista) return !!s.correo && (p.correos.includes(s.correo) || correosEnv().includes(s.correo));
+  return true;
+}
+
+export async function sesionDe(req: Request): Promise<SesionStaff | null> {
+  const s = leerToken(cookieDe(req));
+  if (!s) return null;
+  try {
+    return vigente(s, await leerPolitica()) ? s : null;
+  } catch {
+    // Sin conexión a la base: la firma basta, para no dejar al staff afuera en pleno evento.
+    return s;
+  }
 }
 
 /** Lanza 401 si la petición no viene de staff. */
-export function exigirStaff(req: Request): SesionStaff {
-  const s = sesionDe(req);
-  if (!s) throw new ErrorApi(401, "Solo el staff de La Marina puede hacer cambios. Ingresa con tu PIN o usuario de PadelReserve.");
+export async function exigirStaff(req: Request): Promise<SesionStaff> {
+  const s = await sesionDe(req);
+  if (!s) throw new ErrorApi(401, "Solo el staff de La Marina puede hacer cambios. Ingresa con tu usuario de PadelReserve o el PIN del club.");
   return s;
+}
+
+/* ---------- registro de accesos ---------- */
+
+export interface AccesoStaff {
+  en: string;
+  ok: boolean;
+  metodo: "PIN" | "PADELRESERVE";
+  nombre?: string;
+  correo?: string;
+  ip: string;
+  dispositivo: string;
+  motivo?: string;
+}
+
+const ID_ACCESOS = "staff:accesos";
+const MAX_ACCESOS = 200;
+
+export async function leerAccesosStaff(): Promise<AccesoStaff[]> {
+  const x = await getTorneosRepository().obtenerExtra(ID_ACCESOS);
+  return ((x?.data as { lista?: AccesoStaff[] } | undefined)?.lista ?? []).slice(0, MAX_ACCESOS);
+}
+
+/** Anota un ingreso (o intento) del staff. Nunca rompe el login si la base falla. */
+export async function anotarAcceso(a: AccesoStaff): Promise<void> {
+  try {
+    const lista = [a, ...(await leerAccesosStaff())].slice(0, MAX_ACCESOS);
+    await getTorneosRepository().guardarExtra({ id: ID_ACCESOS, torneoId: "club", tipo: "staff", data: { lista }, actualizadoEn: a.en });
+  } catch {
+    /* el registro es informativo */
+  }
+}
+
+/** "iPhone · Safari", "Windows · Chrome"… a partir del navegador. */
+export function dispositivoDe(req: Request): string {
+  const ua = req.headers.get("user-agent") ?? "";
+  const so = /iPad/.test(ua) ? "iPad" : /iPhone/.test(ua) ? "iPhone" : /Android/.test(ua) ? "Android" : /Windows/.test(ua) ? "Windows" : /Mac OS X/.test(ua) ? "Mac" : /Linux/.test(ua) ? "Linux" : "Otro";
+  const nav = /Edg\//.test(ua) ? "Edge" : /CriOS|Chrome\//.test(ua) ? "Chrome" : /FxiOS|Firefox\//.test(ua) ? "Firefox" : /Safari\//.test(ua) ? "Safari" : "navegador";
+  return `${so} · ${nav}`;
 }
 
 /* ---------- login ---------- */
@@ -108,10 +212,10 @@ export function verificarPin(pin: string): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-/** Login con usuario de PadelReserve (Supabase Auth, grant password). */
-export async function verificarPadelReserve(email: string, password: string): Promise<Omit<SesionStaff, "exp"> | null> {
-  const url = supabaseUrl();
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? supabaseKey();
+/** Login con usuario de PadelReserve (Supabase Auth del CRM, grant password). */
+export async function verificarPadelReserve(email: string, password: string, politica: PoliticaStaff): Promise<Omit<SesionStaff, "exp"> | null> {
+  const url = authUrl();
+  const key = authKey();
   if (!url || !key) return null;
   const res = await fetch(`${url.replace(/\/$/, "")}/auth/v1/token?grant_type=password`, {
     method: "POST",
@@ -123,10 +227,11 @@ export async function verificarPadelReserve(email: string, password: string): Pr
   if (!res.ok) throw new Error(`Supabase auth ${res.status}`);
   const { user } = (await res.json()) as { user: { id: string; email: string; app_metadata?: { role?: string; roles?: string[] }; user_metadata?: { full_name?: string; nombre?: string } } };
   const roles = [user.app_metadata?.role, ...(user.app_metadata?.roles ?? [])].filter(Boolean) as string[];
-  const lista = (process.env.STAFF_EMAILS ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
-  const esStaff = roles.some((r) => ["staff", "admin"].includes(r)) || lista.includes(user.email.toLowerCase());
-  if (!esStaff) throw new ErrorApi(403, "Tu usuario no tiene permisos de staff en La Marina.");
-  return { sub: user.id, nombre: user.user_metadata?.full_name ?? user.user_metadata?.nombre ?? user.email, metodo: "PADELRESERVE" };
+  const correo = normalizarCorreo(user.email);
+  const porRol = roles.some((r) => ["staff", "admin"].includes(r));
+  const enLista = correosEnv().includes(correo) || politica.correos.includes(correo);
+  if (!porRol && !enLista) throw new ErrorApi(403, "Tu usuario de PadelReserve no tiene permiso de staff en La Marina. Pide que agreguen tu correo en Ajustes → Seguridad.");
+  return { sub: user.id, nombre: user.user_metadata?.full_name ?? user.user_metadata?.nombre ?? user.email, metodo: "PADELRESERVE", correo, porLista: !porRol, v: politica.version };
 }
 
 export function ipDe(req: Request) {

@@ -16,7 +16,7 @@ export const GET = manejar(async () => {
 
 /** POST /api/club  body: { club } → guarda si es más reciente que lo guardado. */
 export const POST = manejar(async (req: Request) => {
-  exigirStaff(req);
+  await exigirStaff(req);
   const body = (await leerJson(req)) as { club?: unknown } | null;
   const errores = validarClub(body?.club);
   if (errores.length) throw new ErrorApi(422, "Configuración inválida.", errores);

@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 export const GET = manejar(async (req: Request) => {
   const torneoId = new URL(req.url).searchParams.get("torneoId");
   const p = await leerPlantel();
-  if (sesionDe(req)) {
+  if (await sesionDe(req)) {
     const repo = getTorneosRepository();
     const ids = torneoId ? [torneoId] : (await repo.listar()).filter((t) => !t.eliminado).map((t) => t.id);
     const partidos = new Map<string, number>();
@@ -35,7 +35,7 @@ export const GET = manejar(async (req: Request) => {
  * marca como árbitro principal (mesa técnica: revisa y corrige resultados).
  */
 export const PATCH = manejar(async (req: Request) => {
-  if (!sesionDe(req)) throw new ErrorApi(401, "Solo el staff.");
+  if (!(await sesionDe(req))) throw new ErrorApi(401, "Solo el staff.");
   const b = (await leerJson(req)) as { id?: unknown; activo?: unknown; principal?: unknown } | null;
   if (typeof b?.id !== "string" || (typeof b?.activo !== "boolean" && typeof b?.principal !== "boolean")) throw new ErrorApi(400, "Envía { id, activo } o { id, principal }.");
   const p = await leerPlantel();
@@ -50,7 +50,7 @@ export const PATCH = manejar(async (req: Request) => {
 
 /** DELETE /api/arbitros?id= (staff) → borra al árbitro del plantel (sus partidos anotados conservan su nombre). */
 export const DELETE = manejar(async (req: Request) => {
-  if (!sesionDe(req)) throw new ErrorApi(401, "Solo el staff.");
+  if (!(await sesionDe(req))) throw new ErrorApi(401, "Solo el staff.");
   const id = new URL(req.url).searchParams.get("id");
   if (!id) throw new ErrorApi(400, "Falta id.");
   const p = await leerPlantel();

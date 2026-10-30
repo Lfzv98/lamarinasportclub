@@ -15,7 +15,7 @@ const idValla = (id: string) => `valla:club:${id}`;
 
 /** POST /api/club/vallas { id, img: "data:image/…;base64,…" } → { url } (solo staff). */
 export const POST = manejar(async (req: Request) => {
-  const staff = exigirStaff(req);
+  const staff = await exigirStaff(req);
   const b = (await leerJson(req, 800_000)) as { id?: unknown; img?: unknown } | null;
   if (typeof b?.id !== "string" || !ID.test(b.id) || typeof b.img !== "string") throw new ErrorApi(400, "Envía { id, img }.");
   if (!/^data:image\/(jpeg|webp|png);base64,[A-Za-z0-9+/=]+$/.test(b.img)) throw new ErrorApi(422, "La imagen debe ser JPEG, WebP o PNG.");
@@ -26,7 +26,7 @@ export const POST = manejar(async (req: Request) => {
 
 /** DELETE /api/club/vallas?id= (solo staff). */
 export const DELETE = manejar(async (req: Request) => {
-  exigirStaff(req);
+  await exigirStaff(req);
   const id = new URL(req.url).searchParams.get("id");
   if (!id || !ID.test(id)) throw new ErrorApi(400, "Falta id.");
   await getTorneosRepository().borrarExtra(idValla(id));
