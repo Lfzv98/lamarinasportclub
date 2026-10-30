@@ -27,13 +27,12 @@ export function BotonWhatsApp({ className, texto = "Reserva tu pista", atencion 
       href={`https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`}
       target="_blank"
       rel="noopener noreferrer"
+      aria-label={`${texto} por WhatsApp`}
       className={clsx("inline-flex items-center gap-2.5 rounded-2xl bg-[#25D366] px-4 py-3 font-semibold text-[#0b1f12] shadow-[0_10px_30px_-12px_rgba(37,211,102,0.9)] transition hover:brightness-105 active:scale-[0.98]", className)}
     >
       <IconoWhatsApp className="size-5" />
-      <span className="flex flex-col leading-tight">
-        <span>{texto}</span>
-        <span className="text-xs font-medium opacity-75">{atencion ? WHATSAPP_ATENCION_VISIBLE : WHATSAPP_VISIBLE}</span>
-      </span>
+      {/* Solo la etiqueta: el número lo abre WhatsApp. */}
+      <span className="leading-tight">{texto}</span>
     </a>
   );
 }
