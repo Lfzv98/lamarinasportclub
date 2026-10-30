@@ -26,7 +26,8 @@ export const POST = manejar(async (req: Request) => {
   const ip = ipDe(req);
   controlarIntentos(ip);
   const body = (await leerJson(req)) as { pin?: unknown; email?: unknown; password?: unknown } | null;
-  const politica = await leerPolitica(true);
+  // Si la base no responde, rige la política por defecto: el staff no queda afuera en pleno evento.
+  const politica = await leerPolitica(true).catch(() => ({ pinApagado: false, correos: [], version: 0, actualizadoEn: "" }));
   const base = { en: new Date().toISOString(), ip, dispositivo: dispositivoDe(req) };
 
   let sesion: Parameters<typeof crearToken>[0] | null = null;
