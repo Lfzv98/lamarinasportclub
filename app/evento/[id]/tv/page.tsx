@@ -163,24 +163,42 @@ function TV({ evento }: { evento: EventoAmericano }) {
                     )}
                   </div>
                 </div>
-                <div className={clsx("grid min-h-0 flex-1 gap-4", !lienzo.desplaza && "auto-rows-fr", (ronda?.partidos.length ?? 0) > 2 ? "grid-cols-2" : "grid-cols-1")}>
-                  {ronda?.partidos.map((p) => <PistaTV key={p.id} partido={p} evento={evento} compacto={(ronda?.partidos.length ?? 0) > 2} />)}
+                <div className={clsx("grid min-h-0 flex-1 gap-4", !lienzo.desplaza && "auto-rows-fr", (ronda?.partidos.length ?? 0) > 4 ? "grid-cols-3" : (ronda?.partidos.length ?? 0) > 2 ? "grid-cols-2" : "grid-cols-1")}>
+                  {ronda?.partidos.map((p) => (
+                    <PistaTV key={p.id} partido={p} evento={evento} compacto={(ronda?.partidos.length ?? 0) > 2} denso={(ronda?.partidos.length ?? 0) > 4} />
+                  ))}
                 </div>
-                {espera.length > 0 && (
-                  <div className="glass flex items-center gap-5 rounded-[2rem] border-amber-300/20 px-6 py-4">
-                    <p className="flex shrink-0 items-center gap-3 font-display text-2xl font-bold text-amber-200">
-                      <Coffee className="size-7" /> {evento.modalidad === "DUPLA_FIJA" ? "En espera" : "Descansan"}
-                    </p>
-                    <div className="flex min-w-0 flex-wrap gap-x-6 gap-y-2">
-                      {espera.map((e) => (
-                        <span key={e.id} className="flex items-center gap-2 text-xl">
-                          <span className="font-semibold text-white/90">{e.completo}</span>
-                          {e.vuelve && <span className="text-base text-white/40">→ R{e.vuelve}</span>}
-                        </span>
-                      ))}
+                {espera.length > 0 &&
+                  (espera.length <= 4 ? (
+                    <div className="glass flex shrink-0 items-center gap-5 rounded-[2rem] border-amber-300/20 px-6 py-4">
+                      <p className="flex shrink-0 items-center gap-3 font-display text-2xl font-bold text-amber-200">
+                        <Coffee className="size-7" /> {evento.modalidad === "DUPLA_FIJA" ? "En espera" : "Descansan"}
+                      </p>
+                      <div className="flex min-w-0 flex-wrap gap-x-6 gap-y-2">
+                        {espera.map((e) => (
+                          <span key={e.id} className="flex items-center gap-2 text-xl">
+                            <span className="font-semibold text-white/90">{e.completo}</span>
+                            {e.vuelve && <span className="text-base text-white/40">→ R{e.vuelve}</span>}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    // Muchos en espera (ej. 16 duplas en 4 pistas): lista compacta en columnas para no tapar las pistas.
+                    <div className="glass shrink-0 rounded-[2rem] border-amber-300/20 px-6 py-3">
+                      <p className="mb-1.5 flex items-center gap-2.5 font-display text-xl font-bold text-amber-200">
+                        <Coffee className="size-6" /> {evento.modalidad === "DUPLA_FIJA" ? "En espera" : "Descansan"} <span className="text-base font-medium text-white/40">· {espera.length}</span>
+                      </p>
+                      <div className={clsx("grid gap-x-6 gap-y-0.5", espera.length > 8 ? "grid-cols-3 text-base" : "grid-cols-2 text-lg")}>
+                        {espera.map((e) => (
+                          <span key={e.id} className="flex min-w-0 items-center gap-2">
+                            <span className="truncate font-semibold text-white/90">{e.completo}</span>
+                            {e.vuelve && <span className="shrink-0 text-sm text-white/40">→ R{e.vuelve}</span>}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
               </div>
               {ranking}
             </motion.section>
@@ -192,37 +210,41 @@ function TV({ evento }: { evento: EventoAmericano }) {
   );
 }
 
-function PistaTV({ partido, evento, compacto = false }: { partido: Partido; evento: EventoAmericano; compacto?: boolean }) {
+/** `denso`: 5 o 6 pistas en tres columnas, con nombre y la inicial del apellido para que todo quepa. */
+function PistaTV({ partido, evento, compacto = false, denso = false }: { partido: Partido; evento: EventoAmericano; compacto?: boolean; denso?: boolean }) {
   const porId = new Map(evento.jugadores.map((j) => [j.id, j]));
   const res = partido.resultado;
   const g = res ? ganador(evento.puntuacion, res) : null;
   const lado = (l: "A" | "B") => {
     const par = l === "A" ? partido.parejaA : partido.parejaB;
-    const nombres = par.jugadorIds.map((id) => nombreCompleto(porId.get(id)));
+    const nombres = par.jugadorIds.map((id) => {
+      const j = porId.get(id);
+      return denso && j ? `${j.nombre}${j.apellido ? ` ${j.apellido.charAt(0)}.` : ""}` : nombreCompleto(j);
+    });
     const gana = g === (l === "A" ? 1 : -1);
     return (
-      <div className={clsx("flex items-center gap-4", res && !gana && "opacity-50")}>
-        <AvatarPareja nombres={nombres} fotos={par.jugadorIds.map((id) => porId.get(id)?.fotoUrl)} dupla={fotoDeDupla(evento, par.id)} size={compacto ? 40 : 52} />
+      <div className={clsx("flex items-center", denso ? "gap-2.5" : "gap-4", res && !gana && "opacity-50")}>
+        <AvatarPareja nombres={nombres} fotos={par.jugadorIds.map((id) => porId.get(id)?.fotoUrl)} dupla={fotoDeDupla(evento, par.id)} size={denso ? 32 : compacto ? 40 : 52} />
         <div className="min-w-0 flex-1">
           {nombres.map((n, i) => (
-            <p key={i} className={clsx("break-words font-semibold leading-tight", compacto ? "text-lg" : "text-2xl")}>
+            <p key={i} className={clsx("font-semibold leading-tight", denso ? "truncate text-base" : compacto ? "break-words text-lg" : "break-words text-2xl")}>
               {n}
             </p>
           ))}
         </div>
-        {res && <span className={clsx("font-display font-bold tabular", compacto ? "text-4xl" : "text-5xl", gana ? "text-neon" : "text-white")}>{l === "A" ? res.puntosA : res.puntosB}</span>}
+        {res && <span className={clsx("font-display font-bold tabular", denso ? "text-3xl" : compacto ? "text-4xl" : "text-5xl", gana ? "text-neon" : "text-white")}>{l === "A" ? res.puntosA : res.puntosB}</span>}
       </div>
     );
   };
   return (
-    <motion.div layout className={clsx("glass flex min-h-0 flex-col justify-center rounded-[2rem]", compacto ? "gap-1.5 p-4" : "gap-3 p-6", partido.estado === "FINALIZADO" && "border-neon/30")}>
+    <motion.div layout className={clsx("glass flex min-h-0 flex-col justify-center rounded-[2rem]", denso ? "gap-1 px-3.5 py-3" : compacto ? "gap-1.5 p-4" : "gap-3 p-6", partido.estado === "FINALIZADO" && "border-neon/30")}>
       <div className="flex items-center justify-between">
-        <PistaLabel evento={evento} numero={partido.pista} className="text-xl tracking-[0.25em]" icono="size-5" />
+        <PistaLabel evento={evento} numero={partido.pista} className={denso ? "text-base tracking-[0.18em]" : "text-xl tracking-[0.25em]"} icono={denso ? "size-4" : "size-5"} />
         {partido.estado === "FINALIZADO" ? (
-          <span className="text-lg font-semibold text-neon">Final</span>
+          <span className={clsx("font-semibold text-neon", denso ? "text-base" : "text-lg")}>Final</span>
         ) : partido.estado === "EN_JUEGO" ? (
           <span className="flex items-center gap-2 text-lg text-white/60">
-            <span className="size-2.5 animate-pulse rounded-full bg-neon" /> En juego
+            <span className="size-2.5 animate-pulse rounded-full bg-neon" /> {!denso && "En juego"}
           </span>
         ) : null}
       </div>
