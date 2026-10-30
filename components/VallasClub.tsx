@@ -1,20 +1,22 @@
 "use client";
 
-import { ArrowDown, ArrowUp, ImagePlus, Loader2, Megaphone, Plus, Trash2, Upload } from "lucide-react";
+import { ArrowDown, ArrowUp, ImagePlus, Info, Loader2, Megaphone, Plus, Trash2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "@/components/ui/Toaster";
 import { BandaVallas, MAX_VALLAS } from "@/components/Vallas";
-import { comprimirBanner } from "@/lib/fotos";
+import { comprimirBanner, PIEZA_VALLA } from "@/lib/fotos";
 import { useAmericanos } from "@/lib/store";
 import type { Valla } from "@/types/americano";
 
 const nuevoId = () => `valla-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 const nombreDeArchivo = (f: File) => f.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim().slice(0, 40);
 
-/** Sube la imagen ya ajustada; devuelve su URL o null (y avisa). */
-async function subirImagen(id: string, f: File): Promise<string | null> {
+const MEDIDA = `${PIEZA_VALLA.ancho} × ${PIEZA_VALLA.alto}`;
+
+/** Sube la imagen ya ajustada; devuelve su URL y si es pieza completa, o null (y avisa). */
+async function subirImagen(id: string, f: File): Promise<{ url: string; pieza: boolean } | null> {
   try {
-    const img = await comprimirBanner(f);
+    const { img, pieza } = await comprimirBanner(f);
     const r = await fetch("/api/club/vallas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, img }) });
     const d = (await r.json().catch(() => ({}))) as { url?: string; error?: string };
     if (r.status === 401) useAmericanos.setState({ staff: null, pedirLogin: true });
@@ -22,7 +24,7 @@ async function subirImagen(id: string, f: File): Promise<string | null> {
       toast(d.error ?? `No se pudo subir ${f.name}.`, "error");
       return null;
     }
-    return d.url;
+    return { url: d.url, pieza };
   } catch {
     toast(`No se pudo leer ${f.name} o no hay conexión.`, "error");
     return null;
@@ -52,12 +54,15 @@ export function VallasClub({ valor, onChange }: { valor: Valla[] | undefined; on
 
   async function reemplazar(id: string, f: File) {
     setSubiendo(id);
-    const url = await subirImagen(id, f);
+    const r = await subirImagen(id, f);
     setSubiendo(null);
-    if (!url) return;
+    if (!r) return;
     const v = ultima.current.find((x) => x.id === id);
-    cambiar(id, { img: url, nombre: v?.nombre || nombreDeArchivo(f) });
-    toast(`Logo listo. Toca "Guardar cambios" para publicarlo en la TV.`, "info");
+    cambiar(id, { img: r.url, pieza: r.pieza, nombre: v?.nombre || nombreDeArchivo(f) });
+    toast(
+      r.pieza ? `Pieza lista. Toca "Guardar cambios" para publicarla en la TV.` : `No mide ${MEDIDA}: sale como logo centrado sobre negro. Toca "Guardar cambios" para publicarlo.`,
+      "info",
+    );
   }
 
   async function agregarVarias(files: File[]) {
@@ -66,17 +71,21 @@ export function VallasClub({ valor, onChange }: { valor: Valla[] | undefined; on
     if (!tomar.length) return;
     setLote({ hechas: 0, total: tomar.length });
     let ok = 0;
+    const logos: string[] = [];
     for (const f of tomar) {
       const id = nuevoId();
-      const url = await subirImagen(id, f);
-      if (url) {
-        publicar([...ultima.current, { id, nombre: nombreDeArchivo(f), img: url }]);
+      const r = await subirImagen(id, f);
+      if (r) {
+        publicar([...ultima.current, { id, nombre: nombreDeArchivo(f), img: r.url, pieza: r.pieza }]);
         ok++;
+        if (!r.pieza) logos.push(nombreDeArchivo(f));
       }
       setLote((l) => l && { ...l, hechas: l.hechas + 1 });
     }
     setLote(null);
-    if (ok) toast(`${ok} logo${ok === 1 ? "" : "s"} agregado${ok === 1 ? "" : "s"}. Toca "Guardar cambios" para publicarlos en la TV.`, "info");
+    if (ok) toast(`${ok} marca${ok === 1 ? "" : "s"} agregada${ok === 1 ? "" : "s"}. Toca "Guardar cambios" para publicarlas en la TV.`, "info");
+    if (logos.length)
+      toast(`${logos.length === 1 ? `${logos[0]} no mide` : `${logos.length} imágenes no miden`} ${MEDIDA}: ${logos.length === 1 ? "sale" : "salen"} como logo centrado sobre negro.`, "info");
   }
 
   function quitar(v: Valla) {
@@ -102,9 +111,25 @@ export function VallasClub({ valor, onChange }: { valor: Valla[] | undefined; on
       <p className="mb-3 text-xs leading-relaxed text-white/50">
         Una banda larga abajo de la pantalla que corre sin parar, como la valla LED de un estadio: las marcas pasan una detrás de otra en este orden y
         todas salen en cada vuelta (con 30 marcas, una vuelta dura 2 minutos). Sale en la TV de los americanos normales, individuales, mixtos y del
-        Americano Torneo. Mejor un logo PNG con fondo transparente o un banner ancho (ej. 1200 × 300): se recorta solo a su borde y se ajusta a cada
-        pantalla.
+        Americano Torneo.
       </p>
+
+      <div className="glass mb-3 rounded-2xl p-4 text-xs leading-relaxed text-white/70">
+        <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-white">
+          <Info className="size-4 text-neon" /> Qué pedirle a cada marca
+        </p>
+        <ul className="list-disc space-y-1 pl-4">
+          <li>
+            <b className="text-white">Medida: {MEDIDA} px exactos</b> (horizontal, 3,4 a 1). Con esa medida la pieza cubre su tramo de borde a borde y
+            todas se pegan como una sola valla.
+          </li>
+          <li>PNG o JPG, de menos de 5 MB.</li>
+          <li>Fondo hasta los cuatro bordes, sin marco ni bordes blancos. Mejor oscuro o negro, el color de la valla.</li>
+          <li>Logo y textos importantes dentro de los 1500 × 400 px del centro.</li>
+          <li>Letras grandes y poco texto: se lee de lejos y en movimiento.</li>
+          <li>Si la marca solo tiene su logo: PNG con fondo transparente, en versión clara. Sale centrado sobre negro.</li>
+        </ul>
+      </div>
 
       <div className="glass mb-3 rounded-2xl p-3">
         <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40">Así se ve en la TV</p>
@@ -155,6 +180,11 @@ export function VallasClub({ valor, onChange }: { valor: Valla[] | undefined; on
                   </span>
                 )}
               </button>
+              {v.img && (
+                <span className={v.pieza ? "chip shrink-0 !py-0.5 text-[10px] !text-neon" : "chip shrink-0 !py-0.5 text-[10px]"} title={v.pieza ? `Mide ${MEDIDA}: cubre su tramo completo` : `No mide ${MEDIDA}: sale centrado sobre negro`}>
+                  {v.pieza ? "Pieza completa" : "Logo"}
+                </span>
+              )}
               <input
                 className="input !w-auto min-w-0 flex-1 basis-40 !py-2"
                 placeholder="Nombre de la marca"

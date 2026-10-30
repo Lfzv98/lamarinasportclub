@@ -9,14 +9,14 @@ export const dynamic = "force-dynamic";
  * Imágenes de las vallas publicitarias del Modo TV de americanos. Se guardan aparte de la
  * configuración del club (que se sincroniza seguido) y se sirven por URL versionada.
  */
-const MAX_IMG = 600_000;
+const MAX_IMG = 900_000;
 const ID = /^[A-Za-z0-9_-]{1,60}$/;
 const idValla = (id: string) => `valla:club:${id}`;
 
 /** POST /api/club/vallas { id, img: "data:image/…;base64,…" } → { url } (solo staff). */
 export const POST = manejar(async (req: Request) => {
   const staff = await exigirStaff(req);
-  const b = (await leerJson(req, 800_000)) as { id?: unknown; img?: unknown } | null;
+  const b = (await leerJson(req, 1_000_000)) as { id?: unknown; img?: unknown } | null;
   if (typeof b?.id !== "string" || !ID.test(b.id) || typeof b.img !== "string") throw new ErrorApi(400, "Envía { id, img }.");
   if (!/^data:image\/(jpeg|webp|png);base64,[A-Za-z0-9+/=]+$/.test(b.img)) throw new ErrorApi(422, "La imagen debe ser JPEG, WebP o PNG.");
   if (b.img.length > MAX_IMG) throw new ErrorApi(413, "La imagen pesa demasiado.");

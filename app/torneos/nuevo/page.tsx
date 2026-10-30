@@ -4,7 +4,7 @@ import clsx from "clsx";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, Trophy } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { LogoMenu } from "@/components/LogoMenu";
 import { MapaPistas } from "@/components/MapaPistas";
@@ -20,6 +20,8 @@ import { catalogoCategorias, nombreCorto } from "@/lib/torneo/categorias";
 import { claveAleatoria, venceAlTerminar } from "@/lib/torneo/acceso";
 import { crearTorneo } from "@/lib/torneo/torneo";
 import { useTorneos } from "@/lib/torneosStore";
+import { dejarPrefill, usePrefill } from "@/lib/asistente/prefill";
+import type { LoteDuplas, PrefillTorneoNuevo } from "@/lib/asistente/ejecutar";
 import type { CategoriaTorneo, DiaTorneo } from "@/types/torneo";
 
 export default function NuevoTorneoPage() {
@@ -81,6 +83,21 @@ function NuevoTorneo() {
   const [tolerancia, setTolerancia] = useState(10);
   const [finalesUltimo, setFinalesUltimo] = useState(true);
   const catalogo = useMemo(catalogoCategorias, []);
+  // Duplas que dictó el staff al asistente IA: se ofrecen en "Pegar lista" apenas se crea el torneo.
+  const lotes = useRef<LoteDuplas[]>([]);
+  usePrefill<PrefillTorneoNuevo>("torneo-nuevo", (d) => {
+    if (d.nombre) setNombre(d.nombre);
+    if (d.inicio) setInicio(d.inicio);
+    if (d.dias) setCantidad(Math.min(MAX_DIAS, d.dias));
+    if (d.pistas?.length) setPistas(d.pistas.filter((n) => pistasClub.some((p) => p.numero === n)));
+    const todas = catalogo.flatMap((g) => g.categorias);
+    const elegidas = todas.filter((c) => d.categorias.includes(c.id));
+    if (elegidas.length) setCategorias(elegidas);
+    if (typeof d.descansoMin === "number") setDescanso(Math.min(180, Math.max(0, d.descansoMin)));
+    if (typeof d.toleranciaWO === "number") setTolerancia(Math.min(30, Math.max(5, d.toleranciaWO)));
+    lotes.current = d.lotes.filter((l) => elegidas.some((c) => c.id === l.categoriaId));
+    toast("El asistente dejó el torneo listo. Revísalo y toca Crear.", "info");
+  });
 
   const dias: DiaTorneo[] = Array.from({ length: cantidad }, (_, i) => {
     const fecha = sumarDias(inicio, i);
@@ -119,7 +136,8 @@ function NuevoTorneo() {
       finalesUltimoDia: finalesUltimo,
     });
     guardar({ ...t, acceso: { clave: claveAleatoria(), vence: venceAlTerminar(t.dias) }, arbitros: { turnos: [] } });
-    toast("Torneo creado. Ahora inscribe las duplas.");
+    if (lotes.current.length) dejarPrefill("torneo-duplas", { torneoId: t.id, lotes: lotes.current });
+    toast(lotes.current.length ? "Torneo creado. Revisa las duplas e inscríbelas." : "Torneo creado. Ahora inscribe las duplas.");
     router.push(`/torneos/${t.id}/categorias`);
   }
 

@@ -36,6 +36,9 @@ import {
   tocar,
 } from "@/lib/torneo/torneo";
 import { useTorneos } from "@/lib/torneosStore";
+import { usePrefill } from "@/lib/asistente/prefill";
+import type { LoteDuplas, PrefillDuplasTorneo } from "@/lib/asistente/ejecutar";
+import { BotonRegistrarIA } from "@/components/asistente/BotonRegistrarIA";
 import type { CategoriaEnTorneo, Dupla, FaseReglas, JugadorTorneo, ReglasPartido, Torneo, VerificacionFvp } from "@/types/torneo";
 
 export default function CategoriasPage({ params }: { params: Promise<{ id: string }> }) {
@@ -52,6 +55,14 @@ const ESTADO_LABEL = { INSCRIPCION: "Inscripciones", SORTEADA: "Sorteada (borrad
 function Categorias({ torneo }: { torneo: Torneo }) {
   useFotosTorneo(torneo.id);
   const [sel, setSel] = useState(torneo.categorias[0]?.categoria.id ?? "");
+  // Duplas que dictó el staff al asistente IA: se abren en "Pegar lista", una categoría a la vez.
+  const [lotes, setLotes] = useState<LoteDuplas[]>([]);
+  usePrefill<PrefillDuplasTorneo>("torneo-duplas", (d) => {
+    if (d.torneoId !== torneo.id) return;
+    const validos = d.lotes.filter((l) => torneo.categorias.some((c) => c.categoria.id === l.categoriaId));
+    setLotes(validos);
+    if (validos[0]) setSel(validos[0].categoriaId);
+  });
   const cat = torneo.categorias.find((c) => c.categoria.id === sel) ?? torneo.categorias[0];
   if (!cat) return <p className="mt-10 text-center text-white/50">Este torneo no tiene categorías.</p>;
   return (
@@ -74,16 +85,26 @@ function Categorias({ torneo }: { torneo: Torneo }) {
           );
         })}
       </div>
-      <PanelCategoria key={cat.categoria.id} torneo={torneo} cat={cat} />
+      <PanelCategoria
+        key={`${cat.categoria.id}-${lotes.length}`}
+        torneo={torneo}
+        cat={cat}
+        lote={lotes[0]?.categoriaId === cat.categoria.id ? lotes[0].texto : undefined}
+        onLoteListo={() => {
+          const resto = lotes.slice(1);
+          setLotes(resto);
+          if (resto[0]) setSel(resto[0].categoriaId);
+        }}
+      />
     </>
   );
 }
 
-function PanelCategoria({ torneo, cat }: { torneo: Torneo; cat: CategoriaEnTorneo }) {
+function PanelCategoria({ torneo, cat, lote, onLoteListo }: { torneo: Torneo; cat: CategoriaEnTorneo; lote?: string; onLoteListo?: () => void }) {
   const guardar = useTorneos((s) => s.guardar);
   const [sorteo, setSorteo] = useState(false);
   const [inscribir, setInscribir] = useState(false);
-  const [pegar, setPegar] = useState(false);
+  const [pegar, setPegar] = useState(!!lote);
   const [reglas, setReglas] = useState(false);
   const [revisar, setRevisar] = useState<Dupla | null>(null);
   const id = cat.categoria.id;
@@ -136,6 +157,7 @@ function PanelCategoria({ torneo, cat }: { torneo: Torneo; cat: CategoriaEnTorne
       <div className="mt-6 flex items-end justify-between gap-3">
         <h3 className="font-display text-lg font-semibold">Duplas</h3>
         <div className="flex gap-2">
+          {!sorteada && <BotonRegistrarIA sugerencia={`Inscribir duplas en ${nombreCategoria(cat.categoria)} del torneo ${torneo.nombre}: `} />}
           <button className="btn-ghost !px-3 !py-2" onClick={() => setPegar(true)} disabled={sorteada}>
             <ClipboardPaste className="size-4" /> <span className="hidden sm:inline">Pegar lista</span>
           </button>
@@ -222,7 +244,16 @@ function PanelCategoria({ torneo, cat }: { torneo: Torneo; cat: CategoriaEnTorne
       )}
 
       <InscribirHoja torneo={torneo} cat={cat} abierta={inscribir} onClose={() => setInscribir(false)} />
-      <PegarHoja torneo={torneo} cat={cat} abierta={pegar} onClose={() => setPegar(false)} />
+      <PegarHoja
+        torneo={torneo}
+        cat={cat}
+        abierta={pegar}
+        textoInicial={lote}
+        onClose={() => {
+          setPegar(false);
+          if (lote) onLoteListo?.();
+        }}
+      />
       <ReglasHoja torneo={torneo} cat={cat} abierta={reglas} onClose={() => setReglas(false)} />
       <SorteoPopup torneo={torneo} categoriaId={id} abierto={sorteo} onClose={() => setSorteo(false)} />
       <RevisarFvpHoja torneo={torneo} cat={cat} dupla={revisar && (cat.duplas.find((d) => d.id === revisar.id) ?? null)} onClose={() => setRevisar(null)} />
@@ -389,9 +420,9 @@ function InscribirHoja({ torneo, cat, abierta, onClose }: { torneo: Torneo; cat:
 const CEDULA_EN_TEXTO = /\b[VEve]-?\s?\d[\d.]{4,}\d\b/;
 
 /** Pegar una lista: una dupla por línea, "Nombre Apellido [V-cédula] / Nombre Apellido [V-cédula] [puntos]". */
-function PegarHoja({ torneo, cat, abierta, onClose }: { torneo: Torneo; cat: CategoriaEnTorneo; abierta: boolean; onClose: () => void }) {
+function PegarHoja({ torneo, cat, abierta, textoInicial, onClose }: { torneo: Torneo; cat: CategoriaEnTorneo; abierta: boolean; textoInicial?: string; onClose: () => void }) {
   const guardar = useTorneos((s) => s.guardar);
-  const [texto, setTexto] = useState("");
+  const [texto, setTexto] = useState(textoInicial ?? "");
   const anio = anioTorneo(torneo);
   const chequeaFvp = torneo.validarFvp !== false && cat.categoria.tipo === "NIVEL";
   const fvp = useRankingFvp(chequeaFvp ? (texto.match(new RegExp(CEDULA_EN_TEXTO, "g")) ?? []) : []);

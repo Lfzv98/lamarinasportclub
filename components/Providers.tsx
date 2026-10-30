@@ -10,6 +10,7 @@ import { Toaster } from "./ui/Toaster";
 import { StaffLogin } from "./StaffLogin";
 import { GuardiaSoloRanking } from "./SoloRanking";
 import { FirmaGlobal } from "./FirmaGlobal";
+import { Asistente } from "./asistente/Asistente";
 
 const INTERVALO_SYNC_MS = 8000;
 
@@ -51,6 +52,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <MotionConfig reducedMotion="user">
       {children}
       <FirmaGlobal />
+      <Asistente />
       <StaffLogin />
       <GuardiaSoloRanking />
       <Toaster />

@@ -72,6 +72,9 @@ import { MAX_RONDAS } from "@/lib/validacion";
 import { useAmericanos } from "@/lib/store";
 import { subirFotosDelRegistro, useFotosRegistro } from "@/lib/fotosRegistro";
 import { hayBorrador, useBorrador, useLimpiarBorrador } from "@/hooks/useBorrador";
+import { BotonRegistrarIA } from "@/components/asistente/BotonRegistrarIA";
+import { EVENTO_PREFILL } from "@/lib/asistente/prefill";
+import { tomarAvisoAsistente } from "@/lib/asistente/ejecutar";
 import type { Categoria, ConfigPuntuacion, Genero, Jugador, MetodoPuntuacion, Modalidad, Nivel, Pareja, Rama } from "@/types/americano";
 
 const PASOS = ["Categoría", "Formato", "Jugadores", "Pistas", "Listo"];
@@ -85,10 +88,17 @@ const variantes = {
 };
 
 export default function SetupPage() {
+  // El asistente IA reescribió el borrador con el setup ya abierto: se vuelve a leer.
+  const [version, setVersion] = useState(0);
+  useEffect(() => {
+    const h = () => setVersion((v) => v + 1);
+    window.addEventListener(EVENTO_PREFILL, h);
+    return () => window.removeEventListener(EVENTO_PREFILL, h);
+  }, []);
   return (
     <StaffGate>
       <Suspense>
-        <Setup />
+        <Setup key={version} />
       </Suspense>
     </StaffGate>
   );
@@ -105,7 +115,8 @@ function Setup() {
   const pasosEmpujados = useRef(0);
   const limpiarBorrador = useLimpiarBorrador();
   useEffect(() => {
-    if (hayBorrador())
+    if (tomarAvisoAsistente()) toast("El asistente dejó el americano listo. Revísalo y toca Empezar.", "info");
+    else if (hayBorrador())
       toast("Recuperamos el evento que estabas armando", "info", {
         label: "Empezar de cero",
         fn: () => {
@@ -469,6 +480,7 @@ function Setup() {
                       : "Escribe un nombre y presiona Enter"
                 }
               >
+                <BotonRegistrarIA ancho sugerencia={`Agrega ${dupla ? "estas duplas" : "estos jugadores"} al americano que estoy armando: `} />
                 {dupla ? (
                   <EditorParejas
                     parejas={parejas}
