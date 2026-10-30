@@ -46,7 +46,7 @@ const SECCIONES: { titulo: string; items: Item[] }[] = [
     items: [
       { href: "/", titulo: "Inicio", Icono: Home },
       { href: "/americanos", titulo: "Americanos", sub: "Eventos, cuadro vivo y ranking", Icono: Shuffle },
-      { href: "/habibi", titulo: "Americano HABIBI", sub: "Grupos A y B, y llave hasta la final", Icono: Swords },
+      { href: "/habibi", titulo: "Americano Torneo", sub: "Grupos A y B, y llave hasta la final", Icono: Swords },
       { href: "/torneos", titulo: "Torneos", sub: "Categorías, llaves y programación", Icono: Trophy },
       ...(TENIS_ACTIVO ? [{ href: "/tenis", titulo: "Tenis", sub: "Cancha dura y arcilla", Icono: CircleDot }] : []),
       { href: "/arbitro", titulo: "Árbitros", sub: "La tablet de cada pista", Icono: Flag },
@@ -57,7 +57,7 @@ const SECCIONES: { titulo: string; items: Item[] }[] = [
     titulo: "Staff",
     items: [
       { href: "/setup", titulo: "Nuevo americano", Icono: Plus, staff: true },
-      { href: "/habibi/nuevo", titulo: "Nuevo Americano HABIBI", Icono: Plus, staff: true },
+      { href: "/habibi/nuevo", titulo: "Nuevo Americano Torneo", Icono: Plus, staff: true },
       { href: "/torneos/nuevo", titulo: "Nuevo torneo de pádel", Icono: Plus, staff: true },
       ...(TENIS_ACTIVO ? [{ href: "/tenis/nuevo", titulo: "Nuevo torneo de tenis", Icono: Plus, staff: true }] : []),
       { href: "/inscripciones#staff", titulo: "Panel de inscripciones", sub: "Verificar pagos y pasar duplas al torneo", Icono: Ticket, staff: true },

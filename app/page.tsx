@@ -7,6 +7,8 @@ import { ArrowRight, Flag, Settings, Shuffle, Swords, Ticket, Trophy } from "luc
 import { InstallButton } from "@/components/InstallButton";
 import { Logo } from "@/components/Logo";
 import { MenuApp } from "@/components/MenuApp";
+import { ByPadelReserve } from "@/components/Marcas";
+import { PieDePagina } from "@/components/PieDePagina";
 import { StaffChip } from "@/components/StaffGate";
 import { useListaEventos, useListaHabibi } from "@/lib/store";
 import { useListaTorneos } from "@/lib/torneosStore";
@@ -14,7 +16,7 @@ import { useListaTenis } from "@/lib/tenisStore";
 import { PelotaTenis } from "@/components/tenis/piezas";
 import { TENIS_ACTIVO } from "@/lib/tenis/activo";
 
-/** Inicio: cuatro puertas, Americanos, Americano HABIBI, Torneos y Árbitros, y la entrada a Tenis si el club lo tiene. */
+/** Inicio: cuatro puertas, Americanos, Americano Torneo, Torneos y Árbitros, y la entrada a Tenis si el club lo tiene. */
 export default function Home() {
   const eventos = useListaEventos();
   const habibis = useListaHabibi();
@@ -41,7 +43,7 @@ export default function Home() {
     {
       href: "/habibi",
       icon: Swords,
-      titulo: "Americano HABIBI Tournament",
+      titulo: "Americano Torneo",
       lema: "Grupos A y B, y llave hasta la final.",
       detalle: "Cada grupo juega su americano, individual o en dupla fija; según cómo terminan se arma la llave: octavos, cuartos, semis y la gran final.",
       chip: habibiVivos ? `${habibiVivos} en juego` : `${habibis.length} torneo${habibis.length === 1 ? "" : "s"}`,
@@ -69,7 +71,7 @@ export default function Home() {
   ];
 
   return (
-    <main className="pb-24">
+    <main>
       <div className="sobre-marca relative overflow-hidden bg-marca pb-16 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <div className="pointer-events-none absolute -right-24 -top-32 size-80 rounded-full bg-marca-2/50 blur-3xl" />
         <div className="pointer-events-none absolute -left-24 bottom-0 size-64 rounded-full bg-neon/15 blur-3xl" />
@@ -93,7 +95,6 @@ export default function Home() {
 
       <div className="relative -mt-8 rounded-t-[2rem] bg-fondo">
         <div className="mx-auto max-w-5xl px-4 pt-6 sm:px-6">
-          <p className="label !text-neon">PadelReserve · La Marina Sport Club</p>
           <h1 className="font-display text-3xl font-bold tracking-tight sm:text-5xl">¿Qué jugamos hoy?</h1>
 
           {conInscripcion.map((t) => (
@@ -179,8 +180,13 @@ export default function Home() {
             </Link>
           </motion.div>
           )}
+
+          <div className="mt-10 flex justify-center">
+            <ByPadelReserve />
+          </div>
         </div>
       </div>
+      <PieDePagina firma={false} />
     </main>
   );
 }

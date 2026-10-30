@@ -149,7 +149,7 @@ ok(await pb.locator("text=Americano Viernes Neón").count() === 0, "evento elimi
 const C = await b.newContext(vp); const pc = await nuevo(C);
 await pc.goto(`${U}/americanos`); await pc.evaluate(() => localStorage.setItem("lamarina-americanos-v1", "{roto"));
 await pc.reload({ waitUntil: "networkidle" }); await pc.waitForTimeout(1500);
-ok(await pc.locator("text=Eventos activos").count() > 0 && (await pc.locator(".animate-pulse.h-40").count()) === 0, "datos locales corruptos: la app carga igual");
+ok(await pc.locator("text=Nuevo Americano").count() > 0 && (await pc.locator(".animate-pulse.h-40").count()) === 0, "datos locales corruptos: la app carga igual");
 
 console.log(errs.length ? "ERRORES JS:\n" + errs.join("\n") : "sin errores de JavaScript");
 if (fallos) process.exitCode = 1;

@@ -105,6 +105,7 @@ export default function Americanos() {
             </motion.div>
           </section>
 
+          {(!hidratado || enVivo.length > 0) && (
           <section className="mt-10">
             <div className="mb-4 flex items-end justify-between">
               <h2 className="font-display text-xl font-semibold">Eventos activos</h2>
@@ -116,15 +117,6 @@ export default function Americanos() {
                   <div key={i} className="glass h-40 animate-pulse rounded-3xl" />
                 ))}
               </div>
-            ) : enVivo.length === 0 ? (
-              <Link
-                href="/setup"
-                onClick={soloStaff}
-                className="glass flex flex-col items-center gap-2 rounded-3xl border-dashed p-10 text-center text-white/60 hover:text-white"
-              >
-                <Plus className="size-8 text-neon" />
-                Aún no hay eventos. ¡Crea el primero!
-              </Link>
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {enVivo.map((e, i) => (
@@ -133,6 +125,7 @@ export default function Americanos() {
               </div>
             )}
           </section>
+          )}
 
           {pasados.length > 0 && (
             <section className="mt-10">

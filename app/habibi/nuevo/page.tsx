@@ -193,7 +193,7 @@ function NuevoHabibi() {
     for (const g of gs) void subirFotosDelRegistro(g, fotos);
     sonar("ok");
     vibrar([20, 40, 60]);
-    toast("¡Americano HABIBI creado! A jugar 🎾");
+    toast("¡Americano Torneo creado! A jugar 🎾");
     router.replace(`/habibi/${llave.id}`);
   }
 
@@ -224,7 +224,7 @@ function NuevoHabibi() {
         <AnimatePresence mode="wait" custom={dir} initial={false}>
           <motion.section key={paso} custom={dir} variants={variantes} initial="entra" animate="centro" exit="sale" transition={{ type: "spring", stiffness: 380, damping: 34 }}>
             {paso === 0 && (
-              <Paso titulo="Americano HABIBI Tournament" sub="Staff La Marina · nombre, día y categoría">
+              <Paso titulo="Americano Torneo" sub="Staff La Marina · nombre, día y categoría">
                 <label className="label" htmlFor="hab-nombre">
                   Nombre del torneo
                 </label>

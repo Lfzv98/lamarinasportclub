@@ -32,7 +32,7 @@ import { crearEvento, despues, nuevoId } from "./evento.ts";
 import { planRondas, rondasSugeridas } from "./rotation.ts";
 import { calcularTabla, ganador, normalizarResultado } from "./scoring.ts";
 
-export const NOMBRE_HABIBI = "Americano HABIBI Tournament";
+export const NOMBRE_HABIBI = "Americano Torneo";
 export const LETRAS = ["A", "B"] as const;
 export const MIN_DUPLAS_GRUPO = 2;
 export const MAX_DUPLAS_GRUPO = 12;
@@ -370,7 +370,7 @@ export function pendientesGrupos(grupos: EventoAmericano[]): number {
 /** Por qué todavía no se puede armar la llave (null = se puede). */
 export function bloqueoArmar(llave: EventoAmericano, grupos: EventoAmericano[]): string | null {
   const info = infoLlave(llave);
-  if (!info) return "Este evento no es un Americano HABIBI.";
+  if (!info) return "Este evento no es un Americano Torneo.";
   if (grupos.length !== info.grupos.length) return "Faltan grupos: espera a que se sincronicen.";
   const n = CLASIFICAN[info.inicio];
   for (const g of grupos) {
