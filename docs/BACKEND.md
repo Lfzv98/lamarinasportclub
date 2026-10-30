@@ -16,8 +16,9 @@ La app funciona sola en **modo DEMO** (en memoria del servidor y en el `localSto
 | `SUPABASE_MARCADORES_TABLE` | Opcional, por defecto `torneos_marcadores` |
 | `SUPABASE_EXTRAS_TABLE` | Opcional, por defecto `eventos_extras` (plantel de árbitros del club, fotos e inscripciones online) |
 | `STAFF_PIN` | PIN del staff (4 a 8 dígitos). En DEMO, si falta, es `1234`. Con Supabase, si falta, el PIN queda desactivado |
-| `ANTHROPIC_API_KEY` | Opcional: enciende el asistente IA del staff (`/api/asistente`). Se crea en console.anthropic.com |
-| `ASISTENTE_MODELO` | Opcional: modelo de Claude del asistente, por defecto `claude-opus-5-5` |
+| `GEMINI_API_KEY` | Opcional: enciende el asistente IA del staff (`/api/asistente`) con Gemini. Clave gratis de aistudio.google.com |
+| `GEMINI_MODELO` | Opcional: modelos de Gemini a probar en orden, separados por coma (por defecto los Flash vigentes) |
+| `ANTHROPIC_API_KEY` / `ASISTENTE_MODELO` | Opcional: el asistente con Claude (de pago) cuando no hay `GEMINI_API_KEY` |
 | `STAFF_SECRET` | Secreto (≥16 caracteres) para firmar la sesión de staff. **Obligatorio en producción** |
 | `STAFF_EMAILS` | Opcional: correos con permiso de staff, separados por coma |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Opcional: se usa para el login con usuario de PadelReserve (si falta, usa la service role) |

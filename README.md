@@ -53,7 +53,7 @@ Botón verde **IA** abajo a la derecha (solo con sesión de staff) y **Registrar
 
 - **Arma** un americano, un Americano Torneo o un torneo con sus duplas, y **suma** jugadores o duplas dictados a lo que ya está cargado. Nunca crea ni inscribe solo: deja lleno el formulario de siempre (setup en *Listo*, Americano Torneo en *Listo*, Nuevo torneo y después *Pegar lista* con su chequeo FVP) y el staff confirma.
 - **Responde** cómo se hace algo con el manual de la app (`components/manual/paginas.tsx`, que va en el prompt) y lo que pasa ahora (eventos activos, borrador, ranking) con un resumen que manda la pantalla, sin teléfonos ni cédulas. Lo que no es de la app lo rechaza.
-- `app/api/asistente/route.ts` (solo staff, tope de 60 mensajes cada 10 min por IP) llama a Claude (`claude-opus-5-5`, esfuerzo bajo, cambiable con `ASISTENTE_MODELO`) con herramientas que solo devuelven propuestas; `lib/asistente/ejecutar.ts` las valida y llena cada formulario. Requiere `ANTHROPIC_API_KEY`.
+- `app/api/asistente/route.ts` (solo staff, tope de 60 mensajes cada 10 min por IP) llama a **Gemini** con la clave gratis `GEMINI_API_KEY` (endpoint compatible con OpenAI, prueba los Flash vigentes en orden como el copiloto de La Fructosa; `lib/server/asistente/gemini.ts`). Si no hay clave de Gemini y sí `ANTHROPIC_API_KEY`, usa Claude. Las herramientas solo devuelven propuestas; `lib/asistente/ejecutar.ts` las valida y llena cada formulario.
 
 ## Reglas soportadas
 

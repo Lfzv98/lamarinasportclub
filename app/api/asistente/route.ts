@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { exigirStaff, ipDe } from "@/lib/server/auth";
+import { claveGemini, preguntarGemini } from "@/lib/server/asistente/gemini";
 import { HERRAMIENTAS, NOMBRES_HERRAMIENTAS } from "@/lib/server/asistente/herramientas";
 import { promptSistema } from "@/lib/server/asistente/prompt";
 import { ErrorApi, leerJson, manejar } from "@/lib/server/http";
@@ -26,7 +27,8 @@ function controlarUso(ip: string) {
   uso.set(ip, recientes);
 }
 
-const activo = () => !!process.env.ANTHROPIC_API_KEY;
+// Gemini (clave gratis de Google AI Studio) si está; si no, Claude con ANTHROPIC_API_KEY.
+const activo = () => !!(claveGemini() || process.env.ANTHROPIC_API_KEY);
 
 /** GET /api/asistente → { activo }: si el club tiene la clave de la IA configurada. */
 export const GET = manejar(async () => NextResponse.json({ activo: activo() }));
@@ -37,7 +39,7 @@ export const GET = manejar(async () => NextResponse.json({ activo: activo() }));
  */
 export const POST = manejar(async (req: Request) => {
   await exigirStaff(req);
-  if (!activo()) throw new ErrorApi(503, "El asistente no está configurado: falta la clave ANTHROPIC_API_KEY en el servidor.");
+  if (!activo()) throw new ErrorApi(503, "El asistente no está configurado: falta la clave GEMINI_API_KEY en el servidor.");
   controlarUso(ipDe(req));
 
   const body = (await leerJson(req, 200_000)) as { mensajes?: unknown; contexto?: unknown } | null;
@@ -50,12 +52,18 @@ export const POST = manejar(async (req: Request) => {
   if (!ultimo || ultimo.rol !== "staff" || !ultimo.texto.trim()) throw new ErrorApi(400, "Escribe o dicta qué necesitas.");
   const contexto = JSON.stringify(body?.contexto ?? {}).slice(0, MAX_CONTEXTO);
 
+  const contextoTexto = `<contexto_app>\n${contexto}\n</contexto_app>`;
+  if (claveGemini()) {
+    const salida = await preguntarGemini(promptSistema(), mensajes.slice(0, -1), `${contextoTexto}\n\n${ultimo.texto}`, HERRAMIENTAS);
+    return responder(salida.texto, salida.llamadas.map((l) => ({ nombre: l.nombre, entrada: l.entrada })));
+  }
+
   const historial: Anthropic.Beta.BetaMessageParam[] = mensajes.map((m, i) =>
     i === mensajes.length - 1
       ? {
           role: "user",
           content: [
-            { type: "text", text: `<contexto_app>\n${contexto}\n</contexto_app>` },
+            { type: "text", text: contextoTexto },
             { type: "text", text: m.texto },
           ],
         }
@@ -92,14 +100,19 @@ export const POST = manejar(async (req: Request) => {
   const texto = respuesta.content
     .filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text")
     .map((b) => b.text)
-    .join("\n")
-    .trim();
-  const acciones = respuesta.content
-    .filter((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === "tool_use" && NOMBRES_HERRAMIENTAS.has(b.name))
-    .map((b) => ({ ...(b.input as object), tipo: b.name }) as AccionAsistente);
+    .join("\n");
+  const llamadas = respuesta.content
+    .filter((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === "tool_use")
+    .map((b) => ({ nombre: b.name, entrada: b.input }));
+  return responder(texto, llamadas);
+});
 
+function responder(texto: string, llamadas: { nombre: string; entrada: unknown }[]) {
+  const acciones = llamadas
+    .filter((l) => NOMBRES_HERRAMIENTAS.has(l.nombre) && l.entrada && typeof l.entrada === "object")
+    .map((l) => ({ ...(l.entrada as object), tipo: l.nombre }) as AccionAsistente);
   return NextResponse.json<RespuestaAsistente>({
-    texto: texto || (acciones.length ? "Listo, te lo dejo preparado para revisar." : "No entendí bien. ¿Me lo repites?"),
+    texto: texto.trim() || (acciones.length ? "Listo, te lo dejo preparado para revisar." : "No entendí bien. ¿Me lo repites?"),
     acciones,
   });
-});
+}

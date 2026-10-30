@@ -327,7 +327,7 @@ const CONTENIDO: Pagina[] = [
         </li>
       </ul>
       <Nota titulo="Tú confirmas">
-        La IA nunca crea ni inscribe sola: siempre abre el formulario de siempre para que lo revises. Necesita la clave ANTHROPIC_API_KEY en Vercel.
+        La IA nunca crea ni inscribe sola: siempre abre el formulario de siempre para que lo revises. Usa Gemini con la clave gratis GEMINI_API_KEY en Vercel.
       </Nota>
     </>,
   ),

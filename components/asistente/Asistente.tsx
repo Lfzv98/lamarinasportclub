@@ -164,7 +164,7 @@ function Panel() {
             <div ref={lista} className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
               {sinClave && (
                 <p className="rounded-2xl border border-coral/40 bg-coral/10 p-3 text-sm text-white/80">
-                  El asistente todavía no está encendido: falta pegar la clave <b>ANTHROPIC_API_KEY</b> en las variables de entorno de Vercel.
+                  El asistente todavía no está encendido: falta pegar la clave gratis <b>GEMINI_API_KEY</b> (de aistudio.google.com) en las variables de entorno de Vercel.
                 </p>
               )}
               {!mensajes.length && !sinClave && (
