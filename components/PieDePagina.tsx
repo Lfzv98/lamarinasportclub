@@ -2,9 +2,6 @@ import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { BotonInstagram, BotonWhatsApp, ByPadelReserve } from "@/components/Marcas";
 
-/** Fecha en que se creó la plataforma (primer despliegue). */
-const CREADA = "22 de octubre de 2026";
-
 /** Pie de página del club: reservas por WhatsApp, Instagram y la parte legal. */
 /** `firma`: repite el sello "by PadelReserve" en la barra final (en el inicio ya va bajo los módulos). */
 export function PieDePagina({ firma = true }: { firma?: boolean }) {
@@ -36,7 +33,7 @@ export function PieDePagina({ firma = true }: { firma?: boolean }) {
       <div className="border-t border-white/5">
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 text-center sm:flex-row sm:justify-between sm:px-6 sm:text-left">
           <p className="text-xs text-white/40">
-            © {anio} La Marina Sport Club · Todos los derechos reservados · En servicio desde el {CREADA}
+            © {anio} La Marina Sport Club · Todos los derechos reservados · by PadelReserve
           </p>
           {firma && <ByPadelReserve />}
         </div>
