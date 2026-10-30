@@ -9,7 +9,7 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 | Ruta | Qué hace |
 | --- | --- |
 | `/` | Inicio: cuatro entradas, **Americanos**, **Americano HABIBI Tournament**, **Torneos** y **Árbitros** (y **Tenis** solo si el club lo tiene encendido) |
-| Menú (☰ arriba a la derecha) | Todas las secciones: Americanos, Torneos, Árbitros, Nuevo americano/torneo de pádel (Tenis y Nuevo torneo de tenis solo en clubes con tenis), Ranking FVP, Manual y Ajustes (Datos de prueba, Mi club, Árbitros del club, Claves). Lo del staff lleva candado y pide el mismo PIN del staff |
+| Menú (☰ arriba a la derecha) | Todas las secciones: Americanos, Torneos, Árbitros, Nuevo americano/torneo de pádel (Tenis y Nuevo torneo de tenis solo en clubes con tenis), Ranking FVP, Manual y Ajustes (Mi club, Árbitros del club, Claves). Lo del staff lleva candado y pide el mismo PIN del staff |
 | `/arbitro` | Panel del árbitro (tablet): se registra una sola vez en el club (nombre, teléfono, PIN de árbitros y un código propio de 4 dígitos) y sirve para todos los torneos, luego entra tocando su nombre y su código. Ve su turno y su pista, llama, empieza, anota y toma las fotos de las duplas |
 | `/americanos` | Eventos activos e historial, acceso rápido a Modo TV |
 | `/setup` | Asistente de 5 pasos: categoría, formato y puntuación, pistas y horario, jugadores, resumen con sorteo |
@@ -46,6 +46,14 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 | `/tenis/t/:id/p/:partido/anotar` | Anotador (staff o árbitro): sorteo con moneda, orden de saque, faltas y doble falta, ace, reloj de 25 s, cambios de lado y descansos ITF, canto en voz alta y revisión de marca en arcilla |
 | `/tenis/t/:id/tv` | Modo TV de tenis con el color de la superficie |
 | `/tenis/jugadores` | Ranking de jugadores con su récord en cancha dura y en arcilla |
+
+## Asistente IA (staff)
+
+Botón verde **IA** abajo a la derecha (solo con sesión de staff) y **Registrar con IA** en el paso de jugadores del americano, en el del Americano Torneo y en las categorías de un torneo. Se le habla (dictado del navegador, gratis) o se le escribe.
+
+- **Arma** un americano, un Americano Torneo o un torneo con sus duplas, y **suma** jugadores o duplas dictados a lo que ya está cargado. Nunca crea ni inscribe solo: deja lleno el formulario de siempre (setup en *Listo*, Americano Torneo en *Listo*, Nuevo torneo y después *Pegar lista* con su chequeo FVP) y el staff confirma.
+- **Responde** cómo se hace algo con el manual de la app (`components/manual/paginas.tsx`, que va en el prompt) y lo que pasa ahora (eventos activos, borrador, ranking) con un resumen que manda la pantalla, sin teléfonos ni cédulas. Lo que no es de la app lo rechaza.
+- `app/api/asistente/route.ts` (solo staff, tope de 60 mensajes cada 10 min por IP) llama a Claude (`claude-opus-5-5`, esfuerzo bajo, cambiable con `ASISTENTE_MODELO`) con herramientas que solo devuelven propuestas; `lib/asistente/ejecutar.ts` las valida y llena cada formulario. Requiere `ANTHROPIC_API_KEY`.
 
 ## Reglas soportadas
 
@@ -127,7 +135,7 @@ npm run typecheck
 npm run build
 ```
 
-Sin variables de entorno corre en **modo DEMO**, en memoria y **vacía**. Para enseñarla, el staff toca **Ajustes → Datos de prueba → Cargar datos de prueba**: crea 3 americanos, un torneo de hoy en pleno juego (clave `MARINA`), la Copa Navidad con la inscripción online abierta y 6 árbitros de ejemplo (código `1234`, PIN de árbitros `2468` si no había uno); **Borrar datos de prueba** los quita sin tocar lo real. Los datos salen de `data/mockData.json` (americanos: `node --experimental-strip-types scripts/generar-mock.ts`; torneo: `node --experimental-strip-types scripts/generar-torneo-demo.ts`). Las pruebas de navegador los cargan solas. Para conectar Supabase ver [docs/BACKEND.md](docs/BACKEND.md).
+Sin variables de entorno corre en **modo DEMO**, en memoria y **vacía**. Para enseñarla se cargan datos de prueba con `POST /api/demo` (staff, `{"accion":"cargar"}`; ya no hay botón en Ajustes): crea 3 americanos, un torneo de hoy en pleno juego (clave `MARINA`), la Copa Navidad con la inscripción online abierta y 6 árbitros de ejemplo (código `1234`, PIN de árbitros `2468` si no había uno); `{"accion":"borrar"}` los quita sin tocar lo real. Los datos salen de `data/mockData.json` (americanos: `node --experimental-strip-types scripts/generar-mock.ts`; torneo: `node --experimental-strip-types scripts/generar-torneo-demo.ts`). Las pruebas de navegador los cargan solas. Para conectar Supabase ver [docs/BACKEND.md](docs/BACKEND.md).
 
 ## Despliegue en Vercel
 

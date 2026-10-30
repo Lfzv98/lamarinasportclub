@@ -37,6 +37,10 @@ import {
 import { planRondas } from "@/lib/rotation";
 import { configPorDefecto, descripcionPuntuacion } from "@/lib/scoring";
 import { useAmericanos } from "@/lib/store";
+import { usePrefill } from "@/lib/asistente/prefill";
+import { useContextoPantalla } from "@/lib/asistente/pantalla";
+import { BotonRegistrarIA } from "@/components/asistente/BotonRegistrarIA";
+import type { PrefillHabibi } from "@/lib/asistente/ejecutar";
 import type { ConfigPuntuacion, EmparejarLlave, Genero, InicioLlave, Jugador, MetodoPuntuacion, Modalidad, Nivel, Pareja, PistaClub, Rama } from "@/types/americano";
 
 const PASOS = ["Torneo", "Jugadores", "Grupos", "Llave", "Listo"];
@@ -106,6 +110,27 @@ function NuevoHabibi() {
   const [puntFinal, setPuntFinal] = useState<ConfigPuntuacion>(configPorDefecto("SETS_CORTOS"));
   const [creando, setCreando] = useState(false);
 
+  // El asistente IA dejó el torneo armado: se llena todo y se abre en "Listo" para revisar.
+  usePrefill<PrefillHabibi>("habibi", (d) => {
+    if (d.nombre) setNombre(d.nombre);
+    if (d.fecha) setFecha(d.fecha);
+    if (d.hora) setHora(d.hora);
+    const sumar = !d.reemplazar && d.modalidad === modalidad;
+    if (d.reemplazar) {
+      setRama(d.rama);
+      setNivel(d.nivel);
+    }
+    setModalidad(d.modalidad);
+    const nuevos = <T,>(previos: T[][], extra: T[][]) => [0, 1].map((i) => [...(sumar ? previos[i] : []), ...(extra[i] ?? [])]);
+    setGrupos((gs) => nuevos(gs, d.grupos));
+    setSueltos((ss) => nuevos(ss, d.sueltos));
+    if (d.puntuacionGrupos) setPuntGrupos(d.puntuacionGrupos);
+    if (d.inicio) setInicio(d.inicio);
+    if (typeof d.tercerPuesto === "boolean") setTercerPuesto(d.tercerPuesto);
+    if (d.puntuacionLlave) setPuntLlave(d.puntuacionLlave);
+    if (d.reemplazar) setPaso(PASOS.length - 1);
+  });
+
   const canchasDe = (letra: "A" | "B"): PistaClub[] =>
     activas.filter((p) => uso[p.numero] === letra || uso[p.numero] === "AB").sort((a, b) => Number(b.techada) - Number(a.techada) || a.numero - b.numero);
   const canchasLlave = activas.filter((p) => uso[p.numero]).sort((a, b) => Number(b.techada) - Number(a.techada) || a.numero - b.numero);
@@ -143,6 +168,20 @@ function NuevoHabibi() {
     [nombre, fecha, hora, rama, nivel, modalidad, emparejar, grupos, sueltos, puntGrupos, uso, cronometro, duracion, inicioEfectivo, tercerPuesto, puntLlave, finalDistinta, puntFinal, club.minutosEntreRondas],
   );
   const errores = erroresHabibi(input);
+
+  // El asistente IA ve lo que ya está cargado, para sumar en vez de pisar.
+  useContextoPantalla({
+    formulario: "Nuevo Americano Torneo",
+    paso: PASOS[paso],
+    nombre,
+    categoria: categoriaLabel({ rama, nivel }),
+    modalidad,
+    grupos: LETRAS.map((l, i) => ({
+      grupo: l,
+      duplas: grupos[i].map((d) => d.jugadores.map((j) => [j.nombre, j.apellido].filter(Boolean).join(" ")).join(" / ")),
+      jugadores: sueltos[i].map((j) => `${[j.nombre, j.apellido].filter(Boolean).join(" ")} (${j.genero})`),
+    })),
+  });
 
   const errorPaso = (p: number): string | null => {
     if (p === 0) return nombre.trim() ? null : "Ponle nombre al torneo.";
@@ -276,6 +315,7 @@ function NuevoHabibi() {
                 titulo={individual ? "Jugadores por grupo" : "Duplas por grupo"}
                 sub={individual ? "Anota a cada jugador en su grupo: cambian de pareja cada ronda." : "Anota cada dupla en su grupo. Lo normal: 8 en el A y 8 en el B."}
               >
+                <BotonRegistrarIA ancho sugerencia={`Agrega al grupo ${LETRAS[grupoActivo]} del Americano Torneo: `} />
                 <span className="label">¿Cómo se juega en los grupos?</span>
                 <div className="mb-6 grid grid-cols-2 gap-2">
                   {FORMATOS.map((f) => (

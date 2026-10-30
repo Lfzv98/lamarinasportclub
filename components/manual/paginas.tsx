@@ -223,7 +223,7 @@ const CONTENIDO: Pagina[] = [
           <b>Staff:</b> Nuevo americano, Nuevo torneo, Ranking FVP y este manual.
         </li>
         <li>
-          <b>Ajustes:</b> Datos de prueba, Mi club, Árbitros del club y Claves de torneos.
+          <b>Ajustes:</b> Mi club, Árbitros del club y Claves de torneos.
         </li>
       </ul>
       <Nota titulo="El candado">
@@ -266,7 +266,7 @@ const CONTENIDO: Pagina[] = [
     "Lo que se configura una vez y usan todos los eventos.",
     <ConCaptura src="aj-pistas" alt="Ajustes con las pistas del club">
       <p>
-        Menú <B>☰</B> → <B>Mi club</B>. Arriba hay atajos a Datos de prueba, Árbitros del club y Claves de torneos.
+        Menú <B>☰</B> → <B>Mi club</B>. Arriba hay atajos a Seguridad del staff, Árbitros del club, Publicidad TV y Claves de torneos.
       </p>
       <ul className="ml-lista">
         <li>
@@ -306,25 +306,30 @@ const CONTENIDO: Pagina[] = [
     </ConCaptura>,
   ),
   pagina(
-    "Ajustes del club",
-    <ConCaptura src="aj-demo" alt="Botones para cargar y borrar datos de prueba">
-      <h2>Datos de prueba</h2>
-      <p>La app arranca vacía. Para enseñarla o practicar:</p>
+    "Asistente IA",
+    <>
+      <h2>Asistente IA</h2>
+      <p>
+        Solo para el staff: el botón verde <B>IA</B> abajo a la derecha, en todas las pantallas. Se le habla o se le escribe, y sabe solo de esta app.
+      </p>
       <ul className="ml-lista">
         <li>
-          <B>Cargar datos de prueba</B>: crea 3 americanos, un torneo de hoy en pleno juego (clave <b>MARINA</b>) y 6 árbitros de
-          ejemplo (código <b>1234</b>).
+          <b>Armar:</b> “Americano mixto 5ta hoy a las 7 en las pistas 1 y 2, a 24 puntos, con Ana, Carla, Luis y Pedro”. Te deja el asistente del americano lleno en <B>Listo</B>: revisas y tocas <B>Empezar</B>.
         </li>
-        <li>Si no había PIN de árbitros, queda el <b>2468</b>.</li>
-        <li>Volver a cargarlos los deja como nuevos.</li>
         <li>
-          <B>Borrar datos de prueba</B> los quita sin tocar lo tuyo.
+          <b>Registrar con IA:</b> en el paso de jugadores (americano y Americano Torneo) y en las categorías de un torneo. Abre el micrófono: dicta las duplas y se suman a las que ya hay.
+        </li>
+        <li>
+          <b>Torneos:</b> crea el torneo con sus categorías y abre <B>Pegar lista</B> con las duplas dictadas, con su chequeo FVP.
+        </li>
+        <li>
+          <b>Preguntar:</b> “¿Cómo cargo un marcador?”, “¿Cuántas duplas llevo?”, “¿Quién va ganando?”.
         </li>
       </ul>
-      <Nota titulo="Ojo con la hora" tono="coral">
-        El torneo de prueba es una foto de las 11:50 de la mañana. Si lo cargas más tarde verás atraso y avisos de W.O.: es normal.
+      <Nota titulo="Tú confirmas">
+        La IA nunca crea ni inscribe sola: siempre abre el formulario de siempre para que lo revises. Necesita la clave ANTHROPIC_API_KEY en Vercel.
       </Nota>
-    </ConCaptura>,
+    </>,
   ),
 
   // 4 · Americanos

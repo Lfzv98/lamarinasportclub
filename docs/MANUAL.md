@@ -277,6 +277,7 @@ En Vercel → Settings → Environment Variables, y luego un Redeploy:
 | `STAFF_SECRET` | Sí | Cadena aleatoria de 16 caracteres o más |
 | `STAFF_PIN` | Recomendada | PIN del staff, 4 a 8 dígitos. Con Supabase, si falta, el PIN se desactiva |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Para login PadelReserve | Anon key (si falta, usa la service role) |
+| `ANTHROPIC_API_KEY` | Para el asistente IA | Clave de Anthropic (console.anthropic.com). Sin ella el botón IA avisa que falta |
 | `STAFF_EMAILS` | Opcional | Correos con permiso de staff, separados por coma |
 | `SUPABASE_AMERICANOS_TABLE` / `SUPABASE_CLUB_TABLE` | Opcional | Si quieres otros nombres de tabla |
 
