@@ -344,6 +344,9 @@ export interface Torneo {
   jugadores: JugadorTorneo[];
   categorias: CategoriaEnTorneo[];
   estado: EstadoTorneo;
+  /** Cuándo y quién cerró el torneo ("Automático" si se cerró solo al revisar la última final). */
+  cerradoEn?: string | null;
+  cerradoPor?: string;
   historial?: RegistroCambio[];
   /**
    * Clave de participantes: da acceso a cuadros, horarios, marcadores y estadísticas

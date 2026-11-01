@@ -51,7 +51,7 @@ export function pasosTorneo(t: Torneo): PasoTorneo[] {
     sorteadas.length > 0 && sinPublicar.length === 0 && sinHorario === 0,
     turnos > 0,
     terminado && porRevisar === 0,
-    terminado && porRevisar === 0,
+    t.estado === "FINALIZADO",
   ];
   // Los pasos 1 a 5 se preparan antes; el 6 arranca con el primer partido jugado o en juego.
   const enJuego = partidos.some((p) => p.estado !== "PENDIENTE");
@@ -121,9 +121,10 @@ export function pasosTorneo(t: Torneo): PasoTorneo[] {
     },
     {
       titulo: "Cierre",
-      detalle: terminado ? "Todos los partidos jugados" : "Cuando termine el último partido",
-      aviso: null,
-      porQue: "Con todo jugado y revisado salen el podio, las estadísticas y el resumen para el club.",
+      detalle: t.estado === "FINALIZADO" ? "Torneo cerrado · en el Historial" : terminado ? "Todos los partidos jugados" : "Cuando termine el último partido",
+      aviso: terminado && porRevisar === 0 && t.estado !== "FINALIZADO" ? "Todo jugado y revisado: cierra el torneo (En vivo o Ajustes)." : null,
+      porQue:
+        "Con todo jugado y revisado salen el podio, las estadísticas y el resumen para el club. El torneo se cierra solo cuando mesa técnica da «Visto» a la última final (o a mano desde Ajustes): pasa al Historial y sale de las tablets de los árbitros.",
       ir: "/estadisticas",
       boton: "Stats y resumen",
     },

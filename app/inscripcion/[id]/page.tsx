@@ -66,16 +66,30 @@ export default function InscripcionPage({ params }: { params: Promise<{ id: stri
   const [mias, setMias] = useState<Mia[]>([]);
   const claveMias = `lm-insc-mias:${id}`;
 
-  const cargar = useCallback(async () => {
+  const cargar = useCallback(async (silencioso = false) => {
     try {
       const r = await fetch(`/api/inscripciones/${encodeURIComponent(id)}`, { cache: "no-store" });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error ?? "No se pudo cargar el torneo.");
       setData(d);
     } catch (e) {
+      if (silencioso) return;
       setError((e as Error).message === "Failed to fetch" ? "Sin conexión. Revisa tu internet." : (e as Error).message);
     }
   }, [id]);
+
+  // Cupos en vivo: la barra de cada categoría se actualiza sola mientras la página está abierta.
+  useEffect(() => {
+    const refrescar = () => document.visibilityState === "visible" && cargar(true);
+    const reloj = setInterval(refrescar, 15_000);
+    document.addEventListener("visibilitychange", refrescar);
+    window.addEventListener("focus", refrescar);
+    return () => {
+      clearInterval(reloj);
+      document.removeEventListener("visibilitychange", refrescar);
+      window.removeEventListener("focus", refrescar);
+    };
+  }, [cargar]);
 
   useEffect(() => {
     cargar();

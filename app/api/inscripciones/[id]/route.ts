@@ -14,6 +14,7 @@ import { claveCedula, etiquetaNivel, puedeJugar, verificarDupla } from "@/lib/ra
 import { exigirStaff, sesionDe } from "@/lib/server/auth";
 import { ErrorApi, leerJson, manejar } from "@/lib/server/http";
 import { frenar, guardarComprobante, guardarInscripcion, listarInscripciones, obtenerInscripcion } from "@/lib/server/inscripciones";
+import { actualizarTorneo } from "@/lib/server/torneos";
 import { getTorneosRepository } from "@/lib/server/repository";
 import { buscadorVigente } from "@/lib/server/rankingFvp";
 import { nombreCategoria } from "@/lib/torneo/categorias";
@@ -150,26 +151,30 @@ export const PATCH = manejar(async (req: Request, ctx: { params: Promise<{ id: s
 
   if (b.accion === "confirmar") {
     if (insc.estado === "CONFIRMADA" && insc.duplaId && dupla(t, insc.duplaId)) return NextResponse.json({ inscripcion: insc, torneo: t });
-    const ct = categoria(t, insc.categoriaId);
-    if (!ct) throw new ErrorApi(409, "Esa categoría ya no está en el torneo.");
-    const activas = ct.duplas.filter((d) => d.estado === "ACTIVA");
-    if (ct.cupo != null && activas.length >= ct.cupo) throw new ErrorApi(409, `${nombreCategoria(ct.categoria)} ya llegó a su cupo de ${ct.cupo} duplas.`);
-    const enCategoria = new Set(activas.flatMap((d) => d.jugadorIds.map((x) => claveCedula(jugador(t, x)?.cedula))));
-    const repetido = insc.jugadores.find((j) => enCategoria.has(claveCedula(j.cedula)));
-    if (repetido) throw new ErrorApi(409, `${nombreInscrito(repetido)} ya está en una dupla de ${nombreCategoria(ct.categoria)}.`);
-    const { torneo: conDupla, duplaId } = confirmarEnTorneo(t, insc, null);
     // Mismo chequeo FVP que cuando el staff carga una dupla a mano.
     const fvp = await buscadorVigente();
-    const d = dupla(conDupla, duplaId)!;
-    const js = d.jugadorIds.map((x) => jugador(conDupla, x)) as [JugadorTorneo, JugadorTorneo];
-    const ver = t.validarFvp === false ? null : verificarDupla(ct.categoria, js, fvp?.buscar ?? null, { lista: fvp?.lista });
-    let final = ver ? editarDupla(conDupla, insc.categoriaId, duplaId, { fvp: ver }) : conDupla;
-    final = {
-      ...final,
-      actualizadoEn: despues(final.actualizadoEn),
-      historial: [...(final.historial ?? []), { en: ahora, por: sesion.nombre, texto: `Inscripción online ${insc.codigo} confirmada: ${insc.jugadores.map(nombreInscrito).join(" / ")} (${nombreCategoria(ct.categoria)}).` }].slice(-300),
-    };
-    await getTorneosRepository().guardar(final);
+    let duplaId = "";
+    // Cupo y repetidos se validan sobre la versión vigente: dos personas confirmando a la vez no pasan el cupo.
+    const { despues: final } = await actualizarTorneo(getTorneosRepository(), t.id, (vigente) => {
+      const ct = categoria(vigente, insc.categoriaId);
+      if (!ct) throw new ErrorApi(409, "Esa categoría ya no está en el torneo.");
+      const activas = ct.duplas.filter((d) => d.estado === "ACTIVA");
+      if (ct.cupo != null && activas.length >= ct.cupo) throw new ErrorApi(409, `${nombreCategoria(ct.categoria)} ya llegó a su cupo de ${ct.cupo} duplas.`);
+      const enCategoria = new Set(activas.flatMap((d) => d.jugadorIds.map((x) => claveCedula(jugador(vigente, x)?.cedula))));
+      const repetido = insc.jugadores.find((j) => enCategoria.has(claveCedula(j.cedula)));
+      if (repetido) throw new ErrorApi(409, `${nombreInscrito(repetido)} ya está en una dupla de ${nombreCategoria(ct.categoria)}.`);
+      const conf = confirmarEnTorneo(vigente, insc, null);
+      duplaId = conf.duplaId;
+      const d = dupla(conf.torneo, duplaId)!;
+      const js = d.jugadorIds.map((x) => jugador(conf.torneo, x)) as [JugadorTorneo, JugadorTorneo];
+      const ver = vigente.validarFvp === false ? null : verificarDupla(ct.categoria, js, fvp?.buscar ?? null, { lista: fvp?.lista });
+      const conFvp = ver ? editarDupla(conf.torneo, insc.categoriaId, duplaId, { fvp: ver }) : conf.torneo;
+      return {
+        ...conFvp,
+        actualizadoEn: despues(conFvp.actualizadoEn),
+        historial: [...(conFvp.historial ?? []), { en: ahora, por: sesion.nombre, texto: `Inscripción online ${insc.codigo} confirmada: ${insc.jugadores.map(nombreInscrito).join(" / ")} (${nombreCategoria(ct.categoria)}).` }].slice(-300),
+      };
+    });
     const lista = await guardarInscripcion({ ...insc, estado: "CONFIRMADA", duplaId, revisadaPor: sesion.nombre, nota: nota || insc.nota, actualizadaEn: ahora });
     return NextResponse.json({ inscripcion: lista, torneo: final });
   }

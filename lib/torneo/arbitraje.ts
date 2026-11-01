@@ -7,7 +7,7 @@
  * técnica (árbitro principal o staff) los da por buenos ("revisar") o los corrige con un motivo.
  */
 import type { ResultadoTorneo, Torneo } from "@/types/torneo";
-import { cargarResultado, cargarWO, corregirResultado, iniciarPartido, llamarAPista, marcarVisto } from "./torneo.ts";
+import { cargarResultado, cargarWO, cerrarSiCorresponde, corregirResultado, iniciarPartido, llamarAPista, marcarVisto } from "./torneo.ts";
 
 export type AccionPartido =
   | { accion: "llamar"; pista: number }
@@ -15,12 +15,18 @@ export type AccionPartido =
   | { accion: "resultado"; resultado: ResultadoTorneo }
   | { accion: "wo"; ganador: "A" | "B" }
   | { accion: "revisar" }
-  | { accion: "corregir"; resultado: ResultadoTorneo; motivo: string };
+  /** `esperado`: el resultado que tenía a la vista quien corrige ("6-3 6-4"); si ya cambió, el servidor no corrige encima. */
+  | { accion: "corregir"; resultado: ResultadoTorneo; motivo: string; esperado?: string };
 
 /** PISTA = árbitro de pista; MESA = árbitro principal o staff. */
 export type RolPartido = "PISTA" | "MESA";
 
 export function aplicarAccion(t: Torneo, partidoId: string, a: AccionPartido, por?: string, rol: RolPartido = "PISTA"): Torneo {
+  // Cuando la última final queda revisada en mesa técnica, el torneo se cierra solo.
+  return cerrarSiCorresponde(aplicarSinCierre(t, partidoId, a, por, rol), por);
+}
+
+function aplicarSinCierre(t: Torneo, partidoId: string, a: AccionPartido, por?: string, rol: RolPartido = "PISTA"): Torneo {
   const revision = rol === "MESA" ? "VISTO" : "POR_REVISAR";
   switch (a.accion) {
     case "llamar":

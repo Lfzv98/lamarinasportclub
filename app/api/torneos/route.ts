@@ -4,7 +4,7 @@ import { exigirStaff } from "@/lib/server/auth";
 import { ErrorApi, leerJson, manejar } from "@/lib/server/http";
 import { getTorneosRepository } from "@/lib/server/repository";
 import { buscadorVigente } from "@/lib/server/rankingFvp";
-import { paraVisor, visorDe } from "@/lib/server/torneos";
+import { actualizarTorneo, paraVisor, visorDe } from "@/lib/server/torneos";
 import { despues, fusionarTorneos } from "@/lib/torneo/torneo";
 import { validarTorneo } from "@/lib/torneo/validacion";
 import type { ApiTorneosRespuesta, Torneo } from "@/types/torneo";
@@ -35,12 +35,20 @@ export const POST = manejar(async (req: Request) => {
   const entrante = body!.torneo as Torneo;
   const { bloqueado: _b, ...limpio } = entrante;
   const repo = getTorneosRepository();
-  const existente = await repo.obtener(limpio.id);
-  const fusionado = existente ? fusionarTorneos(existente, limpio) : limpio;
   const fvp = await buscadorVigente();
-  const revisado = revisarFvpServidor(existente, fusionado, fvp?.buscar ?? null, { lista: fvp?.lista, staff: sesion.nombre });
-  // Si el servidor corrigió algo, la versión sube para que el cliente la adopte al fusionar.
-  const final = revisado.cambios ? { ...revisado.torneo, actualizadoEn: despues(fusionado.actualizadoEn) } : fusionado;
-  await repo.guardar(final);
-  return NextResponse.json({ modo: repo.modo, torneo: final }, { status: existente ? 200 : 201 });
+  const preparar = (existente: Torneo | null): Torneo => {
+    const fusionado = existente ? fusionarTorneos(existente, limpio) : limpio;
+    const revisado = revisarFvpServidor(existente, fusionado, fvp?.buscar ?? null, { lista: fvp?.lista, staff: sesion.nombre });
+    // Si el servidor corrigió algo, la versión sube para que el cliente la adopte al fusionar.
+    return revisado.cambios ? { ...revisado.torneo, actualizadoEn: despues(fusionado.actualizadoEn) } : fusionado;
+  };
+  const existente = await repo.obtener(limpio.id);
+  if (!existente) {
+    const nuevo = preparar(null);
+    await repo.guardar(nuevo);
+    return NextResponse.json({ modo: repo.modo, torneo: nuevo }, { status: 201 });
+  }
+  // Fusión sobre la versión vigente: si una tablet cerró un partido mientras tanto, no se pierde.
+  const { despues: final } = await actualizarTorneo(repo, limpio.id, preparar);
+  return NextResponse.json({ modo: repo.modo, torneo: final }, { status: 200 });
 });

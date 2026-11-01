@@ -11,6 +11,7 @@ import { MapaPistas } from "@/components/MapaPistas";
 import { StaffGate } from "@/components/StaffGate";
 import { Stepper } from "@/components/ui/Stepper";
 import { Switch } from "@/components/ui/Switch";
+import { CupoControl } from "@/components/torneo/Cupo";
 import { toast } from "@/components/ui/Toaster";
 import { fechaCorta } from "@/components/torneo/TorneoShell";
 import { vibrar } from "@/lib/feedback";
@@ -82,6 +83,7 @@ function NuevoTorneo() {
   const [descanso, setDescanso] = useState(45);
   const [tolerancia, setTolerancia] = useState(10);
   const [finalesUltimo, setFinalesUltimo] = useState(true);
+  const [cupo, setCupo] = useState<number | null>(null);
   const catalogo = useMemo(catalogoCategorias, []);
   // Duplas que dictó el staff al asistente IA: se ofrecen en "Pegar lista" apenas se crea el torneo.
   const lotes = useRef<LoteDuplas[]>([]);
@@ -135,7 +137,8 @@ function NuevoTorneo() {
       toleranciaWO: tolerancia,
       finalesUltimoDia: finalesUltimo,
     });
-    guardar({ ...t, acceso: { clave: claveAleatoria(), vence: venceAlTerminar(t.dias) }, arbitros: { turnos: [] } });
+    const conCupo = cupo == null ? t : { ...t, categorias: t.categorias.map((c) => ({ ...c, cupo })) };
+    guardar({ ...conCupo, acceso: { clave: claveAleatoria(), vence: venceAlTerminar(t.dias) }, arbitros: { turnos: [] } });
     if (lotes.current.length) dejarPrefill("torneo-duplas", { torneoId: t.id, lotes: lotes.current });
     toast(lotes.current.length ? "Torneo creado. Revisa las duplas e inscríbelas." : "Torneo creado. Ahora inscribe las duplas.");
     router.push(`/torneos/${t.id}/categorias`);
@@ -280,6 +283,12 @@ function NuevoTorneo() {
             </div>
             <Switch activo={finalesUltimo} onChange={setFinalesUltimo} etiqueta="Semis y finales el último día" />
           </div>
+          <CupoControl
+            valor={cupo}
+            onChange={setCupo}
+            etiqueta="Cupo por categoría"
+            sub={cupo == null ? "Sin límite. Puedes fijarlo después en cada categoría (Inscritos o Ajustes)." : `Máximo ${cupo} duplas en cada categoría. Se ajusta por categoría en Inscritos.`}
+          />
         </div>
       </section>
 

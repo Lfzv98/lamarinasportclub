@@ -499,7 +499,8 @@ export function textoResultado(r?: ResultadoTorneo | null): string {
 /** Mesa técnica da por bueno el resultado que cerró el árbitro de pista. */
 export function marcarVisto(t: Torneo, partidoId: string, por: string): Torneo {
   const p = partido(t, partidoId);
-  if (!p || p.estado !== "FINALIZADO") return t;
+  // Ya revisado (por ejemplo, desde otra mesa): no se toca, así dos «Visto» a la vez no pisan nada.
+  if (!p || p.estado !== "FINALIZADO" || (p.revision && p.revision.estado === "VISTO")) return t;
   return tocar(
     actualizarPartido(t, partidoId, (x) => ({
       ...x,
@@ -538,7 +539,9 @@ export function borrarResultado(t: Torneo, partidoId: string, por?: string): Tor
   const p = partido(t, partidoId);
   if (!p) return t;
   const out = actualizarPartido(t, partidoId, (x) => ({ ...x, estado: "PENDIENTE", resultado: null, finEn: null, inicioEn: null, revision: null }));
-  return recalcular(tocar(out, `Resultado borrado: ${p.etiqueta}.`, por), p.categoriaId, por);
+  // Un partido que se vuelve a jugar reabre el torneo si ya estaba cerrado.
+  const abierto = out.estado === "FINALIZADO" ? { ...out, estado: "EN_JUEGO" as const, cerradoEn: null } : out;
+  return recalcular(tocar(abierto, `Resultado borrado: ${p.etiqueta}.`, por), p.categoriaId, por);
 }
 
 export function cargarWO(t: Torneo, partidoId: string, ganador: "A" | "B", por?: string, revision?: RevisionResultado["estado"]): Torneo {
@@ -613,6 +616,72 @@ export function agregarBloqueo(t: Torneo, b: BloqueHorario): Torneo {
 
 export function eliminarTorneo(t: Torneo): Torneo {
   return tocar({ ...t, eliminado: true });
+}
+
+/* ---------- cupos ---------- */
+
+export const CUPO_MIN = 2;
+export const CUPO_MAX = 128;
+
+/** Duplas que quedan por entrar en la categoría (null = sin cupo máximo). */
+export function cupoLibre(c: CategoriaEnTorneo, extra = 0): number | null {
+  if (c.cupo == null) return null;
+  return Math.max(0, c.cupo - c.duplas.filter((d) => d.estado === "ACTIVA").length - extra);
+}
+
+/** Cambia el cupo de una categoría; queda en el historial. */
+export function fijarCupo(t: Torneo, categoriaId: string, cupo: number | null, por?: string): Torneo {
+  const c = categoria(t, categoriaId);
+  if (!c || (c.cupo ?? null) === cupo) return t;
+  const valor = cupo == null ? null : Math.min(CUPO_MAX, Math.max(CUPO_MIN, Math.round(cupo)));
+  return tocar(configurarCategoria(t, categoriaId, { cupo: valor }), `Cupo de ${nombreCategoria(c.categoria)}: ${valor == null ? "sin límite" : `${valor} duplas`}.`, por);
+}
+
+/* ---------- cierre del torneo ---------- */
+
+/** Lo que falta para poder cerrar el torneo (todo en cero = se puede cerrar). */
+export function pendientesCierre(t: Torneo): { sinSorteo: number; sinPublicar: number; sinJugar: number; porRevisar: number; total: number } {
+  const sinSorteo = t.categorias.filter((c) => !c.cuadro).length;
+  const sinPublicar = t.categorias.filter((c) => c.cuadro && !c.cuadro.publicado).length;
+  const partidos = todosLosPartidos(t).filter((p) => !p.bye);
+  return {
+    sinSorteo,
+    sinPublicar,
+    sinJugar: partidos.filter((p) => p.estado !== "FINALIZADO").length,
+    porRevisar: partidos.filter((p) => p.estado === "FINALIZADO" && p.revision?.estado === "POR_REVISAR").length,
+    total: partidos.length,
+  };
+}
+
+/** Todo sorteado, publicado, jugado y revisado por mesa técnica. */
+export function listoParaCerrar(t: Torneo): boolean {
+  if (!t.categorias.length) return false;
+  const f = pendientesCierre(t);
+  return f.total > 0 && !f.sinSorteo && !f.sinPublicar && !f.sinJugar && !f.porRevisar;
+}
+
+/**
+ * Cierra el torneo: pasa a Finalizado, sale de los torneos activos y de la tablet de los árbitros
+ * y queda en el Historial. `auto`: lo cerró la app al dar «Visto» a la última final.
+ */
+export function cerrarTorneo(t: Torneo, por?: string, auto = false): Torneo {
+  if (t.estado === "FINALIZADO") return t;
+  const en = new Date().toISOString();
+  const texto = auto ? "Torneo cerrado solo: la última final quedó revisada en mesa técnica." : "Torneo cerrado.";
+  return tocar({ ...t, estado: "FINALIZADO", cerradoEn: en, cerradoPor: auto ? "Automático" : por }, texto, por);
+}
+
+/** Vuelve a abrir un torneo cerrado (para corregir algo): queda En juego, o Programado si no se jugó nada. */
+export function reabrirTorneo(t: Torneo, por?: string): Torneo {
+  if (t.estado !== "FINALIZADO") return t;
+  const jugado = todosLosPartidos(t).some((p) => !p.bye && p.estado !== "PENDIENTE");
+  const publicado = t.categorias.some((c) => c.cuadro?.publicado);
+  return tocar({ ...t, estado: jugado ? "EN_JUEGO" : publicado ? "PROGRAMADO" : "INSCRIPCION", cerradoEn: null, cerradoPor: undefined }, "Torneo reabierto.", por);
+}
+
+/** Cierre automático: si con esta acción quedó todo jugado y revisado, el torneo se cierra solo. */
+export function cerrarSiCorresponde(t: Torneo, por?: string): Torneo {
+  return t.estado !== "FINALIZADO" && listoParaCerrar(t) ? cerrarTorneo(t, por, true) : t;
 }
 
 /* ---------- multi-dispositivo ---------- */

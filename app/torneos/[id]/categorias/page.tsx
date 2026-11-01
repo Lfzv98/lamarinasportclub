@@ -16,6 +16,7 @@ import { toast } from "@/components/ui/Toaster";
 import { AtletaFvpLinea, EstadoFvpChip, ExcepcionFvp, motivoSugerido, RevisarFvpHoja } from "@/components/torneo/Fvp";
 import { AvisoInscripciones } from "@/components/torneo/AvisoInscripciones";
 import { SorteoPopup } from "@/components/torneo/SorteoPopup";
+import { BarraCupo, CupoControl } from "@/components/torneo/Cupo";
 import { TorneoShell } from "@/components/torneo/TorneoShell";
 import { descripcionReglas, minutosEstimados, nombreCategoria, nombreCorto, tieBreakPorDefecto, validarDupla } from "@/lib/torneo/categorias";
 import { claveCedula, formatoCedula, pendientesFvp, verificarDupla } from "@/lib/ranking/fvp";
@@ -24,9 +25,11 @@ import { useAmericanos } from "@/lib/store";
 import { duplasActivas, ordenSiembra, proponerFormato, resumenFormato } from "@/lib/torneo/cuadro";
 import {
   anioTorneo,
+  cupoLibre,
   configurarCategoria,
   deshacerSorteo,
   editarDupla,
+  fijarCupo,
   estadoCategoria,
   inscribirDupla,
   nombreDupla,
@@ -115,6 +118,7 @@ function PanelCategoria({ torneo, cat, lote, onLoteListo }: { torneo: Torneo; ca
   const propuesta = cat.config.manual ? resumenFormato(activas.length, cat.config) : proponerFormato(activas.length, cat.config);
   const ordenadas = useMemo(() => ordenSiembra(cat.duplas, 1), [cat.duplas]);
   const jugado = cat.cuadro?.partidos.some((p) => !p.bye && p.estado !== "PENDIENTE");
+  const staffNombre = useAmericanos((s) => s.staff?.nombre);
 
   return (
     <section className="mt-4">
@@ -152,6 +156,16 @@ function PanelCategoria({ torneo, cat, lote, onLoteListo }: { torneo: Torneo; ca
             )}
           </div>
         </div>
+      </div>
+
+      <div className="glass mt-3 space-y-3 rounded-2xl p-4" data-cupo-categoria>
+        <CupoControl
+          compacto
+          valor={cat.cupo ?? null}
+          inscritas={activas.length}
+          onChange={(v) => guardar(fijarCupo(torneo, id, v, staffNombre))}
+        />
+        <BarraCupo ocupados={activas.length} cupo={cat.cupo ?? null} />
       </div>
 
       <div className="mt-6 flex items-end justify-between gap-3">
@@ -326,6 +340,7 @@ function InscribirHoja({ torneo, cat, abierta, onClose }: { torneo: Torneo; cat:
 
   function inscribir(seguir: boolean) {
     if (error) return toast(error, "error");
+    if (cupoLibre(cat) === 0) return toast(`Cupo lleno: ${cat.cupo} duplas. Sube el cupo arriba para inscribir más.`, "error");
     const final = conExcepcion(v, excepcion, motivo, staff?.nombre);
     let t = inscribirDupla(torneo, cat.categoria.id, ja, jb, { puntos: puntos ? Number(puntos) : undefined, fvp: final });
     if (final?.estado === "EXCEPCION") t = tocar(t, `Excepción FVP para ${nombreJugador(ja)} / ${nombreJugador(jb)} (${nombreCategoria(cat.categoria)}): ${final.nota}`, staff?.nombre);
@@ -460,6 +475,9 @@ function PegarHoja({ torneo, cat, abierta, textoInicial, onClose }: { torneo: To
           className="btn-neon w-full"
           disabled={!validas.length || (chequeaFvp && !fvp.listo)}
           onClick={() => {
+            const libres = cupoLibre(cat);
+            if (libres !== null && validas.length > libres)
+              return toast(libres ? `Solo quedan ${libres} lugares del cupo (${cat.cupo}). Sube el cupo o pega menos duplas.` : `Cupo lleno: ${cat.cupo} duplas.`, "error");
             let t = torneo;
             for (const v of validas) t = inscribirDupla(t, cat.categoria.id, v.a!, v.b!, { puntos: v.puntos, fvp: v.fvp });
             guardar(t);

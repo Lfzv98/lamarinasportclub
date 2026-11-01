@@ -143,6 +143,11 @@ export interface TorneosRepository {
   listar(): Promise<Torneo[]>;
   obtener(id: string): Promise<Torneo | null>;
   guardar(t: Torneo): Promise<Torneo>;
+  /**
+   * Guarda solo si nadie lo cambió desde `versionPrevia` (su `actualizadoEn`). false = otro lo cambió
+   * entre medio: hay que volver a leer y aplicar el cambio encima (ver `actualizarTorneo`).
+   */
+  guardarSi(t: Torneo, versionPrevia: string): Promise<boolean>;
   listarMarcadores(torneoId?: string | null): Promise<MarcadorVivo[]>;
   obtenerMarcador(id: string): Promise<MarcadorVivo | null>;
   guardarMarcador(m: MarcadorVivo): Promise<MarcadorVivo>;
@@ -188,6 +193,12 @@ const demoTorneos: TorneosRepository = {
   async guardar(t) {
     torneosDemo().set(t.id, t);
     return t;
+  },
+  async guardarSi(t, versionPrevia) {
+    const actual = torneosDemo().get(t.id);
+    if (actual && actual.actualizadoEn !== versionPrevia) return false;
+    torneosDemo().set(t.id, t);
+    return true;
   },
   async listarMarcadores(torneoId) {
     return [...marcadoresDemo().values()].filter((m) => !torneoId || m.torneoId === torneoId);
@@ -241,6 +252,15 @@ function supabaseTorneos(url: string, key: string): TorneosRepository {
     async guardar(t) {
       await upsert(tablaT, { id: t.id, club_id: t.clubId, data: t, estado: t.estado, actualizado_en: t.actualizadoEn });
       return t;
+    },
+    async guardarSi(t, versionPrevia) {
+      // Compare-and-swap con PostgREST: solo actualiza la fila si sigue en la versión que se leyó.
+      const filas = await pedir<{ id: string }[]>(
+        tablaT,
+        `?id=eq.${encodeURIComponent(t.id)}&actualizado_en=eq.${encodeURIComponent(versionPrevia)}&select=id`,
+        { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ club_id: t.clubId, data: t, estado: t.estado, actualizado_en: t.actualizadoEn }) },
+      );
+      return Array.isArray(filas) && filas.length > 0;
     },
     async listarMarcadores(torneoId) {
       const filtro = torneoId ? `&torneo_id=eq.${encodeURIComponent(torneoId)}` : "";
