@@ -4,7 +4,7 @@ import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, BarChart3, CalendarClock, ClipboardCheck, Flag, GitFork, KeyRound, LayoutDashboard, Lock, Settings, Ticket, Users } from "lucide-react";
+import { ArrowLeft, BarChart3, CalendarClock, GitFork, KeyRound, LayoutDashboard, Lock, Ticket, Users } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "@/components/Logo";
 import { LogoMenu } from "@/components/LogoMenu";
@@ -12,6 +12,7 @@ import { StaffChip } from "@/components/StaffGate";
 import { useEsStaff } from "@/lib/store";
 import { useEsMesa } from "@/lib/arbitro";
 import { EstadoConexion } from "@/components/torneo/Conexion";
+import { PanelStaff } from "@/components/torneo/PanelStaff";
 import { useTorneo, useTorneos } from "@/lib/torneosStore";
 import type { Torneo } from "@/types/torneo";
 
@@ -151,23 +152,10 @@ export function TorneoShell({ id, children, ancho = "max-w-6xl" }: { id: string;
         </div>
         <StaffChip />
         {esMesa && <EstadoConexion className="hidden md:inline-flex" />}
-        {esMesa && !pathname.endsWith("/mesa") && torneo.categorias.some((c) => c.cuadro?.publicado) && (
-          <Link href={`/torneos/${id}/mesa`} className="btn-ghost !p-2.5" aria-label="Mesa técnica" title="Mesa técnica">
-            <ClipboardCheck className="size-5" />
-          </Link>
-        )}
-        {esStaff && (
-          <Link href={`/torneos/${id}/arbitros`} className={clsx("btn-ghost !p-2.5", pathname.endsWith("/arbitros") && "!border-neon/50 !text-neon")} aria-label="Árbitros y turnos" title="Árbitros y turnos">
-            <Flag className="size-5" />
-          </Link>
-        )}
-        {esStaff && (
-          <Link href={`/torneos/${id}/ajustes`} className={clsx("btn-ghost !p-2.5", pathname.endsWith("/ajustes") && "!border-neon/50 !text-neon")} aria-label="Ajustes del torneo">
-            <Settings className="size-5" />
-          </Link>
-        )}
         <LogoMenu />
       </header>
+
+      <PanelStaff torneo={torneo} esStaff={!!esStaff} esMesa={!!esMesa} />
 
       {children(torneo)}
 

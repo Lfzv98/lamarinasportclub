@@ -3,6 +3,7 @@
 import clsx from "clsx";
 import { use, useMemo, useState } from "react";
 import { CalendarClock, Clock, CloudRain, RefreshCw, Search, TriangleAlert, Wand2 } from "lucide-react";
+import { CambiosHorario } from "@/components/torneo/CambiosHorario";
 import { ImprevistosHoja } from "@/components/torneo/ImprevistosHoja";
 import { toast } from "@/components/ui/Toaster";
 import { MatchCard, ResultadoHoja } from "@/components/torneo/piezas";
@@ -122,6 +123,12 @@ function Programacion({ torneo }: { torneo: Torneo }) {
           <TriangleAlert className="mt-0.5 size-4 shrink-0" />
           {sinHorario.length} partido(s) sin horario: no entran en los días y pistas del torneo. Agrega horario o un día, o reprograma.
         </p>
+      )}
+
+      {esStaff && (
+        <div className="mt-1" data-avisos-horario>
+          <CambiosHorario torneo={torneo} onAbrir={setAbierto} />
+        </div>
       )}
 
       {horas.length === 0 ? (
