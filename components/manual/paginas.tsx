@@ -106,7 +106,7 @@ const CONTENIDO: Pagina[] = [
           </h1>
           <p>Todo lo que tiene la app del club: para el staff, los árbitros, los jugadores y el dueño.</p>
         </div>
-        <p className="ml-tapa-pie">Edición octubre 2026 · PadelReserve</p>
+        <p className="ml-tapa-pie">Edición noviembre 2026 · PadelReserve</p>
       </div>
     ),
   },
@@ -640,9 +640,71 @@ const CONTENIDO: Pagina[] = [
     </>,
   ),
 
-  // 5 · Torneos: preparar
+  // 5 · El torneo en 7 pasos
   capitulo(
     "5",
+    "El torneo en 7 pasos",
+    "El camino completo, de la inscripción al Historial.",
+    <ConCaptura src="to-pasos" alt="Panel del staff y los 7 pasos del torneo en En vivo">
+      <p>
+        Arriba en cada torneo, el staff ve su <b>panel en tres bloques</b>. Cada bloque agrupa lo que se hace en un momento del
+        torneo, así nada se mezcla bajo presión:
+      </p>
+      <ul className="ml-lista">
+        <li>
+          <B>Gestión previa</B>: inscritos, pagos online, cupos, verificación FVP, sorteo y ajustes.
+        </li>
+        <li>
+          <B>Centro de control</B>: mesa técnica, pistas en vivo, resultados por revisar y el botón de clima.
+        </li>
+        <li>
+          <B>Logística</B>: horarios, «Desde ahora», avisos de cambio de hora y turnos de árbitros.
+        </li>
+      </ul>
+      <p className="ml-chico">
+        El número ámbar en cada bloque es lo pendiente. El árbitro principal solo ve el Centro de control.
+      </p>
+    </ConCaptura>,
+  ),
+  pagina(
+    "El torneo en 7 pasos",
+    <>
+      <h2>Los 7 pasos</h2>
+      <p>En vivo muestra esta lista con el paso actual marcado. Un paso se pone en verde solo cuando de verdad está hecho.</p>
+      <Pasos
+        items={[
+          <>
+            <b>Crear el torneo:</b> días, pistas, categorías y cupo (Gestión previa).
+          </>,
+          <>
+            <b>Inscribir duplas:</b> online con pago, a mano o pegando una lista. El cupo cierra solo cada categoría.
+          </>,
+          <>
+            <b>Cerrar inscripciones y sortear:</b> con la FVP verificada, el sorteo se activa.
+          </>,
+          <>
+            <b>Programar y publicar:</b> <B>Publicar y programar</B> pone cada partido en día, hora y pista.
+          </>,
+          <>
+            <b>Árbitros y mesa técnica:</b> turnos por pista y el árbitro principal en la mesa (Logística).
+          </>,
+          <>
+            <b>Día de juego:</b> los árbitros anotan, la mesa técnica revisa, el clima se maneja con Imprevistos.
+          </>,
+          <>
+            <b>Cierre:</b> se cierra solo con el «Visto» de la última final, o con <B>Cerrar torneo</B>.
+          </>,
+        ]}
+      />
+      <Nota titulo="Quién hace qué" tono="cielo">
+        Pasos 1 a 5: el staff. Paso 6: árbitros de pista y mesa técnica (árbitro principal o staff). Paso 7: solo, o el staff.
+      </Nota>
+    </>,
+  ),
+
+  // 6 · Torneos: preparar
+  capitulo(
+    "6",
     "Torneos: preparar",
     "Crear, inscribir, verificar con la FVP y sortear.",
     <ConCaptura src="to-lista" alt="Lista de torneos con Nuevo torneo y Ranking FVP">
@@ -686,6 +748,9 @@ const CONTENIDO: Pagina[] = [
           marca una fila completa.
         </li>
         <li>
+          <b>Cupo por categoría</b> (en Reglas del día): cuántas duplas como máximo. Apagado, sin límite.
+        </li>
+        <li>
           <B>Crear torneo</B>. Se abre Inscritos.
         </li>
       </ul>
@@ -726,6 +791,25 @@ const CONTENIDO: Pagina[] = [
         <li>Sin cédula, la dupla queda «por verificar» hasta que la revises.</li>
         <li>El número al final son sus puntos de ranking.</li>
       </ul>
+    </ConCaptura>,
+  ),
+  pagina(
+    "Torneos: preparar",
+    <ConCaptura src="to-cupo" alt="Cupo máximo de la categoría con su barra de llenado">
+      <h2>Cupo máximo</h2>
+      <p>
+        Cada categoría puede tener un <b>cupo máximo de duplas</b>. Se fija al crear el torneo, en <B>Inscritos</B> (arriba de la
+        lista) o en <B>Ajustes</B> → Cupo por categoría.
+      </p>
+      <ul className="ml-lista">
+        <li>La barra muestra cuántos lugares quedan: verde con lugar, ámbar con pocos, roja llena.</li>
+        <li>Al llenarse, la inscripción online de esa categoría se cierra sola y el staff tampoco puede inscribir más a mano.</li>
+        <li>La página de inscripción se actualiza sola: si la categoría se llena mientras alguien completa el formulario, se le avisa.</li>
+        <li>Si dos inscripciones buscan el último lugar a la vez, entra solo la primera que se confirma.</li>
+      </ul>
+      <Nota titulo="Subir o bajar el cupo">
+        Se puede cambiar en cualquier momento, pero nunca por debajo de las duplas ya inscritas. Queda en el historial.
+      </Nota>
     </ConCaptura>,
   ),
   pagina(
@@ -805,9 +889,9 @@ const CONTENIDO: Pagina[] = [
     </ConCaptura>,
   ),
 
-  // 6 · Torneos: día de juego
+  // 7 · Torneos: día de juego
   capitulo(
-    "6",
+    "7",
     "Torneos: día de juego",
     "Llamar, anotar, reprogramar y cerrar.",
     <ConCaptura src="to-envivo" alt="En vivo: partidos jugados, pistas y atraso">
@@ -835,16 +919,16 @@ const CONTENIDO: Pagina[] = [
           <>
             <B>Llamar a pista</B>: el partido queda «Llamado» y sale en la TV.
           </>,
-          <>El árbitro de esa pista lo empieza y lo anota en su tablet (capítulo 7).</>,
+          <>El árbitro de esa pista lo empieza y lo anota en su tablet (capítulo 8).</>,
           <>Si no hay árbitro, el staff toca el partido → «Anotar punto a punto», o carga el resultado final con sets.</>,
           <>Al terminar, el ganador avanza solo en el cuadro y la pista llama al siguiente.</>,
         ]}
       />
       <Nota titulo="Corregir un resultado">
-        Toca el partido en Cuadros o Horarios y vuelve a guardar el resultado. Queda en el historial.
+        Lo corrige la mesa técnica, con motivo (capítulo 9). Cada resultado que cierra un árbitro llega a su bandeja para el «Visto».
       </Nota>
       <Nota titulo="El modo TV de cada pista" tono="cielo">
-        El ícono de pantalla en la tarjeta abre la TV de esa pista (capítulo 8).
+        El ícono de pantalla en la tarjeta abre la TV de esa pista (capítulo 11).
       </Nota>
     </>,
   ),
@@ -891,7 +975,7 @@ const CONTENIDO: Pagina[] = [
     <ConCaptura src="to-imprevistos" alt="Imprevistos: suspender pistas, sedes y días">
       <h2>Imprevistos</h2>
       <p>
-        <B>Imprevistos</B> en En vivo o en Horarios:
+        <B>Imprevistos</B> en En vivo, en Horarios o en la mesa técnica (el paso a paso de la lluvia está en el capítulo 10):
       </p>
       <ul className="ml-lista">
         <li>
@@ -913,7 +997,7 @@ const CONTENIDO: Pagina[] = [
     <ConCaptura src="to-arbitros" alt="Árbitros del torneo y plantel">
       <h2>Árbitros del torneo</h2>
       <p>
-        Bandera <B>⚑</B> arriba en el torneo.
+        Panel del staff → <B>Logística</B> → <B>Turnos de árbitros</B>.
       </p>
       <ul className="ml-lista">
         <li>El plantel del club, con cuántos turnos, partidos y puntos lleva cada uno en este torneo.</li>
@@ -930,11 +1014,12 @@ const CONTENIDO: Pagina[] = [
     <ConCaptura src="to-ajustes" alt="Ajustes del torneo">
       <h2>Ajustes del torneo</h2>
       <p>
-        Engranaje <B>⚙</B> arriba en el torneo.
+        Panel del staff → <B>Gestión previa</B> → <B>Ajustes</B>.
       </p>
       <ul className="ml-lista">
         <li>Nombre, descanso mínimo entre partidos y tolerancia para W.O.</li>
         <li>Semis y finales el último día en la pista principal.</li>
+        <li>Cupo por categoría y el estado del torneo (cerrar o reabrir).</li>
         <li>Días y horarios, pistas, orden de desempates.</li>
         <li>
           <b>Patrocinadores:</b> salen en la TV y en la página del torneo.
@@ -949,9 +1034,34 @@ const CONTENIDO: Pagina[] = [
     </ConCaptura>,
   ),
 
-  // 7 · Árbitros
+  pagina(
+    "Torneos: día de juego",
+    <ConCaptura src="to-cierre" alt="Torneo jugado y revisado con el botón Cerrar torneo">
+      <h2>Cerrar el torneo</h2>
+      <p>
+        Cuando la mesa técnica da <b>«Visto» a la última final</b>, el torneo <b>se cierra solo</b>: pasa al Historial, sale de las
+        tablets de los árbitros y los resultados quedan a la vista de todos.
+      </p>
+      <ul className="ml-lista">
+        <li>
+          Si todo está jugado y revisado, En vivo muestra <B>Cerrar torneo</B> para cerrarlo a mano.
+        </li>
+        <li>
+          ¿Una categoría no se jugó? En <B>Ajustes</B> → Estado del torneo, <B>Cerrar igual</B> dice qué falta antes de cerrar.
+        </li>
+        <li>
+          <B>Reabrir</B> lo devuelve a Torneos activos. Si la mesa borra un resultado, se reabre solo.
+        </li>
+      </ul>
+      <Nota titulo="Torneo cerrado" tono="coral">
+        Con el torneo cerrado nadie puede anotar. La mesa técnica todavía puede corregir un resultado con motivo.
+      </Nota>
+    </ConCaptura>,
+  ),
+
+  // 8 · Árbitros
   capitulo(
-    "7",
+    "8",
     "Árbitros",
     "La tablet de cada pista: un toque por punto.",
     <ConCaptura src="arb-quien" alt="Pantalla ¿Quién eres? con los árbitros del club">
@@ -1088,9 +1198,136 @@ const CONTENIDO: Pagina[] = [
     </ConCaptura>,
   ),
 
-  // 8 · Pantallas
+  // 9 · Mesa técnica
   capitulo(
-    "8",
+    "9",
+    "Mesa técnica",
+    "El árbitro principal revisa todo lo que se anota.",
+    <ConCaptura src="mesa-bandeja" alt="Mesa técnica: resultados por revisar y pistas">
+      <p>
+        La <b>mesa técnica</b> la lleva el <b>árbitro principal</b> (o alguien del staff). Se abre en el panel →{" "}
+        <B>Centro de control</B> → <B>Mesa técnica</B>.
+      </p>
+      <ul className="ml-lista">
+        <li>Arriba: cuántos resultados hay por revisar, cuántos partidos en juego y el atraso.</li>
+        <li>
+          <b>Resultados por revisar:</b> cada partido que cierra un árbitro llega aquí al instante, con sonido.
+        </li>
+        <li>
+          <b>Pistas:</b> qué se juega, qué está llamado, qué sigue y qué pista está sin árbitro.
+        </li>
+        <li>
+          <b>Cambios de horario:</b> a quién avisar, con un toque a WhatsApp.
+        </li>
+      </ul>
+    </ConCaptura>,
+  ),
+  pagina(
+    "Mesa técnica",
+    <>
+      <h2>La bandeja, paso a paso</h2>
+      <Pasos
+        items={[
+          <>Llega el resultado: suena y se ve arriba, con la categoría, la pista y quién lo cerró.</>,
+          <>
+            Las <b>finales y semifinales</b> salen primero; después, lo que más espera.
+          </>,
+          <>
+            Confírmalo con el árbitro o la planilla. Si está bien, <B>Visto</B>.
+          </>,
+          <>
+            Si está mal, <B>Corregir</B>: cambia el marcador, escribe el motivo y confirma. Si la corrección cambia quién avanza, la
+            app avisa qué partidos se anulan.
+          </>,
+          <>
+            Con varios en la bandeja, <B>Todos vistos</B> los confirma de una vez.
+          </>,
+        ]}
+      />
+      <Nota titulo="En rojo" tono="coral">
+        Un resultado que espera más de 10 minutos se pinta en rojo y sale un aviso arriba: el cuadro no se detiene, pero conviene
+        revisarlo pronto.
+      </Nota>
+    </>,
+  ),
+  pagina(
+    "Mesa técnica",
+    <>
+      <h2>Varias tablets a la vez</h2>
+      <p>En la mesa puede haber más de una persona. La app está hecha para que nadie pise a nadie:</p>
+      <ul className="ml-lista">
+        <li>
+          Cada <B>Visto</B> se guarda sobre la versión vigente del torneo. Si otra tablet guardó un instante antes, la app lo vuelve
+          a aplicar encima, sin perder nada.
+        </li>
+        <li>Mientras se guarda, el botón queda tomado: un doble toque no cuenta dos veces.</li>
+        <li>
+          Si otra mesa ya corrigió ese partido, tu corrección no se aplica y la app te dice a qué cambió. Revísalo y decide.
+        </li>
+        <li>Sin señal, el «Visto» queda en cola y se sube solo al volver internet.</li>
+      </ul>
+      <Nota titulo="El árbitro de pista" tono="cielo">
+        El árbitro de pista no corrige un resultado ya cargado: avisa a la mesa técnica. Así cada cambio queda firmado y con motivo.
+      </Nota>
+    </>,
+  ),
+
+  // 10 · Lluvia y clima
+  capitulo(
+    "10",
+    "Lluvia y clima",
+    "Suspender, guardar el marcador y seguir sin rehacer nada.",
+    <ConCaptura src="to-imprevistos" alt="Imprevistos: suspender pistas por lluvia">
+      <h3>Cuando empieza a llover</h3>
+      <Pasos
+        items={[
+          <>
+            En la mesa técnica toca <B>Imprevistos / clima</B> (también está en En vivo y en Horarios).
+          </>,
+          <>
+            Elige las pistas. <B>Solo exteriores</B> deja jugando las techadas.
+          </>,
+          <>Motivo (Lluvia) y por cuánto tiempo: 30 min, 1 hora, 2 horas o hasta nuevo aviso.</>,
+          <>
+            <B>Suspender y reprogramar</B>.
+          </>,
+        ]}
+      />
+    </ConCaptura>,
+  ),
+  pagina(
+    "Lluvia y clima",
+    <>
+      <h2>Qué hace la app sola</h2>
+      <ul className="ml-lista">
+        <li>Los partidos en juego guardan su marcador exacto y siguen después desde ese punto.</li>
+        <li>Lo que faltaba en esas pistas se reacomoda en las que siguen activas, respetando el descanso de cada dupla.</li>
+        <li>Los jugadores ven su horario nuevo marcado en la app.</li>
+        <li>
+          En <B>Logística</B> → Horarios, la lista de cambios de horario te dice a quién avisar por WhatsApp.
+        </li>
+      </ul>
+      <h3>Cuando para</h3>
+      <Pasos
+        items={[
+          <>
+            <B>Imprevistos</B> → Suspendido ahora → <B>Reanudar</B>.
+          </>,
+          <>
+            Si se perdió mucho tiempo, en Horarios toca <B>Desde ahora</B> para reacomodar lo que falta.
+          </>,
+          <>¿No alcanza el día? Agrega un día o una sede de apoyo en Imprevistos.</>,
+        ]}
+      />
+      <Nota titulo="Una pista dañada" tono="cielo">
+        Es lo mismo que la lluvia: suspende solo esa pista con el motivo que corresponda.
+      </Nota>
+    </>,
+  ),
+
+  // 11 · Pantallas
+  capitulo(
+    "11",
     "Las pantallas del club",
     "La tele del bar y la pantalla de cada pista.",
     <>
@@ -1118,9 +1355,9 @@ const CONTENIDO: Pagina[] = [
     </>,
   ),
 
-  // 9 · Jugadores y público
+  // 12 · Jugadores y público
   capitulo(
-    "9",
+    "12",
     "Para jugadores y público",
     "Lo que ve quien no es del staff.",
     <ConCaptura src="pub-evento" alt="Cuadro del americano en modo espectador">
@@ -1181,9 +1418,9 @@ const CONTENIDO: Pagina[] = [
     </ConCaptura>,
   ),
 
-  // 10 · Dueño
+  // 13 · Dueño
   capitulo(
-    "10",
+    "13",
     "Para el dueño",
     "Cómo va el club, en una pantalla.",
     <ConCaptura src="to-resumen" alt="Resumen para el club en Stats">
@@ -1226,9 +1463,9 @@ const CONTENIDO: Pagina[] = [
     </>,
   ),
 
-  // 11 · Sin señal
+  // 14 · Sin señal
   capitulo(
-    "11",
+    "14",
     "Sin señal y otros imprevistos",
     "La app sigue funcionando aunque se corte internet.",
     <>
@@ -1271,18 +1508,19 @@ const CONTENIDO: Pagina[] = [
         <li>Leer la regla de puntuación en voz alta.</li>
         <li>Llamar a pista a tiempo y vigilar el atraso.</li>
         <li>Cargar cada resultado apenas termina.</li>
+        <li>Torneos: la mesa técnica deja la bandeja en cero (nada en rojo).</li>
       </ul>
       <h3>Al cerrar</h3>
       <ul className="ml-check">
-        <li>Finalizar, mostrar el podio y compartirlo.</li>
+        <li>Finalizar, mostrar el podio y compartirlo. Un torneo se cierra solo con el «Visto» de la última final.</li>
         <li>Revisar Stats con el dueño.</li>
       </ul>
     </>,
   ),
 
-  // 12 · FAQ
+  // 15 · FAQ
   capitulo(
-    "12",
+    "15",
     "Preguntas frecuentes",
     "Lo que más se pregunta en la pista.",
     <dl className="ml-faq">
@@ -1291,7 +1529,9 @@ const CONTENIDO: Pagina[] = [
       <dt>Llegó alguien tarde o se lesionó.</dt>
       <dd>Americano: Jugadores y fotos. Torneo: el árbitro marca retiro por lesión en ⋯.</dd>
       <dt>Cargué mal un resultado.</dt>
-      <dd>Deshacer en el aviso, o abre la pista o el partido y corrígelo.</dd>
+      <dd>Americano: Deshacer en el aviso o abre la pista. Torneo: avisa a la mesa técnica, que lo corrige con motivo.</dd>
+      <dt>La categoría ya no acepta duplas.</dt>
+      <dd>Se llenó el cupo. Súbelo en Inscritos o en Ajustes → Cupo por categoría.</dd>
       <dt>No se activa el Sorteo.</dt>
       <dd>Hay duplas por verificar o bloqueadas en la FVP. Toca su aviso.</dd>
     </dl>,
@@ -1307,23 +1547,25 @@ const CONTENIDO: Pagina[] = [
       <dd>Bórralo del plantel en Ajustes y que se registre de nuevo con el PIN de árbitros.</dd>
       <dt>La tele se ve cortada.</dt>
       <dd>Pantalla completa con F11. Se adapta a cualquier tamaño.</dd>
+      <dt>El torneo desapareció de la tablet del árbitro.</dt>
+      <dd>Se cerró: está en el Historial. Si falta algo por jugar, el staff lo reabre en Ajustes → Estado del torneo.</dd>
       <dt>El chip dice «Sin conexión».</dt>
       <dd>Sigue trabajando: todo se guarda en el aparato y se sube solo cuando vuelve la señal.</dd>
     </dl>,
   ),
 
-  // 13 · Lo que viene
+  // 16 · Lo que viene
   capitulo(
-    "13",
+    "16",
     "Lo que viene",
     "Lo que todavía no hace la app.",
     <>
       <ul className="ml-lista">
         <li>
-          <b>Inscripción online:</b> hoy inscribe el staff. Está en camino una página para que cada jugador se inscriba solo.
+          <b>Avisos automáticos:</b> hoy el aviso de cambio de horario se manda con un toque a WhatsApp. Está en camino que salga solo.
         </li>
         <li>
-          <b>Base de datos del club:</b> Juan conecta la app con PadelReserve (Supabase). Mientras tanto corre en modo de prueba, en la memoria del servidor.
+          <b>Horarios por dupla:</b> que el staff marque las horas en que una dupla no puede jugar desde la pantalla.
         </li>
         <li>
           <b>Ranking FVP automático:</b> se descarga solo cada mañana cuando la app está publicada.

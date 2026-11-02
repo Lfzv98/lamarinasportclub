@@ -75,13 +75,13 @@ export function CierreTorneo({ torneo, forzar = false, className }: { torneo: To
       <span className={clsx("flex size-10 shrink-0 items-center justify-center rounded-xl", listo ? "bg-neon text-noche" : "bg-white/10 text-white/70")}>
         {listo ? <CheckCircle2 className="size-5" /> : <Lock className="size-5" />}
       </span>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 basis-48">
         <p className="font-semibold">{listo ? "Todo jugado y revisado" : "Cerrar el torneo"}</p>
         <p className="text-xs text-white/55">
           {listo ? "Se cierra solo al dar «Visto» a la última final; si no, ciérralo aquí." : `Falta: ${textoPendientesCierre(torneo) || "—"}. Se cierra solo cuando todo esté jugado y revisado.`}
         </p>
       </div>
-      <div className="flex gap-2">
+      <div className="flex w-full justify-end gap-2 sm:w-auto">
         {listo && (
           <Link href={`/torneos/${torneo.id}/cuadros`} className="btn-ghost !py-2 text-sm">
             <Trophy className="size-4" /> Campeones

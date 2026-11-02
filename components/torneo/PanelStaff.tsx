@@ -49,10 +49,11 @@ export function PanelStaff({ torneo, esStaff, esMesa }: { torneo: Torneo; esStaf
   const publicado = torneo.categorias.some((c) => c.cuadro?.publicado);
   const sinTurnos = publicado && !(torneo.arbitros?.turnos?.length ?? 0) ? 1 : 0;
 
-  const secciones: { id: SeccionStaff; titulo: string; sub: string; icon: typeof Users; badge: number; destinos: Destino[] }[] = [
+  const secciones: { id: SeccionStaff; titulo: string; corto: string; sub: string; icon: typeof Users; badge: number; destinos: Destino[] }[] = [
     {
       id: "PREVIA",
       titulo: "Gestión previa",
+      corto: "Previa",
       sub: "Pagos, cupos y sorteo",
       icon: ClipboardList,
       badge: fvp,
@@ -65,6 +66,7 @@ export function PanelStaff({ torneo, esStaff, esMesa }: { torneo: Torneo; esStaf
     {
       id: "CONTROL",
       titulo: "Centro de control",
+      corto: "Control",
       sub: "Mesa, pistas y clima",
       icon: Gauge,
       badge: porRevisar,
@@ -76,6 +78,7 @@ export function PanelStaff({ torneo, esStaff, esMesa }: { torneo: Torneo; esStaf
     {
       id: "LOGISTICA",
       titulo: "Logística",
+      corto: "Logística",
       sub: "Horarios, turnos y avisos",
       icon: Truck,
       badge: cambios + sinTurnos,
@@ -104,11 +107,19 @@ export function PanelStaff({ torneo, esStaff, esMesa }: { torneo: Torneo; esStaf
               {on && <motion.span layoutId="seccion-staff" className="absolute inset-0 rounded-xl bg-neon" transition={{ type: "spring", stiffness: 500, damping: 38 }} />}
               <s.icon className="relative size-4 shrink-0" />
               <span className="relative min-w-0">
-                <span className="block truncate text-[12px] font-bold leading-tight sm:text-sm">{s.titulo}</span>
+                <span className="block truncate text-[13px] font-bold leading-tight sm:hidden">{s.corto}</span>
+                <span className="hidden truncate text-sm font-bold leading-tight sm:block">{s.titulo}</span>
                 <span className={clsx("hidden truncate text-[11px] leading-tight sm:block", on ? "text-noche/70" : "text-white/45")}>{s.sub}</span>
               </span>
               {s.badge > 0 && (
-                <span className={clsx("relative ml-auto min-w-5 rounded-full px-1.5 text-center text-[11px] font-bold", on ? "bg-noche text-neon" : "bg-amber-300 text-marino-2")}>{s.badge}</span>
+                <span
+                  className={clsx(
+                    "absolute -right-1 -top-1.5 z-10 min-w-5 rounded-full px-1.5 text-center text-[11px] font-bold shadow sm:relative sm:right-auto sm:top-auto sm:z-auto sm:ml-auto sm:shadow-none",
+                    on ? "bg-noche text-neon" : "bg-amber-300 text-marino-2",
+                  )}
+                >
+                  {s.badge}
+                </span>
               )}
             </Link>
           );
