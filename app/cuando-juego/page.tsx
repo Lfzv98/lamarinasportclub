@@ -88,7 +88,9 @@ export default function CuandoJuegoPage() {
                     <span className="block truncate font-display text-lg font-bold text-blanco sm:text-xl">{t.nombre}</span>
                     <span className="block text-sm text-blanco/60">{rangoFechas(t)}</span>
                   </span>
-                  <EstadoTorneoBadge estado={t.estado} />
+                  <span className="hidden sm:block">
+                    <EstadoTorneoBadge estado={t.estado} />
+                  </span>
                   <ArrowRight className="size-5 shrink-0 text-lima transition group-hover:translate-x-1" />
                 </Link>
               </motion.div>
