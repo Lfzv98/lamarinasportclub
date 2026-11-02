@@ -32,7 +32,7 @@ function TV({ torneo }: { torneo: Torneo }) {
   const lienzo = useLienzo(vertical);
   const estrecho = lienzo.ancho < ANCHO_ESTRECHO;
   const pistas = estadoPistas(torneo);
-  const proximos = partidosListos(torneo).filter((p) => !pistas.some((c) => c.llamado?.id === p.id)).slice(0, 6);
+  const proximos = partidosListos(torneo).filter((p) => !pistas.some((c) => c.llamado?.id === p.id)).slice(0, pistas.length > 6 ? 4 : 6);
   const recientes = torneo.categorias
     .flatMap((c) => c.cuadro?.partidos ?? [])
     .filter((p) => p.estado === "FINALIZADO" && !p.bye && p.finEn)
@@ -40,6 +40,8 @@ function TV({ torneo }: { torneo: Torneo }) {
     .slice(0, 5);
   const url = typeof window !== "undefined" ? `${location.origin}/torneos/${torneo.id}` : "";
   const cat = (id: string) => nombreCorto(categoria(torneo, id)!.categoria);
+  // Torneos con varias sedes (10+ pistas): tarjetas compactas en 2-3 columnas para que todas quepan sin encimarse.
+  const muchas = pistas.length > 6;
 
   return (
     <Escenario oculto={oculto} lienzo={lienzo}>
@@ -60,17 +62,17 @@ function TV({ torneo }: { torneo: Torneo }) {
         </div>
       </header>
       <div className={clsx("grid min-h-0 flex-1 gap-6", vertical || estrecho ? "grid-cols-1" : "grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]")}>
-        <div className={clsx("grid min-h-0 gap-5", estrecho ? "grid-cols-1" : "grid-cols-2", !lienzo.desplaza && "auto-rows-fr")}>
+        <div className={clsx("grid min-h-0", muchas ? clsx("gap-3", estrecho ? "grid-cols-2" : "grid-cols-3") : estrecho ? "grid-cols-1 gap-5" : "grid-cols-2 gap-5", !lienzo.desplaza && "auto-rows-fr")}>
           {pistas.map((c) => (
-            <div key={c.numero} className={clsx("glass flex min-h-0 flex-col rounded-[2rem] p-6", c.enJuego && "!border-neon/40")}>
-              <div className="flex items-center gap-3">
-                <span className={clsx("flex size-12 items-center justify-center rounded-full font-display text-2xl font-bold", c.enJuego ? "bg-lima text-marino-2" : "bg-pista text-blanco")}>{c.numero}</span>
-                <p className="flex-1 truncate font-display text-2xl font-bold">
+            <div key={c.numero} className={clsx("glass flex min-h-0 flex-col overflow-hidden", muchas ? "rounded-3xl p-4" : "rounded-[2rem] p-6", c.enJuego && "!border-neon/40")}>
+              <div className={clsx("flex items-center", muchas ? "gap-2" : "gap-3")}>
+                <span className={clsx("flex shrink-0 items-center justify-center rounded-full font-display font-bold", muchas ? "size-9 text-lg" : "size-12 text-2xl", c.enJuego ? "bg-lima text-marino-2" : "bg-pista text-blanco")}>{c.numero}</span>
+                <p className={clsx("min-w-0 flex-1 truncate font-display font-bold", muchas ? "text-lg" : "text-2xl")}>
                   {c.nombre}
                   {c.sede && <span className="font-normal text-cielo"> · {c.sede}</span>}
                 </p>
                 {c.enJuego ? (
-                  <span className="flex items-center gap-2 text-lg font-semibold text-neon">
+                  <span className={clsx("flex shrink-0 items-center gap-2 font-semibold text-neon", muchas ? "text-base" : "text-lg")}>
                     <Radio className="size-5" /> {cat(c.enJuego.categoriaId)}
                   </span>
                 ) : c.llamado ? (
@@ -85,16 +87,16 @@ function TV({ torneo }: { torneo: Torneo }) {
                   <span className="text-lg text-white/40">Libre</span>
                 )}
               </div>
-              <div className="mt-auto pt-4">
+              <div className={clsx("mt-auto", muchas ? "pt-2" : "pt-4")}>
                 {c.enJuego ? (
-                  <MarcadorMini torneo={torneo} p={c.enJuego} grande completo />
+                  <MarcadorMini torneo={torneo} p={c.enJuego} grande={!muchas} completo={!muchas} />
                 ) : c.llamado ? (
-                  <Cruce torneo={torneo} p={c.llamado} className="text-xl font-semibold" />
+                  <Cruce torneo={torneo} p={c.llamado} className={muchas ? "text-base font-semibold" : "text-xl font-semibold"} />
                 ) : (
                   c.siguiente ? (
                     <div className="text-white/45">
                       <p className="text-sm font-semibold uppercase tracking-wider">Siguiente</p>
-                      <Cruce torneo={torneo} p={c.siguiente} className="mt-1 text-lg" />
+                      <Cruce torneo={torneo} p={c.siguiente} className={clsx("mt-1", muchas ? "text-sm" : "text-lg")} />
                     </div>
                   ) : (
                     <p className="text-xl text-white/40">—</p>
@@ -103,13 +105,13 @@ function TV({ torneo }: { torneo: Torneo }) {
               </div>
             </div>
           ))}
-          <div className="glass flex items-center gap-6 rounded-[2rem] p-6">
-            <div className="shrink-0 rounded-2xl bg-blanco p-3">
-              <QR texto={url} size={150} />
+          <div className={clsx("glass flex min-h-0 items-center", muchas ? "gap-4 rounded-3xl p-4" : "gap-6 rounded-[2rem] p-6")}>
+            <div className={clsx("shrink-0 bg-blanco", muchas ? "rounded-xl p-2" : "rounded-2xl p-3")}>
+              <QR texto={url} size={muchas ? 96 : 150} />
             </div>
             <div className="min-w-0">
-              <p className="font-display text-2xl font-bold">Sigue el torneo</p>
-              <p className="mt-1 text-lg text-white/55">Cuadros, horarios y tus estadísticas</p>
+              <p className={clsx("font-display font-bold", muchas ? "text-xl" : "text-2xl")}>Sigue el torneo</p>
+              <p className={clsx("mt-1 text-white/55", muchas ? "text-base" : "text-lg")}>Cuadros, horarios y tus estadísticas</p>
             </div>
           </div>
         </div>
