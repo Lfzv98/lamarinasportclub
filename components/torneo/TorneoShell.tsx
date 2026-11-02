@@ -31,7 +31,7 @@ export function rangoFechas(t: Pick<Torneo, "dias">): string {
 export function EstadoTorneoBadge({ estado }: { estado: Torneo["estado"] }) {
   if (estado === "EN_JUEGO")
     return (
-      <span className="chip border-neon/30 bg-neon/10 text-neon">
+      <span className="chip shrink-0 whitespace-nowrap border-neon/30 bg-neon/10 text-neon">
         <span className="relative flex size-2">
           <span className="absolute inline-flex size-full animate-ping rounded-full bg-neon opacity-70" />
           <span className="relative inline-flex size-2 rounded-full bg-neon" />
@@ -39,9 +39,9 @@ export function EstadoTorneoBadge({ estado }: { estado: Torneo["estado"] }) {
         En juego
       </span>
     );
-  if (estado === "FINALIZADO") return <span className="chip">Finalizado</span>;
-  if (estado === "PROGRAMADO") return <span className="chip text-cielo">Programado</span>;
-  return <span className="chip text-amber-200">Inscripciones</span>;
+  if (estado === "FINALIZADO") return <span className="chip shrink-0 whitespace-nowrap">Finalizado</span>;
+  if (estado === "PROGRAMADO") return <span className="chip shrink-0 whitespace-nowrap text-cielo">Programado</span>;
+  return <span className="chip shrink-0 whitespace-nowrap text-amber-200">Inscripciones</span>;
 }
 
 /** Pantalla de clave para participantes. */
@@ -138,15 +138,17 @@ export function TorneoShell({ id, children, ancho = "max-w-6xl" }: { id: string;
 
   return (
     <div className={clsx("mx-auto min-h-dvh px-4 pb-28 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6", ancho)}>
-      <header className="flex items-center gap-3 py-3">
+      {/* En el celular el nombre va en su propia fila: los botones del staff no lo aplastan. */}
+      <header className="flex flex-wrap items-center gap-x-1.5 gap-y-2 py-3 max-sm:[&_.btn-ghost]:!p-2 sm:gap-x-3">
         <Link href="/torneos" className="btn-ghost !p-2.5" aria-label="Torneos">
           <ArrowLeft className="size-5" />
         </Link>
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate font-display text-lg font-bold leading-tight sm:text-xl">{torneo.nombre}</h1>
+        <span className="flex-1 sm:hidden" />
+        <div className="order-last w-full min-w-0 sm:order-none sm:w-auto sm:flex-1">
+          <h1 className="truncate font-display text-xl font-bold leading-tight">{torneo.nombre}</h1>
           <div className="mt-1 flex items-center gap-2">
             <EstadoTorneoBadge estado={torneo.estado} />
-            <span className="hidden text-xs text-white/50 sm:inline">{rangoFechas(torneo)}</span>
+            <span className="truncate text-xs text-white/50">{rangoFechas(torneo)}</span>
           </div>
         </div>
         <StaffChip />
