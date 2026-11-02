@@ -63,7 +63,7 @@ function Programacion({ torneo }: { torneo: Torneo }) {
   return (
     <>
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <div className="-mx-4 flex flex-1 gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        <div className="-mx-4 flex w-[calc(100%+2rem)] min-w-0 gap-2 overflow-x-auto px-4 sm:mx-0 sm:w-auto sm:flex-1 sm:px-0">
           {torneo.dias.map((d) => {
             const n = partidos.filter((p) => p.programacion?.fecha === d.fecha).length;
             return (
@@ -81,14 +81,14 @@ function Programacion({ torneo }: { torneo: Torneo }) {
           })}
         </div>
         {esStaff && (
-          <div className="flex gap-2">
-            <button className="btn-ghost !py-2" onClick={() => programar(false)} title="Vuelve a armar los horarios de lo que no está fijo">
+          <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto [&_svg]:shrink-0">
+            <button className="btn-ghost justify-center whitespace-nowrap !px-2 !py-2 text-xs sm:!px-4 sm:text-sm" onClick={() => programar(false)} title="Vuelve a armar los horarios de lo que no está fijo">
               <Wand2 className="size-4" /> Programar
             </button>
-            <button className="btn-ghost !py-2" onClick={() => programar(true)} title="Reacomoda lo que falta desde ahora">
+            <button className="btn-ghost justify-center whitespace-nowrap !px-2 !py-2 text-xs sm:!px-4 sm:text-sm" onClick={() => programar(true)} title="Reacomoda lo que falta desde ahora">
               <RefreshCw className="size-4" /> Desde ahora
             </button>
-            <button className="btn-ghost !py-2 !text-amber-200" onClick={() => setImprevistos(true)} title="Lluvia, pistas, sedes y días">
+            <button className="btn-ghost justify-center whitespace-nowrap !px-2 !py-2 text-xs !text-amber-200 sm:!px-4 sm:text-sm" onClick={() => setImprevistos(true)} title="Lluvia, pistas, sedes y días">
               <CloudRain className="size-4" /> Imprevistos
             </button>
           </div>
