@@ -12,10 +12,10 @@ import { useAmericanos, useEsStaff } from "@/lib/store";
  * El candado vive solo en la pestaña (sessionStorage): escanear otro QR del club, como el
  * sticker de inscripciones, abre una pestaña nueva y entra normal. Antes vivía en
  * localStorage y dejaba al teléfono atado para siempre a la tabla de un americano viejo.
- * Las inscripciones nunca se bloquean.
+ * Las inscripciones y «¿Cuándo juego?» (los QR fijos del club) nunca se bloquean.
  */
 const CLAVE = "lm-solo-ranking";
-const SIEMPRE_LIBRE = /^\/inscripcion(es|\/[^/]+)\/?$/;
+const SIEMPRE_LIBRE = /^\/(inscripciones|inscripcion\/[^/]+|cuando-juego)\/?$/;
 
 export function marcarSoloRanking(ruta: string) {
   try {
