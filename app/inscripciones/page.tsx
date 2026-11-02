@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Inbox, Settings2, Ticket, Trophy } from "lucide-react";
 import { Logo } from "@/components/Logo";
@@ -15,6 +17,10 @@ import { useListaTorneos, useTorneos } from "@/lib/torneosStore";
 /**
  * Inscripciones: la puerta fija a la inscripción online. Los jugadores ven los torneos con
  * la inscripción abierta; el staff, además, entra al panel de inscripciones de cada torneo.
+ *
+ * Es la dirección del QR fijo del club: si hay un solo torneo abierto, el jugador entra directo
+ * a su formulario; si hay varios, elige aquí. Se decide con los datos recién traídos del servidor
+ * (no con la copia guardada en el teléfono) para no mandarlo a un torneo que ya cerró.
  */
 export default function InscripcionesPage() {
   const torneos = useListaTorneos();
@@ -22,6 +28,13 @@ export default function InscripcionesPage() {
   const esStaff = useEsStaff();
   const abiertos = torneos.filter((t) => aperturaInscripcion(t).abierta);
   const activos = torneos.filter((t) => t.estado !== "FINALIZADO");
+  const router = useRouter();
+  const ultimoSync = useTorneos((s) => s.ultimoSync);
+  const unicoAbierto = ultimoSync && !esStaff && abiertos.length === 1 ? abiertos[0].id : null;
+
+  useEffect(() => {
+    if (unicoAbierto) router.replace(`/inscripcion/${unicoAbierto}`);
+  }, [unicoAbierto, router]);
 
   return (
     <main className="mx-auto max-w-5xl px-4 pb-24 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6">
