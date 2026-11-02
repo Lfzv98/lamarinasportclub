@@ -1,7 +1,7 @@
 import "server-only";
 import { crearEvento } from "@/lib/evento";
 import { catNivel } from "@/lib/torneo/categorias";
-import { avanzarHasta, torneoGrande } from "@/lib/torneo/grande";
+import { avanzarHasta, marcadoresSimulados, torneoGrande } from "@/lib/torneo/grande";
 import { repartirTurnos } from "@/lib/torneo/arbitros";
 import { leerPlantel } from "./arbitros";
 import { crearTorneo, inscribirDupla } from "@/lib/torneo/torneo";
@@ -106,9 +106,15 @@ export async function crearAmericanoPrueba(): Promise<EventoAmericano> {
 export async function crearTorneoGrande(): Promise<Torneo> {
   const hoy = hoyClub();
   const id = `${PREFIJO}${marca()}-open-grande`;
-  let t = torneoGrande({ id, nombre: "Open La Marina 2026 · 450 duplas", desde: sumarDias(hoy, -5), dias: 14, sortear: true });
+  // Dos semanas de lunes a domingo, con hoy en la mitad: así las semis y finales caen en un domingo.
+  const dow = new Date(`${hoy}T12:00:00Z`).getUTCDay();
+  const desde = sumarDias(hoy, -((dow + 6) % 7) - (dow === 0 || dow >= 5 ? 0 : 7));
+  let t = torneoGrande({ id, nombre: "Open La Marina 2026 · 450 duplas", desde, dias: 14, sortear: true });
   const plantel = (await leerPlantel()).arbitros.filter((a) => a.activo !== false).map((a) => a.id);
   if (plantel.length) t = { ...t, arbitros: { ...(t.arbitros ?? {}), turnos: repartirTurnos(t, plantel) } };
-  t = avanzarHasta(t, `${hoy}T${horaClub()}`);
-  return getTorneosRepository().guardar({ ...t, actualizadoEn: new Date().toISOString() });
+  const ahora = `${hoy}T${horaClub()}`;
+  t = avanzarHasta(t, ahora);
+  const repo = getTorneosRepository();
+  for (const m of marcadoresSimulados(t, ahora)) await repo.guardarMarcador(m);
+  return repo.guardar({ ...t, actualizadoEn: new Date().toISOString() });
 }

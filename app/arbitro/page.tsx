@@ -359,6 +359,8 @@ function Encabezado({ torneo, p, rotulo, vivo = false }: { torneo: Torneo; p: Pa
   );
 }
 
+const diaCorto = (f: string) => new Date(`${f}T12:00:00Z`).toLocaleDateString("es", { weekday: "short", day: "numeric", timeZone: "UTC" });
+
 /** Lo que viene en esta pista según la programación, para que el árbitro sepa a quién esperar. */
 function DespuesEnPista({ torneo, pista, excluir }: { torneo: Torneo; pista: number; excluir: string }) {
   const proximos = torneo.categorias
@@ -367,13 +369,18 @@ function DespuesEnPista({ torneo, pista, excluir }: { torneo: Torneo; pista: num
     .sort((a, b) => `${a.programacion!.fecha} ${a.programacion!.hora}`.localeCompare(`${b.programacion!.fecha} ${b.programacion!.hora}`))
     .slice(0, 2);
   if (!proximos.length) return <div className="flex-1" />;
+  // Si lo próximo es otro día, se dice cuál (el árbitro no espera hoy a un partido de mañana).
+  const hoy = relojClub(Date.now()).fecha;
   return (
     <div className="mt-auto pt-6">
       <p className="label">Después en esta pista</p>
       <ul className="space-y-2">
         {proximos.map((p) => (
           <li key={p.id} className="flex items-center gap-3 rounded-2xl bg-white/[0.04] px-4 py-3">
-            <span className="font-display text-lg font-bold tabular-nums text-lima">{p.programacion!.hora}</span>
+            <span className="shrink-0 text-center leading-tight">
+              {p.programacion!.fecha !== hoy && <span className="block text-[11px] font-semibold uppercase text-white/50">{diaCorto(p.programacion!.fecha)}</span>}
+              <span className="font-display text-lg font-bold tabular-nums text-lima">{p.programacion!.hora}</span>
+            </span>
             <span className="min-w-0 flex-1 truncate text-sm">
               {p.duplaA && p.duplaB ? `${nombreDupla(torneo, dupla(torneo, p.duplaA))} vs ${nombreDupla(torneo, dupla(torneo, p.duplaB))}` : "Por definir"}
             </span>

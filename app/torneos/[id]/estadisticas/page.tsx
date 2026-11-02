@@ -55,7 +55,8 @@ function Estadisticas({ torneo }: { torneo: Torneo }) {
 
   const q = buscar.trim().toLowerCase();
   const visibles = filas.filter((f) => !q || f.nombre.toLowerCase().includes(q));
-  const top = (fn: (f: Fila) => number, asc = false) => [...filas].filter((f) => f.s.puntosJugados >= 10).sort((a, b) => (asc ? fn(a) - fn(b) : fn(b) - fn(a))).slice(0, 5);
+  // "Menos errores" pide ~un partido completo por partido contado: con 10 puntos de un partido a medias cualquiera tiene 0.
+  const top = (fn: (f: Fila) => number, asc = false, minPuntos = (_: Fila) => 10) => [...filas].filter((f) => f.s.puntosJugados >= minPuntos(f)).sort((a, b) => (asc ? fn(a) - fn(b) : fn(b) - fn(a))).slice(0, 5);
   const sel = filas.find((f) => f.id === abierto);
 
   if (!filas.length)
@@ -76,7 +77,7 @@ function Estadisticas({ torneo }: { torneo: Torneo }) {
       <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Ranking titulo="Más winners" icon={Zap} filas={top((f) => f.s.winners)} valor={(f) => `${f.s.winners}`} onClick={setAbierto} />
         <Ranking titulo="% puntos ganados" icon={TrendingUp} filas={top((f) => f.s.puntosGanados / f.s.puntosJugados)} valor={(f) => `${pct(f.s.puntosGanados, f.s.puntosJugados)}%`} onClick={setAbierto} />
-        <Ranking titulo="Menos errores no forzados" icon={TrendingDown} filas={top((f) => f.s.erroresNoForzados / f.partidos, true)} valor={(f) => `${(f.s.erroresNoForzados / f.partidos).toFixed(1)}/partido`} onClick={setAbierto} />
+        <Ranking titulo="Menos errores no forzados" icon={TrendingDown} filas={top((f) => f.s.erroresNoForzados / f.partidos, true, (f) => 40 * f.partidos)} valor={(f) => `${(f.s.erroresNoForzados / f.partidos).toFixed(1)}/partido`} onClick={setAbierto} />
       </div>
 
       <label className="glass mt-6 flex items-center gap-2 rounded-xl px-3">
