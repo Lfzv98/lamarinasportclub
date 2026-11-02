@@ -18,6 +18,8 @@ import { useEsStaff } from "@/lib/store";
 /** Pantallas completas (TV, anotador, imprimir) donde el botón molestaría. */
 const SIN_BOTON = [/\/tv$/, /\/anotar(\/|$)/, /\/pista\/[^/]+$/, /^\/manual\/imprimir$/, /^\/offline$/, /^\/inscripcion\//];
 /** Pantallas con barra fija abajo: el botón sube para no taparla. */
+/** Rutas con un botón fijo de guardar encima de la barra: el asistente sube para no taparlo. */
+const CON_BOTON_FIJO = [/^\/torneos\/[^/]+\/ajustes$/];
 const CON_BARRA = [/^\/evento\/[^/]+(\/[^/]+)?$/, /^\/habibi\/[^/]+$/, /^\/torneos\/(?!ranking$)[^/]+/, /^\/(setup|club)$/, /\/ajustes$/, /\/nuevo$/];
 
 const SUGERENCIAS = [
@@ -55,7 +57,7 @@ export function Asistente() {
             }}
             className={clsx(
               "fixed right-4 z-[55] flex items-center gap-2 rounded-full bg-neon px-4 py-3 font-semibold text-marino-2 shadow-[0_10px_30px_-8px_rgba(141,220,47,0.7)] transition hover:brightness-105 sm:right-6",
-              CON_BARRA.some((r) => r.test(ruta)) ? "bottom-28" : "bottom-[max(1.25rem,env(safe-area-inset-bottom))]",
+              CON_BOTON_FIJO.some((r) => r.test(ruta)) ? "bottom-44" : CON_BARRA.some((r) => r.test(ruta)) ? "bottom-28" : "bottom-[max(1.25rem,env(safe-area-inset-bottom))]",
             )}
             aria-label="Abrir asistente IA"
           >

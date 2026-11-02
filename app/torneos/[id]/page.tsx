@@ -11,6 +11,7 @@ import { TorneoShell } from "@/components/torneo/TorneoShell";
 import { FranjaPatrocinadores } from "@/components/torneo/Patrocinadores";
 import { useAhora, useMarcadoresEnVivo } from "@/components/torneo/vivo";
 import { TarjetaPista } from "@/components/torneo/Pistas";
+import { CierreTorneo } from "@/components/torneo/CierreTorneo";
 import { PasosTorneo } from "@/components/torneo/PasosTorneo";
 import { useEsMesa } from "@/lib/arbitro";
 import { atrasoMinutos, estadoPistas, partidosListos, vencidosWO } from "@/lib/torneo/programacion";
@@ -50,6 +51,16 @@ function EnVivo({ torneo }: { torneo: Torneo }) {
   return (
     <>
       {esStaff && <PasosTorneo torneo={torneo} />}
+      {esStaff && <CierreTorneo torneo={torneo} className="mt-3" />}
+      {!esStaff && torneo.estado === "FINALIZADO" && (
+        <Link href={`/torneos/${torneo.id}/cuadros`} className="glass mt-3 flex items-center gap-3 rounded-2xl p-4" data-torneo-finalizado>
+          <Trophy className="size-5 text-neon" />
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold">Torneo finalizado</span>
+            <span className="block text-xs text-white/55">Mira los campeones y los cuadros completos.</span>
+          </span>
+        </Link>
+      )}
       {esMesa && publicadas > 0 && (
         <Link href={`/torneos/${torneo.id}/mesa`} className="glass mt-2 flex items-center gap-3 rounded-2xl p-3.5 transition hover:border-neon/40">
           <span className="flex size-10 items-center justify-center rounded-xl bg-lima text-marino-2">

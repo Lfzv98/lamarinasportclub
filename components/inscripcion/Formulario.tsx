@@ -200,6 +200,11 @@ export function Formulario({ data, onListo }: { data: ApiInscripcionPublica; onL
 
       <AnimatePresence mode="wait">
         <motion.div key={paso} initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.22 }}>
+          {cat && libres(cat) === 0 && (
+            <p className="mb-4 rounded-2xl border border-coral/40 bg-coral/10 p-3 text-sm font-semibold text-coral" data-cupo-lleno>
+              Se llenó el cupo de {cat.nombre} mientras completaban el formulario. {paso === 0 ? "Elijan otra categoría." : "Vuelvan al paso 1 y elijan otra categoría."}
+            </p>
+          )}
           {paso === 0 && <PasoCategoria categorias={data.categorias} valor={b.categoriaId} onChange={(id) => {
                 setErrores({});
                 setB({ ...b, categoriaId: id });
@@ -325,7 +330,7 @@ function PasoCategoria({ categorias, valor, onChange, error }: { categorias: Cup
                     </span>
                     {c.cupo != null && (
                       <span className="mt-2 block h-1 overflow-hidden rounded-full bg-white/10">
-                        <span className="block h-full rounded-full bg-lima" style={{ width: `${Math.min(100, (c.ocupados / c.cupo) * 100)}%` }} />
+                        <span className={clsx("block h-full rounded-full transition-all", llena ? "bg-coral" : "bg-lima")} style={{ width: `${Math.min(100, (c.ocupados / c.cupo) * 100)}%` }} />
                       </span>
                     )}
                   </button>

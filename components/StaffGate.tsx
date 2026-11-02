@@ -40,7 +40,8 @@ export function StaffGate({ children }: { children: React.ReactNode }) {
 }
 
 /** Chip de sesión: "Soy staff" para entrar, o el nombre con opción de salir. */
-export function StaffChip() {
+/** `compacto`: en el celular, solo el escudo (deja lugar al título). */
+export function StaffChip({ compacto = false }: { compacto?: boolean } = {}) {
   const staff = useAmericanos((s) => s.staff);
   const setPedirLogin = useAmericanos((s) => s.setPedirLogin);
   const logout = useAmericanos((s) => s.logout);
@@ -48,7 +49,7 @@ export function StaffChip() {
   if (!staff)
     return (
       <button className="chip hover:border-neon/40 hover:text-white" onClick={() => setPedirLogin(true)}>
-        <LockKeyhole className="size-3" /> Soy staff
+        <LockKeyhole className="size-3" /> <span className={compacto ? "hidden sm:inline" : undefined}>Soy staff</span>
       </button>
     );
   return (
@@ -57,8 +58,9 @@ export function StaffChip() {
       title={`${staff.nombre} · tocar para salir`}
       onClick={() => confirm("¿Cerrar sesión de staff en este dispositivo?") && logout()}
     >
-      <ShieldCheck className="size-3" /> Staff
-      <LogOut className="size-3 opacity-60" />
+      <ShieldCheck className={compacto ? "size-4 sm:size-3" : "size-3"} />
+      <span className={compacto ? "hidden sm:inline" : undefined}>Staff</span>
+      <LogOut className={compacto ? "hidden size-3 opacity-60 sm:block" : "size-3 opacity-60"} />
     </button>
   );
 }

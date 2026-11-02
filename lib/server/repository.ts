@@ -143,7 +143,17 @@ export interface TorneosRepository {
   listar(): Promise<Torneo[]>;
   obtener(id: string): Promise<Torneo | null>;
   guardar(t: Torneo): Promise<Torneo>;
-  listarMarcadores(torneoId?: string | null): Promise<MarcadorVivo[]>;
+  /**
+   * Guarda solo si nadie lo cambió desde `versionPrevia` (su `actualizadoEn`). false = otro lo cambió
+   * entre medio: hay que volver a leer y aplicar el cambio encima (ver `actualizarTorneo`).
+   */
+  guardarSi(t: Torneo, versionPrevia: string): Promise<boolean>;
+  /** Índice liviano (sin el cuadro): para que la sincronización traiga solo los torneos que cambiaron. */
+  indice(): Promise<IndiceTorneo[]>;
+  /** Varios torneos completos por id. */
+  obtenerVarios(ids: string[]): Promise<Torneo[]>;
+  /** Con `desde`: los que siguen en juego más los cambiados después de esa fecha (para refrescos frecuentes). */
+  listarMarcadores(torneoId?: string | null, desde?: string | null): Promise<MarcadorVivo[]>;
   obtenerMarcador(id: string): Promise<MarcadorVivo | null>;
   guardarMarcador(m: MarcadorVivo): Promise<MarcadorVivo>;
   /** Datos sueltos de un torneo o americano (registro de árbitros, fotos): tabla `eventos_extras`. */
@@ -152,6 +162,14 @@ export interface TorneosRepository {
   obtenerExtra(id: string): Promise<ExtraTorneo | null>;
   guardarExtra(x: ExtraTorneo): Promise<ExtraTorneo>;
   borrarExtra(id: string): Promise<void>;
+}
+
+/** Lo mínimo de un torneo para saber si cambió y quién puede verlo. */
+export interface IndiceTorneo {
+  id: string;
+  actualizadoEn: string;
+  acceso?: Torneo["acceso"];
+  eliminado?: boolean;
 }
 
 export interface ExtraTorneo<T = unknown> {
@@ -185,12 +203,24 @@ const demoTorneos: TorneosRepository = {
   async obtener(id) {
     return torneosDemo().get(id) ?? null;
   },
+  async indice() {
+    return [...torneosDemo().values()].map((t) => ({ id: t.id, actualizadoEn: t.actualizadoEn, acceso: t.acceso ?? null, eliminado: !!t.eliminado }));
+  },
+  async obtenerVarios(ids) {
+    return ids.map((id) => torneosDemo().get(id)).filter((t): t is Torneo => !!t);
+  },
   async guardar(t) {
     torneosDemo().set(t.id, t);
     return t;
   },
-  async listarMarcadores(torneoId) {
-    return [...marcadoresDemo().values()].filter((m) => !torneoId || m.torneoId === torneoId);
+  async guardarSi(t, versionPrevia) {
+    const actual = torneosDemo().get(t.id);
+    if (actual && actual.actualizadoEn !== versionPrevia) return false;
+    torneosDemo().set(t.id, t);
+    return true;
+  },
+  async listarMarcadores(torneoId, desde) {
+    return [...marcadoresDemo().values()].filter((m) => (!torneoId || m.torneoId === torneoId) && (!desde || !m.finalizado || m.actualizadoEn > desde));
   },
   async obtenerMarcador(id) {
     return marcadoresDemo().get(id) ?? null;
@@ -238,12 +268,40 @@ function supabaseTorneos(url: string, key: string): TorneosRepository {
     async obtener(id) {
       return (await pedir<{ data: Torneo }[]>(tablaT, `?select=data&id=eq.${encodeURIComponent(id)}`))[0]?.data ?? null;
     },
+    async indice() {
+      const filas = await todasLasPaginas((desde) =>
+        pedir<{ id: string; actualizado_en: string; acceso: Torneo["acceso"] | null; eliminado: boolean | null }[]>(
+          tablaT,
+          `?select=id,actualizado_en,acceso:data->acceso,eliminado:data->eliminado&order=actualizado_en.desc,id.asc&limit=${PAGINA}&offset=${desde}`,
+        ),
+      );
+      return filas.map((f) => ({ id: f.id, actualizadoEn: f.actualizado_en, acceso: f.acceso ?? null, eliminado: !!f.eliminado }));
+    },
+    async obtenerVarios(ids) {
+      const out: Torneo[] = [];
+      for (let i = 0; i < ids.length; i += 40) {
+        const lista = ids.slice(i, i + 40).map((id) => `"${id.replace(/"/g, "")}"`).join(",");
+        out.push(...(await pedir<{ data: Torneo }[]>(tablaT, `?select=data&id=in.(${encodeURIComponent(lista)})`)).map((f) => f.data));
+      }
+      return out;
+    },
     async guardar(t) {
       await upsert(tablaT, { id: t.id, club_id: t.clubId, data: t, estado: t.estado, actualizado_en: t.actualizadoEn });
       return t;
     },
-    async listarMarcadores(torneoId) {
-      const filtro = torneoId ? `&torneo_id=eq.${encodeURIComponent(torneoId)}` : "";
+    async guardarSi(t, versionPrevia) {
+      // Compare-and-swap con PostgREST: solo actualiza la fila si sigue en la versión que se leyó.
+      const filas = await pedir<{ id: string }[]>(
+        tablaT,
+        `?id=eq.${encodeURIComponent(t.id)}&actualizado_en=eq.${encodeURIComponent(versionPrevia)}&select=id`,
+        { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ club_id: t.clubId, data: t, estado: t.estado, actualizado_en: t.actualizadoEn }) },
+      );
+      return Array.isArray(filas) && filas.length > 0;
+    },
+    async listarMarcadores(torneoId, desde) {
+      const filtro =
+        (torneoId ? `&torneo_id=eq.${encodeURIComponent(torneoId)}` : "") +
+        (desde ? `&or=${encodeURIComponent(`(actualizado_en.gt.${desde},data->>finalizado.is.null,data->>finalizado.eq.false)`)}` : "");
       return (await todasLasPaginas((desde) => pedir<{ data: MarcadorVivo }[]>(tablaM, `?select=data${filtro}&order=id.asc&limit=${PAGINA}&offset=${desde}`))).map((f) => f.data);
     },
     async obtenerMarcador(id) {

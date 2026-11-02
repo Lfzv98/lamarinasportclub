@@ -3,7 +3,8 @@
 import clsx from "clsx";
 import { use, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Camera, ClipboardPaste, Crown, Dices, Plus, Settings2, Trash2, Undo2, UserPlus } from "lucide-react";
+import { Camera, ClipboardPaste, Crown, Dices, ListChecks, Plus, Settings2, Trash2, Undo2, UserPlus } from "lucide-react";
+import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
 import { TomarFoto } from "@/components/Foto";
 import { subirFoto, useFotoDupla, useFotos, useFotosTorneo } from "@/lib/fotos";
@@ -16,6 +17,7 @@ import { toast } from "@/components/ui/Toaster";
 import { AtletaFvpLinea, EstadoFvpChip, ExcepcionFvp, motivoSugerido, RevisarFvpHoja } from "@/components/torneo/Fvp";
 import { AvisoInscripciones } from "@/components/torneo/AvisoInscripciones";
 import { SorteoPopup } from "@/components/torneo/SorteoPopup";
+import { BarraCupo, CupoControl } from "@/components/torneo/Cupo";
 import { TorneoShell } from "@/components/torneo/TorneoShell";
 import { descripcionReglas, minutosEstimados, nombreCategoria, nombreCorto, tieBreakPorDefecto, validarDupla } from "@/lib/torneo/categorias";
 import { claveCedula, formatoCedula, pendientesFvp, verificarDupla } from "@/lib/ranking/fvp";
@@ -24,9 +26,11 @@ import { useAmericanos } from "@/lib/store";
 import { duplasActivas, ordenSiembra, proponerFormato, resumenFormato } from "@/lib/torneo/cuadro";
 import {
   anioTorneo,
+  cupoLibre,
   configurarCategoria,
   deshacerSorteo,
   editarDupla,
+  fijarCupo,
   estadoCategoria,
   inscribirDupla,
   nombreDupla,
@@ -109,12 +113,15 @@ function PanelCategoria({ torneo, cat, lote, onLoteListo }: { torneo: Torneo; ca
   const [revisar, setRevisar] = useState<Dupla | null>(null);
   const id = cat.categoria.id;
   const porRevisar = pendientesFvp(torneo, id);
+  // Sin lista FVP cargada no hay contra qué verificar: se ofrece cargarla o sortear sin validar (no revisar una por una).
+  const sinListaFvp = porRevisar.length > 0 && porRevisar.every((d) => d.fvp?.estado === "POR_VERIFICAR" && !d.fvp.lista);
   const activas = duplasActivas(cat.duplas);
   const estado = estadoCategoria(cat);
   const sorteada = !!cat.cuadro;
   const propuesta = cat.config.manual ? resumenFormato(activas.length, cat.config) : proponerFormato(activas.length, cat.config);
   const ordenadas = useMemo(() => ordenSiembra(cat.duplas, 1), [cat.duplas]);
   const jugado = cat.cuadro?.partidos.some((p) => !p.bye && p.estado !== "PENDIENTE");
+  const staffNombre = useAmericanos((s) => s.staff?.nombre);
 
   return (
     <section className="mt-4">
@@ -154,6 +161,16 @@ function PanelCategoria({ torneo, cat, lote, onLoteListo }: { torneo: Torneo; ca
         </div>
       </div>
 
+      <div className="glass mt-3 space-y-3 rounded-2xl p-4" data-cupo-categoria>
+        <CupoControl
+          compacto
+          valor={cat.cupo ?? null}
+          inscritas={activas.length}
+          onChange={(v) => guardar(fijarCupo(torneo, id, v, staffNombre))}
+        />
+        <BarraCupo ocupados={activas.length} cupo={cat.cupo ?? null} />
+      </div>
+
       <div className="mt-6 flex items-end justify-between gap-3">
         <h3 className="font-display text-lg font-semibold">Duplas</h3>
         <div className="flex gap-2">
@@ -168,9 +185,31 @@ function PanelCategoria({ torneo, cat, lote, onLoteListo }: { torneo: Torneo; ca
       </div>
       {sorteada && <p className="mt-2 text-xs text-white/45">Para sumar duplas después del sorteo, deshaz el sorteo (si no hay partidos jugados).</p>}
       {porRevisar.length > 0 && !sorteada && (
-        <p className="mt-2 text-sm text-amber-300">
-          {porRevisar.length} dupla{porRevisar.length === 1 ? "" : "s"} sin pasar el chequeo del ranking FVP. Revísala{porRevisar.length === 1 ? "" : "s"} (toca el aviso de cada una) para poder hacer el sorteo.
-        </p>
+        <div className="mt-2 text-sm text-amber-300" data-aviso-fvp>
+          <p>
+            {porRevisar.length} dupla{porRevisar.length === 1 ? "" : "s"} sin pasar el chequeo del ranking FVP.{" "}
+            {sinListaFvp
+              ? "No hay lista FVP cargada: cárgala para verificarlas todas de una vez, o sortea sin validar en este torneo."
+              : `Revísala${porRevisar.length === 1 ? "" : "s"} (toca el aviso de cada una) para poder hacer el sorteo.`}
+          </p>
+          {sinListaFvp && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Link href="/torneos/ranking" className="btn-ghost !px-3 !py-2 text-xs">
+                <ListChecks className="size-4" /> Cargar lista FVP
+              </Link>
+              <button
+                className="btn-ghost !px-3 !py-2 text-xs"
+                onClick={() => {
+                  if (!confirm("¿Sortear este torneo sin validar categorías con el ranking FVP? Se puede volver a activar en Ajustes.")) return;
+                  guardar({ ...torneo, validarFvp: false });
+                  toast("Validación FVP desactivada en este torneo. Ya puedes sortear.", "ok");
+                }}
+              >
+                Sortear sin validar FVP
+              </button>
+            </div>
+          )}
+        </div>
       )}
 
       {cat.duplas.length === 0 ? (
@@ -326,6 +365,7 @@ function InscribirHoja({ torneo, cat, abierta, onClose }: { torneo: Torneo; cat:
 
   function inscribir(seguir: boolean) {
     if (error) return toast(error, "error");
+    if (cupoLibre(cat) === 0) return toast(`Cupo lleno: ${cat.cupo} duplas. Sube el cupo arriba para inscribir más.`, "error");
     const final = conExcepcion(v, excepcion, motivo, staff?.nombre);
     let t = inscribirDupla(torneo, cat.categoria.id, ja, jb, { puntos: puntos ? Number(puntos) : undefined, fvp: final });
     if (final?.estado === "EXCEPCION") t = tocar(t, `Excepción FVP para ${nombreJugador(ja)} / ${nombreJugador(jb)} (${nombreCategoria(cat.categoria)}): ${final.nota}`, staff?.nombre);
@@ -460,6 +500,9 @@ function PegarHoja({ torneo, cat, abierta, textoInicial, onClose }: { torneo: To
           className="btn-neon w-full"
           disabled={!validas.length || (chequeaFvp && !fvp.listo)}
           onClick={() => {
+            const libres = cupoLibre(cat);
+            if (libres !== null && validas.length > libres)
+              return toast(libres ? `Solo quedan ${libres} lugares del cupo (${cat.cupo}). Sube el cupo o pega menos duplas.` : `Cupo lleno: ${cat.cupo} duplas.`, "error");
             let t = torneo;
             for (const v of validas) t = inscribirDupla(t, cat.categoria.id, v.a!, v.b!, { puntos: v.puntos, fvp: v.fvp });
             guardar(t);

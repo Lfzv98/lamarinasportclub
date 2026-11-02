@@ -11,6 +11,7 @@ import { MapaPistas } from "@/components/MapaPistas";
 import { StaffGate } from "@/components/StaffGate";
 import { Stepper } from "@/components/ui/Stepper";
 import { Switch } from "@/components/ui/Switch";
+import { CupoControl } from "@/components/torneo/Cupo";
 import { toast } from "@/components/ui/Toaster";
 import { fechaCorta } from "@/components/torneo/TorneoShell";
 import { vibrar } from "@/lib/feedback";
@@ -82,6 +83,7 @@ function NuevoTorneo() {
   const [descanso, setDescanso] = useState(45);
   const [tolerancia, setTolerancia] = useState(10);
   const [finalesUltimo, setFinalesUltimo] = useState(true);
+  const [cupo, setCupo] = useState<number | null>(null);
   const catalogo = useMemo(catalogoCategorias, []);
   // Duplas que dictó el staff al asistente IA: se ofrecen en "Pegar lista" apenas se crea el torneo.
   const lotes = useRef<LoteDuplas[]>([]);
@@ -135,7 +137,8 @@ function NuevoTorneo() {
       toleranciaWO: tolerancia,
       finalesUltimoDia: finalesUltimo,
     });
-    guardar({ ...t, acceso: { clave: claveAleatoria(), vence: venceAlTerminar(t.dias) }, arbitros: { turnos: [] } });
+    const conCupo = cupo == null ? t : { ...t, categorias: t.categorias.map((c) => ({ ...c, cupo })) };
+    guardar({ ...conCupo, acceso: { clave: claveAleatoria(), vence: venceAlTerminar(t.dias) }, arbitros: { turnos: [] } });
     if (lotes.current.length) dejarPrefill("torneo-duplas", { torneoId: t.id, lotes: lotes.current });
     toast(lotes.current.length ? "Torneo creado. Revisa las duplas e inscríbelas." : "Torneo creado. Ahora inscribe las duplas.");
     router.push(`/torneos/${t.id}/categorias`);
@@ -191,12 +194,12 @@ function NuevoTorneo() {
         </div>
         <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
           {dias.map((d) => (
-            <li key={d.fecha} className="glass flex items-center gap-3 rounded-2xl p-3">
-              <span className="w-24 shrink-0 font-semibold">{fechaCorta(d.fecha)}</span>
+            <li key={d.fecha} className="glass flex items-center gap-2 rounded-2xl p-3 sm:gap-3">
+              <span className="w-[4.5rem] shrink-0 text-sm font-semibold sm:w-24 sm:text-base">{fechaCorta(d.fecha)}</span>
               <input
                 type="time"
                 step={900}
-                className="input !w-auto min-w-0 flex-1 !px-2 !py-2 text-center"
+                className="input !w-auto min-w-0 flex-1 !px-1.5 !py-2 text-center text-sm [color-scheme:dark] sm:!px-2 sm:text-base"
                 value={d.inicio}
                 onChange={(e) => setHoras((h) => ({ ...h, [d.fecha]: { ...h[d.fecha], inicio: e.target.value } }))}
                 aria-label={`Inicio ${d.fecha}`}
@@ -205,7 +208,7 @@ function NuevoTorneo() {
               <input
                 type="time"
                 step={900}
-                className="input !w-auto min-w-0 flex-1 !px-2 !py-2 text-center"
+                className="input !w-auto min-w-0 flex-1 !px-1.5 !py-2 text-center text-sm [color-scheme:dark] sm:!px-2 sm:text-base"
                 value={d.fin}
                 onChange={(e) => setHoras((h) => ({ ...h, [d.fecha]: { ...h[d.fecha], fin: e.target.value } }))}
                 aria-label={`Fin ${d.fecha}`}
@@ -280,6 +283,12 @@ function NuevoTorneo() {
             </div>
             <Switch activo={finalesUltimo} onChange={setFinalesUltimo} etiqueta="Semis y finales el último día" />
           </div>
+          <CupoControl
+            valor={cupo}
+            onChange={setCupo}
+            etiqueta="Cupo por categoría"
+            sub={cupo == null ? "Sin límite. Puedes fijarlo después en cada categoría (Inscritos o Ajustes)." : `Máximo ${cupo} duplas en cada categoría. Se ajusta por categoría en Inscritos.`}
+          />
         </div>
       </section>
 

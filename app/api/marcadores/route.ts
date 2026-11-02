@@ -5,13 +5,14 @@ import { getTorneosRepository } from "@/lib/server/repository";
 import { arbitroValido, nombreArbitro } from "@/lib/server/arbitros";
 import { puedeVer, visorDe } from "@/lib/server/torneos";
 import { validarMarcador } from "@/lib/torneo/validacion";
-import type { ApiMarcadoresRespuesta, MarcadorVivo } from "@/types/torneo";
+import type { ApiMarcadoresRespuesta, MarcadorVivo, Torneo } from "@/types/torneo";
 
 export const dynamic = "force-dynamic";
 
 /**
  * GET /api/marcadores?torneoId=… → marcadores punto a punto (para el marcador de pista,
- * el cuadro en vivo y las estadísticas). `&desde=ISO` devuelve solo los cambiados después.
+ * el cuadro en vivo y las estadísticas). `&desde=ISO` devuelve los que siguen en juego y los
+ * terminados que cambiaron después: así el refresco cada 3 s no trae otra vez cientos de partidos cerrados.
  */
 export const GET = manejar(async (req: Request) => {
   const url = new URL(req.url);
@@ -19,10 +20,11 @@ export const GET = manejar(async (req: Request) => {
   const desde = url.searchParams.get("desde");
   const repo = getTorneosRepository();
   const v = await visorDe(req);
-  const torneos = new Map((await repo.listar()).map((t) => [t.id, t]));
-  const marcadores = (await repo.listarMarcadores(torneoId)).filter((m) => {
+  // Solo el índice de torneos (sin cuadros) para saber qué puede ver este visor.
+  const torneos = new Map((await repo.indice()).map((i) => [i.id, i as unknown as Torneo]));
+  const marcadores = (await repo.listarMarcadores(torneoId, desde)).filter((m) => {
     const t = torneos.get(m.torneoId);
-    return t && puedeVer(t, v) && (!desde || m.actualizadoEn > desde);
+    return t && puedeVer(t, v) && (!desde || !m.finalizado || m.actualizadoEn > desde);
   });
   return NextResponse.json<ApiMarcadoresRespuesta>({ modo: repo.modo, marcadores });
 });

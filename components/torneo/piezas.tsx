@@ -171,9 +171,14 @@ export function ResultadoHoja({ torneo, partidoId, onClose }: { torneo: Torneo; 
   const [sets, setSets] = useState<SetScore[]>([]);
   const [prog, setProg] = useState({ fecha: "", hora: "", pista: 1 });
   const [motivo, setMotivo] = useState("");
+  // Resultado que la mesa tenía delante al abrir: si otra mesa lo cambia mientras tanto, el servidor no corrige encima.
+  const [esperado, setEsperado] = useState("");
+  const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
     if (!p || !reglas) return;
+    setEsperado(textoResultado(p.resultado));
+    setEnviando(false);
     setSets(p.resultado?.sets.map((s) => ({ ...s })) ?? Array.from({ length: reglas.sets === 3 ? 2 : 1 }, () => ({ a: 0, b: 0 })));
     setProg({ fecha: p.programacion?.fecha ?? torneo.dias[0]?.fecha ?? "", hora: p.programacion?.hora ?? "09:00", pista: p.programacion?.pista ?? torneo.canchas[0]?.numero ?? 1 });
     setMotivo("");
@@ -199,7 +204,10 @@ export function ResultadoHoja({ torneo, partidoId, onClose }: { torneo: Torneo; 
     setSets((xs) => xs.map((s, k) => (k === i ? { ...s, [lado]: Math.max(0, s[lado] + d) } : s)));
   };
   const enviar = async (accion: AccionPartido, ok: string) => {
+    if (enviando) return;
+    setEnviando(true);
     const err = await accionPartido(torneo.id, p.id, accion);
+    setEnviando(false);
     if (err) return toast(err, "error");
     toast(ok);
     onClose();
@@ -215,17 +223,17 @@ export function ResultadoHoja({ torneo, partidoId, onClose }: { torneo: Torneo; 
         esMesa && listo ? (
           <div className="space-y-2">
             {terminado && p.revision?.estado === "POR_REVISAR" && !cambia && (
-              <button className="btn-neon w-full text-base" onClick={() => enviar({ accion: "revisar" }, "Resultado revisado")}>
+              <button className="btn-neon w-full text-base" disabled={enviando} onClick={() => enviar({ accion: "revisar" }, "Resultado revisado")}>
                 <Check className="size-5" /> Visto: el resultado está bien
               </button>
             )}
             {terminado ? (
               <button
                 className={clsx("w-full", cambia ? "btn-neon text-base" : "btn-ghost")}
-                disabled={!cambia || motivo.trim().length < 3}
+                disabled={!cambia || motivo.trim().length < 3 || enviando}
                 onClick={() => {
                   if (anula.length && !confirm(`Esta corrección cambia quién avanza y anula: ${anula.map((x) => x.etiqueta).join(", ")}. ¿Seguir?`)) return;
-                  enviar({ accion: "corregir", resultado: nuevo, motivo }, `Corregido: ${textoSets(sets)}`);
+                  enviar({ accion: "corregir", resultado: nuevo, motivo, esperado: esperado || undefined }, `Corregido: ${textoSets(sets)}`);
                 }}
               >
                 <PenLine className="size-4" /> {cambia ? (motivo.trim().length < 3 ? "Escribe el motivo para corregir" : `Corregir a ${textoSets(sets)}`) : "Cambia el marcador de arriba para corregir"}

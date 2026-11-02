@@ -9,7 +9,7 @@
  */
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { fusionarTorneos, marcarCambiosHorario } from "@/lib/torneo/torneo";
+import { despues, fusionarTorneos, marcarCambiosHorario } from "@/lib/torneo/torneo";
 import { aplicarAccion, type AccionPartido } from "@/lib/torneo/arbitraje";
 import { esMesaAhora, useArbitroStore } from "@/lib/arbitro";
 import { useAmericanos } from "@/lib/store";
@@ -97,12 +97,19 @@ async function enviarAccion(a: AccionPendiente): Promise<string | null> {
       torneos: data.torneo ? unir(s.torneos, [data.torneo]) : s.torneos,
       offline: false,
     }));
+    // Rechazada: la próxima sincronización trae el torneo completo para deshacer lo que se mostró.
+    if (!res.ok) delete versionesServidor[a.torneoId];
     return res.ok ? null : (data.error ?? "No se pudo guardar.");
   } catch {
     useTorneos.setState({ offline: true });
     return "offline";
   }
 }
+
+/** Versiones que el servidor ya mandó a este dispositivo (id → versión): la próxima sincronización trae solo lo nuevo. */
+let versionesServidor: Record<string, string> = {};
+/** Torneos cuyos marcadores ya se trajeron completos en esta sesión. */
+const marcadoresCompletos = new Set<string>();
 
 function unir(local: Record<string, Torneo>, remotos: Torneo[]) {
   const out = { ...local };
@@ -175,9 +182,19 @@ export const useTorneos = create<EstadoTorneos>()(
 
       async sincronizar() {
         try {
-          const [rt, ra] = await Promise.all([fetch("/api/torneos?todos=1", { cache: "no-store" }), fetch("/api/torneos/acceso", { cache: "no-store" })]);
+          // Solo viajan los torneos que cambiaron desde la última vez (ver GET /api/torneos).
+          const locales = get().torneos;
+          const conocidas = Object.entries(versionesServidor)
+            .filter(([id]) => locales[id])
+            .slice(0, 250)
+            .map(([id, ver]) => `${id}~${ver}`)
+            .join(",");
+          const url = `/api/torneos?todos=1${conocidas ? `&v=${encodeURIComponent(conocidas)}` : ""}`;
+          const [rt, ra] = await Promise.all([fetch(url, { cache: "no-store" }), fetch("/api/torneos/acceso", { cache: "no-store" })]);
           if (!rt.ok) throw new Error(String(rt.status));
           const data = (await rt.json()) as ApiTorneosRespuesta;
+          // Sin `versiones` (servidor viejo) la respuesta trae todo: se olvida lo conocido.
+          versionesServidor = data.versiones ?? {};
           const accesos = ra.ok ? ((await ra.json()) as { accesos: Record<string, string> }).accesos : get().accesos;
           set((s) => ({ torneos: unir(s.torneos, data.torneos), accesos, ultimoSync: new Date().toISOString(), offline: false }));
           if (!esStaff() && !esArbitro()) return;
@@ -189,11 +206,21 @@ export const useTorneos = create<EstadoTorneos>()(
             await Promise.all(mp.map((id) => ms[id]).filter(Boolean).map(enviarMarcador));
             return;
           }
-          const remotos = new Map(data.torneos.map((t) => [t.id, t]));
+          // Versión del servidor de cada torneo (llegue o no completo en esta respuesta).
+          const enServidor = (id: string): number | null => {
+            const ver = data.versiones?.[id];
+            if (ver) return Number.parseInt(ver, 10);
+            const t = data.torneos.find((x) => x.id === id);
+            return t ? Date.parse(t.actualizadoEn) : null;
+          };
           const { torneos, pendientes, marcadores, marcadoresPendientes } = get();
           await Promise.all([
             ...Object.values(torneos)
-              .filter((t) => !t.bloqueado && (pendientes.includes(t.id) || !remotos.has(t.id) || t.actualizadoEn > remotos.get(t.id)!.actualizadoEn))
+              .filter((t) => {
+                if (t.bloqueado) return false;
+                const srv = enServidor(t.id);
+                return pendientes.includes(t.id) || srv === null || Date.parse(t.actualizadoEn) > srv;
+              })
               .map(enviar),
             ...marcadoresPendientes.map((id) => marcadores[id]).filter(Boolean).map(enviarMarcador),
           ]);
@@ -204,9 +231,15 @@ export const useTorneos = create<EstadoTorneos>()(
 
       async sincronizarMarcadores(torneoId) {
         try {
-          const res = await fetch(`/api/marcadores?torneoId=${encodeURIComponent(torneoId)}`, { cache: "no-store" });
+          // Los terminados no cambian: después de la primera vez se piden solo los nuevos (con 15 min de
+          // margen por si el reloj de alguna tablet anda atrasado). Los en juego llegan siempre.
+          const cerrados = Object.values(get().marcadores).filter((m) => m.torneoId === torneoId && m.finalizado);
+          const ultimo = cerrados.reduce((max, m) => (m.actualizadoEn > max ? m.actualizadoEn : max), "");
+          const desde = marcadoresCompletos.has(torneoId) && ultimo ? new Date(Date.parse(ultimo) - 15 * 60_000).toISOString() : null;
+          const res = await fetch(`/api/marcadores?torneoId=${encodeURIComponent(torneoId)}${desde ? `&desde=${encodeURIComponent(desde)}` : ""}`, { cache: "no-store" });
           if (!res.ok) return;
           const { marcadores } = (await res.json()) as ApiMarcadoresRespuesta;
+          marcadoresCompletos.add(torneoId);
           set((s) => {
             const out = { ...s.marcadores };
             for (const m of marcadores) out[m.id] = masNuevo(out[m.id], m);
@@ -219,7 +252,11 @@ export const useTorneos = create<EstadoTorneos>()(
 
       guardar(nuevo) {
         // Partidos publicados que cambiaron de hora: quedan marcados para avisar a los jugadores.
-        const t = marcarCambiosHorario(get().torneos[nuevo.id], nuevo);
+        const previo = get().torneos[nuevo.id];
+        let t = marcarCambiosHorario(previo, nuevo);
+        // Todo cambio del staff sube la versión: si no (p. ej. Programar o Repartir turnos, que no "tocan" el torneo),
+        // el servidor ve la misma versión, se queda con la suya y el cambio se pierde sin aviso.
+        if (previo && t !== previo && t.actualizadoEn <= previo.actualizadoEn) t = { ...t, actualizadoEn: despues(previo.actualizadoEn) };
         set((s) => ({ torneos: { ...s.torneos, [t.id]: t }, pendientes: s.pendientes.includes(t.id) ? s.pendientes : [...s.pendientes, t.id] }));
         canal?.postMessage({ tipo: "torneo", torneo: t });
         subir(`t:${t.id}`, 400, () => {
@@ -262,7 +299,8 @@ export const useTorneos = create<EstadoTorneos>()(
           return null;
         }
         if (error) {
-          // El servidor no la aceptó: se vuelve a lo que diga el servidor.
+          // El servidor no la aceptó: se vuelve a lo que diga el servidor (completo, aunque su versión no haya cambiado).
+          delete versionesServidor[torneoId];
           await get().sincronizar();
         }
         return error;

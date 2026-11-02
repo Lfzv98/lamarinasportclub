@@ -42,7 +42,11 @@ export function pasosTorneo(t: Torneo): PasoTorneo[] {
   const porRevisar = partidos.filter((p) => p.estado === "FINALIZADO" && p.revision?.estado === "POR_REVISAR").length;
   const pistas = t.canchas.filter((c) => c.activa).length;
   const terminado = partidos.length > 0 && jugados === partidos.length;
-  const inscripcionAbierta = !!t.inscripcion?.abierta;
+  // La inscripción online solo importa mientras alguna de sus categorías siga sin sorteo: una
+  // categoría sorteada ya no acepta duplas por el enlace, y un torneo en juego tampoco.
+  const idsInscripcion = t.inscripcion?.categorias ?? [];
+  const inscripcionAbierta =
+    !!t.inscripcion?.abierta && t.estado === "INSCRIPCION" && cats.some((c) => !c.cuadro && (!idsInscripcion.length || idsInscripcion.includes(c.categoria.id)));
 
   const hechos = [
     t.dias.length > 0 && pistas > 0 && cats.length > 0,
@@ -51,7 +55,7 @@ export function pasosTorneo(t: Torneo): PasoTorneo[] {
     sorteadas.length > 0 && sinPublicar.length === 0 && sinHorario === 0,
     turnos > 0,
     terminado && porRevisar === 0,
-    terminado && porRevisar === 0,
+    t.estado === "FINALIZADO",
   ];
   // Los pasos 1 a 5 se preparan antes; el 6 arranca con el primer partido jugado o en juego.
   const enJuego = partidos.some((p) => p.estado !== "PENDIENTE");
@@ -121,9 +125,10 @@ export function pasosTorneo(t: Torneo): PasoTorneo[] {
     },
     {
       titulo: "Cierre",
-      detalle: terminado ? "Todos los partidos jugados" : "Cuando termine el último partido",
-      aviso: null,
-      porQue: "Con todo jugado y revisado salen el podio, las estadísticas y el resumen para el club.",
+      detalle: t.estado === "FINALIZADO" ? "Torneo cerrado · en el Historial" : terminado ? "Todos los partidos jugados" : "Cuando termine el último partido",
+      aviso: terminado && porRevisar === 0 && t.estado !== "FINALIZADO" ? "Todo jugado y revisado: cierra el torneo (En vivo o Ajustes)." : null,
+      porQue:
+        "Con todo jugado y revisado salen el podio, las estadísticas y el resumen para el club. El torneo se cierra solo cuando mesa técnica da «Visto» a la última final (o a mano desde Ajustes): pasa al Historial y sale de las tablets de los árbitros.",
       ir: "/estadisticas",
       boton: "Stats y resumen",
     },

@@ -17,7 +17,10 @@ import { nombrePista } from "@/lib/torneo/imprevistos";
 import { categoriasEstelares, ESTELAR_DESDE, fechaHoraLocal, programarTorneo } from "@/lib/torneo/programacion";
 import { nombreCorto } from "@/lib/torneo/categorias";
 import { NOMBRE_CRITERIO } from "@/lib/torneo/tabla";
-import { configurarTorneo, eliminarTorneo, nuevoId, todosLosPartidos } from "@/lib/torneo/torneo";
+import { configurarTorneo, eliminarTorneo, fijarCupo, nuevoId, todosLosPartidos } from "@/lib/torneo/torneo";
+import { useAmericanos } from "@/lib/store";
+import { BarraCupo, CupoControl } from "@/components/torneo/Cupo";
+import { CierreTorneo } from "@/components/torneo/CierreTorneo";
 import { useTorneos } from "@/lib/torneosStore";
 import type { CriterioDesempate, DiaTorneo, Patrocinador, Torneo } from "@/types/torneo";
 
@@ -66,6 +69,8 @@ function Ajustes({ torneo }: { torneo: Torneo }) {
     validarFvp: torneo.validarFvp !== false,
     inscripcion: torneo.inscripcion ?? null,
   }));
+  const [cupos, setCupos] = useState<Record<string, number | null>>(() => Object.fromEntries(torneo.categorias.map((c) => [c.categoria.id, c.cupo ?? null])));
+  const staffNombre = useAmericanos((s) => s.staff?.nombre);
   const archivo = useRef<HTMLInputElement>(null);
   const [nuevoSponsor, setNuevoSponsor] = useState("");
 
@@ -83,6 +88,7 @@ function Ajustes({ torneo }: { torneo: Torneo }) {
 
   const guardarTodo = () => {
     let t = configurarTorneo(torneo, { ...b, nombre: b.nombre.trim() || torneo.nombre, dias: [...b.dias].sort((x, y) => x.fecha.localeCompare(y.fecha)) });
+    for (const [id, cupo] of Object.entries(cupos)) t = fijarCupo(t, id, cupo, staffNombre);
     let extra = "";
     if (agendaCambio) {
       const empezado = todosLosPartidos(t).some((p) => p.inicioEn);
@@ -147,9 +153,9 @@ function Ajustes({ torneo }: { torneo: Torneo }) {
             <p className="font-semibold">Categoría estelar de noche</p>
             <p className="text-xs text-white/50">Se juega de noche en {nombrePista(torneo, torneo.canchas.find((c) => c.activa)?.numero)} y su final cierra el torneo. El resto deja libre esa pista de noche.</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex w-full min-w-0 gap-2 sm:w-auto">
             <select
-              className="input !w-auto !py-2"
+              className="input min-w-0 flex-1 !py-2 sm:!w-auto sm:flex-none"
               aria-label="Categoría estelar"
               value={estelarElegida}
               onChange={(e) =>
@@ -176,7 +182,7 @@ function Ajustes({ torneo }: { torneo: Torneo }) {
                 type="time"
                 step={900}
                 aria-label="Desde qué hora"
-                className="input !w-auto !py-2"
+                className="input !w-auto shrink-0 !py-2"
                 value={b.horarioEstelar?.desde ?? ESTELAR_DESDE}
                 onChange={(e) => setB({ ...b, horarioEstelar: { categorias: [estelarElegida], desde: e.target.value || ESTELAR_DESDE } })}
               />
@@ -186,6 +192,21 @@ function Ajustes({ torneo }: { torneo: Torneo }) {
       </div>
 
       <AjustesInscripcion torneo={torneo} valor={b.inscripcion} onChange={(inscripcion) => setB((x) => ({ ...x, inscripcion }))} />
+
+      <p className="label mt-8" id="cupos">Cupo por categoría</p>
+      <div className="glass divide-y divide-white/5 rounded-2xl" data-cupos>
+        {torneo.categorias.map((c) => {
+          const inscritas = c.duplas.filter((d) => d.estado === "ACTIVA").length;
+          const valor = cupos[c.categoria.id] ?? null;
+          return (
+            <div key={c.categoria.id} className="space-y-2 p-4">
+              <CupoControl compacto etiqueta={nombreCorto(c.categoria)} valor={valor} inscritas={inscritas} onChange={(v) => setCupos((x) => ({ ...x, [c.categoria.id]: v }))} sub={valor == null ? `${inscritas} inscritas · sin límite` : undefined} />
+              {valor != null && <BarraCupo ocupados={inscritas} cupo={valor} />}
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-2 text-xs text-white/45">Con cupo, la inscripción online muestra los lugares que quedan y deja de aceptar duplas al llenarse (contando las que esperan confirmar el pago).</p>
 
       <p className="label mt-8">Días</p>
       <ul className="space-y-2">
@@ -323,6 +344,9 @@ function Ajustes({ torneo }: { torneo: Torneo }) {
           e.currentTarget.value = "";
         }}
       />
+
+      <p className="label mt-8">Estado del torneo</p>
+      <CierreTorneo torneo={torneo} forzar />
 
       <p className="label mt-8 flex items-center gap-1.5">
         <History className="size-3.5" /> Historial de cambios

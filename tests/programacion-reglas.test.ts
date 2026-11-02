@@ -147,3 +147,26 @@ test("la categoría estelar se puede elegir o apagar", () => {
   const sin = programarTorneo({ ...base, horarioEstelar: null }).torneo;
   assert.ok(todos(sin).some((p) => p.categoriaId === "M-1RA" && p.programacion && p.programacion.hora < "19:00"));
 });
+
+test("fin de semana corto: la estelar de 3 duplas no deja partidos sin hora por buscar la noche", () => {
+  // Caso real de la prueba de punta a punta: 2 días de 08 a 22, 7ma M (8), 6ta F (3) y 5ta X (3, la estelar).
+  const cats: [CategoriaTorneo, number, "M" | "F" | "X"][] = [
+    [catNivel("MASCULINO", "7MA"), 8, "M"],
+    [catNivel("FEMENINO", "6TA"), 3, "F"],
+    [catNivel("MIXTO", "5TA"), 3, "X"],
+  ];
+  const dias = [
+    { fecha: "2026-11-14", inicio: "08:00", fin: "22:00" },
+    { fecha: "2026-11-15", inicio: "08:00", fin: "22:00" },
+  ];
+  let t = crearTorneo({ nombre: "Copa corta", dias, canchas: CLUB_POR_DEFECTO.pistas, categorias: cats.map((c) => c[0]) });
+  assert.deepEqual(categoriasEstelares(t), ["X-5TA"]);
+  for (const [c, n, g] of cats) {
+    for (let i = 1; i <= n; i++) t = inscribirDupla(t, c.id, jug(`${c.id}-a${i}`, g === "F" ? "F" : "M"), jug(`${c.id}-b${i}`, g === "M" ? "M" : "F"), { id: `${c.id}-d${i}` });
+    t = sortearCategoria(t, c.id, { semilla: 3 });
+    t = publicarCategoria(t, c.id);
+  }
+  const r = programarTorneo(t);
+  assert.deepEqual(r.sinLugar, []);
+  assert.ok(todos(r.torneo).filter((p) => !p.bye).every((p) => p.programacion), "todos los partidos con hora");
+});

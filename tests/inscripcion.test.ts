@@ -55,6 +55,16 @@ test("inscripción válida: normaliza nombres, cédula y teléfono", () => {
   assert.equal(v.jugadores[0].telefono, "+584141234567");
 });
 
+test("una categoría ya sorteada no acepta inscripciones online", () => {
+  const t = torneo();
+  const sorteada: Torneo = { ...t, categorias: t.categorias.map((c) => (c.categoria.id === "M-5TA" ? { ...c, cuadro: { partidos: [] } as unknown as typeof c.cuadro } : c)) };
+  assert.equal(aperturaInscripcion(sorteada, HOY).abierta, true);
+  assert.equal(cuposCategorias(sorteada, []).some((c) => c.id === "M-5TA"), false);
+  assert.match(validarInscripcion(sorteada, entrada(), [], null, HOY).errores[0], /Elige una categoría/);
+  const todas: Torneo = { ...t, categorias: t.categorias.map((c) => ({ ...c, cuadro: { partidos: [] } as unknown as typeof c.cuadro })) };
+  assert.deepEqual(aperturaInscripcion(todas, HOY), { abierta: false, motivo: "Los cuadros ya están sorteados: las inscripciones cerraron." });
+});
+
 test("cerrada, vencida o torneo ya programado: no deja inscribir", () => {
   assert.equal(aperturaInscripcion(torneo({ abierta: false }), HOY).abierta, false);
   assert.equal(aperturaInscripcion(torneo(), "2026-12-11").abierta, false);

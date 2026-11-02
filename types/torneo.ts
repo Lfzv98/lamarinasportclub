@@ -344,6 +344,9 @@ export interface Torneo {
   jugadores: JugadorTorneo[];
   categorias: CategoriaEnTorneo[];
   estado: EstadoTorneo;
+  /** Cuándo y quién cerró el torneo ("Automático" si se cerró solo al revisar la última final). */
+  cerradoEn?: string | null;
+  cerradoPor?: string;
   historial?: RegistroCambio[];
   /**
    * Clave de participantes: da acceso a cuadros, horarios, marcadores y estadísticas
@@ -460,7 +463,10 @@ export interface MarcadorVivo {
 
 export interface ApiTorneosRespuesta {
   modo: "DEMO" | "SUPABASE";
+  /** Con `?v=`: solo los que cambiaron desde las versiones que el cliente ya tiene. */
   torneos: Torneo[];
+  /** Versión de cada torneo visible para este visor (todos, no solo los enviados): "ms" + "s|v|b". */
+  versiones?: Record<string, string>;
 }
 
 export interface ApiMarcadoresRespuesta {
