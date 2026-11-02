@@ -144,7 +144,9 @@ function TV({ torneo }: { torneo: Torneo }) {
                     <span className="min-w-0 flex-1 break-words leading-tight">
                       <b>{lineasOrigen(torneo, p, ganaA ? "A" : "B").join(" / ")}</b> <span className="text-white/40">a</span> {lineasOrigen(torneo, p, ganaA ? "B" : "A").join(" / ")}
                     </span>
-                    <span className="font-display font-bold text-lima">{textoSets(p.resultado!.sets, !ganaA)}</span>
+                    <span className="font-display font-bold text-lima">
+                      {p.resultado!.tipo === "WO" ? "W.O." : `${textoSets(p.resultado!.sets, !ganaA)}${p.resultado!.tipo === "RETIRO" ? " ret." : p.resultado!.tipo === "DESCALIFICACION" ? " desc." : ""}`}
+                    </span>
                   </li>
                 );
               })}

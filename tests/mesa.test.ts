@@ -106,9 +106,12 @@ test("los 7 pasos avanzan en orden y explican qué falta", () => {
   assert.equal(actual(t).n, 3);
   t = { ...t, inscripcion: { abierta: true } as Torneo["inscripcion"] };
   assert.match(actual(t).aviso!, /inscripción online sigue abierta/);
-  t = { ...t, inscripcion: null };
+  // Si el staff sortea sin apagar la inscripción online, la categoría sorteada ya no acepta duplas
+  // por el enlace: el paso 3 queda hecho igual (antes se quedaba trabado hasta el cierre del torneo).
   t = sortearCategoria(t, cid, { semilla: 1, config: { ...CONFIG_CUADRO_BASE, formato: "ELIMINACION" } });
   assert.equal(actual(t).n, 4);
+  assert.equal(pasosTorneo(t)[2].aviso, null);
+  t = { ...t, inscripcion: null };
   t = programarTorneo(publicarCategoria(t, cid)).torneo;
   assert.equal(actual(t).n, 5);
   t = { ...t, arbitros: { turnos: [{ id: "t1", arbitroId: "a", fecha: "2026-12-05", pista: 1, desde: "08:00", hasta: "14:00" }] } };

@@ -3,7 +3,8 @@
 import clsx from "clsx";
 import { use, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Camera, ClipboardPaste, Crown, Dices, Plus, Settings2, Trash2, Undo2, UserPlus } from "lucide-react";
+import { Camera, ClipboardPaste, Crown, Dices, ListChecks, Plus, Settings2, Trash2, Undo2, UserPlus } from "lucide-react";
+import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
 import { TomarFoto } from "@/components/Foto";
 import { subirFoto, useFotoDupla, useFotos, useFotosTorneo } from "@/lib/fotos";
@@ -112,6 +113,8 @@ function PanelCategoria({ torneo, cat, lote, onLoteListo }: { torneo: Torneo; ca
   const [revisar, setRevisar] = useState<Dupla | null>(null);
   const id = cat.categoria.id;
   const porRevisar = pendientesFvp(torneo, id);
+  // Sin lista FVP cargada no hay contra qué verificar: se ofrece cargarla o sortear sin validar (no revisar una por una).
+  const sinListaFvp = porRevisar.length > 0 && porRevisar.every((d) => d.fvp?.estado === "POR_VERIFICAR" && !d.fvp.lista);
   const activas = duplasActivas(cat.duplas);
   const estado = estadoCategoria(cat);
   const sorteada = !!cat.cuadro;
@@ -182,9 +185,31 @@ function PanelCategoria({ torneo, cat, lote, onLoteListo }: { torneo: Torneo; ca
       </div>
       {sorteada && <p className="mt-2 text-xs text-white/45">Para sumar duplas después del sorteo, deshaz el sorteo (si no hay partidos jugados).</p>}
       {porRevisar.length > 0 && !sorteada && (
-        <p className="mt-2 text-sm text-amber-300">
-          {porRevisar.length} dupla{porRevisar.length === 1 ? "" : "s"} sin pasar el chequeo del ranking FVP. Revísala{porRevisar.length === 1 ? "" : "s"} (toca el aviso de cada una) para poder hacer el sorteo.
-        </p>
+        <div className="mt-2 text-sm text-amber-300" data-aviso-fvp>
+          <p>
+            {porRevisar.length} dupla{porRevisar.length === 1 ? "" : "s"} sin pasar el chequeo del ranking FVP.{" "}
+            {sinListaFvp
+              ? "No hay lista FVP cargada: cárgala para verificarlas todas de una vez, o sortea sin validar en este torneo."
+              : `Revísala${porRevisar.length === 1 ? "" : "s"} (toca el aviso de cada una) para poder hacer el sorteo.`}
+          </p>
+          {sinListaFvp && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Link href="/torneos/ranking" className="btn-ghost !px-3 !py-2 text-xs">
+                <ListChecks className="size-4" /> Cargar lista FVP
+              </Link>
+              <button
+                className="btn-ghost !px-3 !py-2 text-xs"
+                onClick={() => {
+                  if (!confirm("¿Sortear este torneo sin validar categorías con el ranking FVP? Se puede volver a activar en Ajustes.")) return;
+                  guardar({ ...torneo, validarFvp: false });
+                  toast("Validación FVP desactivada en este torneo. Ya puedes sortear.", "ok");
+                }}
+              >
+                Sortear sin validar FVP
+              </button>
+            </div>
+          )}
+        </div>
       )}
 
       {cat.duplas.length === 0 ? (

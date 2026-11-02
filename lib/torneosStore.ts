@@ -9,7 +9,7 @@
  */
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { fusionarTorneos, marcarCambiosHorario } from "@/lib/torneo/torneo";
+import { despues, fusionarTorneos, marcarCambiosHorario } from "@/lib/torneo/torneo";
 import { aplicarAccion, type AccionPartido } from "@/lib/torneo/arbitraje";
 import { esMesaAhora, useArbitroStore } from "@/lib/arbitro";
 import { useAmericanos } from "@/lib/store";
@@ -252,7 +252,11 @@ export const useTorneos = create<EstadoTorneos>()(
 
       guardar(nuevo) {
         // Partidos publicados que cambiaron de hora: quedan marcados para avisar a los jugadores.
-        const t = marcarCambiosHorario(get().torneos[nuevo.id], nuevo);
+        const previo = get().torneos[nuevo.id];
+        let t = marcarCambiosHorario(previo, nuevo);
+        // Todo cambio del staff sube la versión: si no (p. ej. Programar o Repartir turnos, que no "tocan" el torneo),
+        // el servidor ve la misma versión, se queda con la suya y el cambio se pierde sin aviso.
+        if (previo && t !== previo && t.actualizadoEn <= previo.actualizadoEn) t = { ...t, actualizadoEn: despues(previo.actualizadoEn) };
         set((s) => ({ torneos: { ...s.torneos, [t.id]: t }, pendientes: s.pendientes.includes(t.id) ? s.pendientes : [...s.pendientes, t.id] }));
         canal?.postMessage({ tipo: "torneo", torneo: t });
         subir(`t:${t.id}`, 400, () => {

@@ -42,7 +42,11 @@ export function pasosTorneo(t: Torneo): PasoTorneo[] {
   const porRevisar = partidos.filter((p) => p.estado === "FINALIZADO" && p.revision?.estado === "POR_REVISAR").length;
   const pistas = t.canchas.filter((c) => c.activa).length;
   const terminado = partidos.length > 0 && jugados === partidos.length;
-  const inscripcionAbierta = !!t.inscripcion?.abierta;
+  // La inscripción online solo importa mientras alguna de sus categorías siga sin sorteo: una
+  // categoría sorteada ya no acepta duplas por el enlace, y un torneo en juego tampoco.
+  const idsInscripcion = t.inscripcion?.categorias ?? [];
+  const inscripcionAbierta =
+    !!t.inscripcion?.abierta && t.estado === "INSCRIPCION" && cats.some((c) => !c.cuadro && (!idsInscripcion.length || idsInscripcion.includes(c.categoria.id)));
 
   const hechos = [
     t.dias.length > 0 && pistas > 0 && cats.length > 0,

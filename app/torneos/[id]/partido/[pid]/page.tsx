@@ -91,7 +91,7 @@ function Cabecera({ torneo, p, m, e, nombreLado }: { torneo: Torneo; p: PartidoT
   return (
     <section className={clsx("relative overflow-hidden rounded-[2rem] border p-5 sm:p-6", vivo ? "seleccion sobre-marca" : "glass")}>
       <div className="pointer-events-none absolute -right-20 -top-24 size-64 rounded-full bg-marca-2/30 blur-3xl" />
-      <div className="relative flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/50">
+      <div className="relative flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/50">
         {vivo ? (
           <span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-neon">
             <span className="size-2 animate-pulse rounded-full bg-neon" /> En vivo
@@ -102,9 +102,9 @@ function Cabecera({ torneo, p, m, e, nombreLado }: { torneo: Torneo; p: PartidoT
           <span>{p.programacion ? `Programado ${p.programacion.hora}` : "Por programar"}</span>
         )}
         <span>·</span>
-        <span className="truncate">
+        <span className="min-w-0 leading-snug">
           {nombreCorto(categoria(torneo, p.categoriaId)!.categoria)} · {p.etiqueta}
-          {pista ? ` · ${nombrePista(torneo, pista)}` : ""}
+          {pista ? <span className="whitespace-nowrap"> · {nombrePista(torneo, pista)}</span> : ""}
         </span>
         <button className="ml-auto rounded-full p-1.5 text-white/60 hover:text-white" onClick={compartir} aria-label="Compartir">
           <Share2 className="size-4" />

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { proponerFormato } from "../lib/torneo/cuadro.ts";
 import { CONFIG_CUADRO_BASE, catNivel } from "../lib/torneo/categorias.ts";
 import { agregarSede, partidosSuspendidos, quitarSede, reanudarPista, reanudarPistas, suspenderPistas, suspensionesActivas } from "../lib/torneo/imprevistos.ts";
-import { programarTorneo } from "../lib/torneo/programacion.ts";
+import { atrasoMinutos, programarTorneo } from "../lib/torneo/programacion.ts";
 import { crearTorneo, iniciarPartido, inscribirDupla, publicarCategoria, sortearCategoria, todosLosPartidos } from "../lib/torneo/torneo.ts";
 import { CLUB_POR_DEFECTO } from "../lib/horarios.ts";
 import type { PartidoTorneo, Torneo } from "../types/torneo.ts";
@@ -109,4 +109,25 @@ test("lluvia: el botón de la pista reactiva solo esa pista y las demás siguen 
   const despues = jugables(r.torneo).filter((p) => p.programacion && p.estado === "PENDIENTE" && inicio(p) >= ahora + 3600_000);
   assert.ok(despues.some((p) => p.programacion!.pista === 2), "la pista 2 vuelve a recibir partidos");
   assert.ok(despues.every((p) => p.programacion!.pista !== 3), "la 3 sigue suspendida");
+});
+
+test("atraso: cuenta lo que sigue en pista o esperando, no lo que ya terminó", () => {
+  const t = torneo(8);
+  const primero = jugables(t).filter((p) => p.programacion).sort((a, b) => inicio(a) - inicio(b))[0];
+  const { fecha, hora } = primero.programacion!;
+  const a = (min: number) => new Date(inicio(primero) + min * 60_000);
+  // A la hora exacta no hay atraso; 20 minutos después sin empezar, sí.
+  assert.equal(atrasoMinutos(t, a(0)), 0);
+  assert.equal(atrasoMinutos(t, a(20)), 20);
+  // Arrancó 30 minutos tarde y sigue en pista: el atraso es de 30.
+  const otros = (x: Torneo) => ({ ...x, categorias: x.categorias.map((c) => ({ ...c, cuadro: c.cuadro && { ...c.cuadro, partidos: c.cuadro.partidos.map((p) => (p.id === primero.id || p.programacion?.fecha !== fecha || p.programacion.hora !== hora ? p : { ...p, estado: "FINALIZADO" as const })) } })) });
+  const empezado = (x: Torneo, en: Date) => ({ ...x, categorias: x.categorias.map((c) => ({ ...c, cuadro: c.cuadro && { ...c.cuadro, partidos: c.cuadro.partidos.map((p) => (p.id === primero.id ? { ...p, estado: "EN_JUEGO" as const, inicioEn: en.toISOString() } : p)) } })) });
+  const tarde = empezado(otros(t), a(30));
+  assert.equal(atrasoMinutos(tarde, a(40)), 30);
+  // Ya terminado, ese arranque tardío no deja el aviso prendido el resto del día.
+  const terminado = { ...tarde, categorias: tarde.categorias.map((c) => ({ ...c, cuadro: c.cuadro && { ...c.cuadro, partidos: c.cuadro.partidos.map((p) => (p.id === primero.id ? { ...p, estado: "FINALIZADO" as const } : p)) } })) };
+  assert.equal(atrasoMinutos(terminado, a(40)), 0);
+  // Un partido anotado otro día (una prueba, un error) no cuenta como atraso de hoy.
+  const otroDia = empezado(otros(t), new Date(inicio(primero) - 5 * 86_400_000 + 3 * 3600_000));
+  assert.equal(atrasoMinutos(otroDia, a(10)), 0);
 });

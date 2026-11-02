@@ -65,6 +65,15 @@ export interface OpcionesProgramacion {
 }
 
 export function programarTorneo(t: Torneo, opts: OpcionesProgramacion = {}): ResultadoProgramacion {
+  const r = programar(t, opts, true);
+  // Si por llevar la estelar a la noche algún partido se queda sin hora (pocos días o noches cortas),
+  // se programa de nuevo sin esa preferencia: primero que todo tenga hora.
+  if (!r.sinLugar.length || !categoriasEstelares(t).length) return r;
+  const sinNoche = programar(t, opts, false);
+  return sinNoche.sinLugar.length < r.sinLugar.length ? sinNoche : r;
+}
+
+function programar(t: Torneo, opts: OpcionesProgramacion, conEstelar: boolean): ResultadoProgramacion {
   const dias = [...t.dias].sort((a, b) => a.fecha.localeCompare(b.fecha));
   const idxDia = new Map(dias.map((d, i) => [d.fecha, i]));
   const ventanas: Intervalo[] = dias.map((d, i) => ({ ini: i * DIA + aMinutos(d.inicio), fin: i * DIA + aMinutos(d.fin) }));
@@ -181,7 +190,7 @@ export function programarTorneo(t: Torneo, opts: OpcionesProgramacion = {}): Res
   let minutosSinLugar = 0;
 
   // Categoría estelar de noche en la pista principal (la primera de la sede principal).
-  const estelares = new Set(categoriasEstelares(t));
+  const estelares = new Set(conEstelar ? categoriasEstelares(t) : []);
   const principal = canchas[0]?.numero;
   const noche = aMinutos(t.horarioEstelar?.desde ?? ESTELAR_DESDE);
   const esNoche = (ini: number) => ini - Math.floor(ini / DIA) * DIA >= noche;
@@ -405,17 +414,22 @@ export function estadoPistas(t: Torneo, ahora = Date.now()): EstadoPista[] {
     });
 }
 
-/** Minutos de atraso del torneo: cuánto después de lo programado empezaron los partidos de hoy. */
+/**
+ * Minutos de atraso del torneo ahora mismo: cuánto después de lo programado arrancaron los partidos
+ * que siguen en pista, o cuánto llevan esperando los que ya debían haber empezado. Lo ya terminado
+ * no cuenta: si el club se puso al día (o se reacomodó «desde ahora»), el aviso se apaga.
+ */
 export function atrasoMinutos(t: Torneo, ahora = new Date()): number {
-  const hoy = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, "0")}-${String(ahora.getDate()).padStart(2, "0")}`;
+  const fechaDe = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const hoy = fechaDe(ahora);
   const min = ahora.getHours() * 60 + ahora.getMinutes();
   let atraso = 0;
   for (const p of t.categorias.flatMap((c) => c.cuadro?.partidos ?? [])) {
-    if (p.bye || !p.programacion || p.programacion.fecha !== hoy) continue;
+    if (p.bye || !p.programacion || p.programacion.fecha !== hoy || p.estado === "FINALIZADO") continue;
     const prog = aMinutos(p.programacion.hora);
     if (p.inicioEn) {
       const i = new Date(p.inicioEn);
-      atraso = Math.max(atraso, i.getHours() * 60 + i.getMinutes() - prog);
+      if (fechaDe(i) === hoy) atraso = Math.max(atraso, i.getHours() * 60 + i.getMinutes() - prog);
     } else if (p.estado === "PENDIENTE" || p.estado === "LLAMADO") {
       atraso = Math.max(atraso, min - prog);
     }

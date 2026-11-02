@@ -82,13 +82,15 @@ export function aperturaInscripcion(t: Torneo, hoy = hoyVenezuela()): { abierta:
   if (!c?.abierta) return { abierta: false, motivo: "Las inscripciones online están cerradas." };
   if (t.estado !== "INSCRIPCION") return { abierta: false, motivo: "El torneo ya está programado: las inscripciones cerraron." };
   if (c.cierre && hoy > c.cierre) return { abierta: false, motivo: "La fecha de inscripción ya pasó." };
-  if (!categoriasInscribibles(t).length) return { abierta: false, motivo: "No hay categorías abiertas." };
+  if (!categoriasInscribibles(t).length)
+    return { abierta: false, motivo: t.categorias.some((c) => c.cuadro) ? "Los cuadros ya están sorteados: las inscripciones cerraron." : "No hay categorías abiertas." };
   return { abierta: true };
 }
 
+/** Categorías que aceptan inscripción online: las elegidas en Ajustes que todavía no tienen sorteo. */
 export function categoriasInscribibles(t: Torneo): CategoriaTorneo[] {
   const ids = t.inscripcion?.categorias ?? [];
-  return t.categorias.map((c) => c.categoria).filter((c) => !ids.length || ids.includes(c.id));
+  return t.categorias.filter((c) => !c.cuadro).map((c) => c.categoria).filter((c) => !ids.length || ids.includes(c.id));
 }
 
 /** Inscripciones que todavía ocupan cupo (no rechazadas ni ya convertidas en dupla). */
