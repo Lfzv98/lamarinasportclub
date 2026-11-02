@@ -194,12 +194,12 @@ function NuevoTorneo() {
         </div>
         <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
           {dias.map((d) => (
-            <li key={d.fecha} className="glass flex items-center gap-3 rounded-2xl p-3">
-              <span className="w-24 shrink-0 font-semibold">{fechaCorta(d.fecha)}</span>
+            <li key={d.fecha} className="glass flex items-center gap-2 rounded-2xl p-3 sm:gap-3">
+              <span className="w-[4.5rem] shrink-0 text-sm font-semibold sm:w-24 sm:text-base">{fechaCorta(d.fecha)}</span>
               <input
                 type="time"
                 step={900}
-                className="input !w-auto min-w-0 flex-1 !px-2 !py-2 text-center"
+                className="input !w-auto min-w-0 flex-1 !px-1.5 !py-2 text-center text-sm [color-scheme:dark] sm:!px-2 sm:text-base"
                 value={d.inicio}
                 onChange={(e) => setHoras((h) => ({ ...h, [d.fecha]: { ...h[d.fecha], inicio: e.target.value } }))}
                 aria-label={`Inicio ${d.fecha}`}
@@ -208,7 +208,7 @@ function NuevoTorneo() {
               <input
                 type="time"
                 step={900}
-                className="input !w-auto min-w-0 flex-1 !px-2 !py-2 text-center"
+                className="input !w-auto min-w-0 flex-1 !px-1.5 !py-2 text-center text-sm [color-scheme:dark] sm:!px-2 sm:text-base"
                 value={d.fin}
                 onChange={(e) => setHoras((h) => ({ ...h, [d.fecha]: { ...h[d.fecha], fin: e.target.value } }))}
                 aria-label={`Fin ${d.fecha}`}

@@ -1,6 +1,9 @@
 import "server-only";
 import { crearEvento } from "@/lib/evento";
 import { catNivel } from "@/lib/torneo/categorias";
+import { avanzarHasta, torneoGrande } from "@/lib/torneo/grande";
+import { repartirTurnos } from "@/lib/torneo/arbitros";
+import { leerPlantel } from "./arbitros";
 import { crearTorneo, inscribirDupla } from "@/lib/torneo/torneo";
 import type { EventoAmericano, Jugador } from "@/types/americano";
 import type { JugadorTorneo, Torneo } from "@/types/torneo";
@@ -93,4 +96,19 @@ export async function crearAmericanoPrueba(): Promise<EventoAmericano> {
     jugadores,
   });
   return getRepository().guardar({ ...e, id: `${PREFIJO}${m}-americano` });
+}
+
+/**
+ * Torneo a escala real (450 duplas, 16 categorías, dos semanas, La Marina + dos sedes de apoyo), a
+ * mitad de camino: lo jugado hasta ahora tiene resultado, hay partidos en juego y llamados, y la
+ * bandeja de mesa técnica tiene lo último por revisar. Para demos con el volumen de un Open real.
+ */
+export async function crearTorneoGrande(): Promise<Torneo> {
+  const hoy = hoyClub();
+  const id = `${PREFIJO}${marca()}-open-grande`;
+  let t = torneoGrande({ id, nombre: "Open La Marina 2026 · 450 duplas", desde: sumarDias(hoy, -5), dias: 14, sortear: true });
+  const plantel = (await leerPlantel()).arbitros.filter((a) => a.activo !== false).map((a) => a.id);
+  if (plantel.length) t = { ...t, arbitros: { ...(t.arbitros ?? {}), turnos: repartirTurnos(t, plantel) } };
+  t = avanzarHasta(t, `${hoy}T${horaClub()}`);
+  return getTorneosRepository().guardar({ ...t, actualizadoEn: new Date().toISOString() });
 }

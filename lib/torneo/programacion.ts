@@ -256,8 +256,13 @@ export function programarTorneo(t: Torneo, opts: OpcionesProgramacion = {}): Res
       return null;
     };
 
+    // Las semis de la estelar dejan lugar en el día para la gran final (con su descanso): si no, la final no cabe.
+    const granFinal = estelar ? aProgramar.find((q) => esGranFinal(q) && [q.origenA, q.origenB].some((o) => o.tipo === "GANADOR" && o.partidoId === p.id)) : undefined;
+    const cabeLaFinal = (ini: number) => !granFinal || ini + dur + t.descansoMin + duracion(granFinal) <= (ventanas[Math.floor(ini / DIA)]?.fin ?? -Infinity);
     const elegido = esGranFinal(p)
       ? (buscar((n) => n === principal, true) ?? buscar(() => true, true))
+      : granFinal
+        ? (buscar((_, ini) => esNoche(ini) && cabeLaFinal(ini)) ?? buscar((_, ini) => cabeLaFinal(ini)) ?? buscar(() => true))
       : estelar
         ? // Estelar: de noche (en la principal si está libre); si no cabe, cuando se pueda.
           (buscar((_, ini) => esNoche(ini)) ?? buscar(() => true))

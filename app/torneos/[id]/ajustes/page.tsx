@@ -153,9 +153,9 @@ function Ajustes({ torneo }: { torneo: Torneo }) {
             <p className="font-semibold">Categoría estelar de noche</p>
             <p className="text-xs text-white/50">Se juega de noche en {nombrePista(torneo, torneo.canchas.find((c) => c.activa)?.numero)} y su final cierra el torneo. El resto deja libre esa pista de noche.</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex w-full min-w-0 gap-2 sm:w-auto">
             <select
-              className="input !w-auto !py-2"
+              className="input min-w-0 flex-1 !py-2 sm:!w-auto sm:flex-none"
               aria-label="Categoría estelar"
               value={estelarElegida}
               onChange={(e) =>
@@ -182,7 +182,7 @@ function Ajustes({ torneo }: { torneo: Torneo }) {
                 type="time"
                 step={900}
                 aria-label="Desde qué hora"
-                className="input !w-auto !py-2"
+                className="input !w-auto shrink-0 !py-2"
                 value={b.horarioEstelar?.desde ?? ESTELAR_DESDE}
                 onChange={(e) => setB({ ...b, horarioEstelar: { categorias: [estelarElegida], desde: e.target.value || ESTELAR_DESDE } })}
               />

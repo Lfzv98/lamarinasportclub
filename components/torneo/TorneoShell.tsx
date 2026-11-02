@@ -144,13 +144,13 @@ export function TorneoShell({ id, children, ancho = "max-w-6xl" }: { id: string;
           <ArrowLeft className="size-5" />
         </Link>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate font-display text-lg font-bold leading-tight sm:text-xl">{torneo.nombre}</h1>
+          <h1 className="line-clamp-2 break-words font-display text-base font-bold leading-tight sm:truncate sm:text-xl">{torneo.nombre}</h1>
           <div className="mt-1 flex items-center gap-2">
             <EstadoTorneoBadge estado={torneo.estado} />
             <span className="hidden text-xs text-white/50 sm:inline">{rangoFechas(torneo)}</span>
           </div>
         </div>
-        <StaffChip />
+        <StaffChip compacto />
         {esMesa && <EstadoConexion className="hidden md:inline-flex" />}
         <LogoMenu />
       </header>

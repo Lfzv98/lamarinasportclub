@@ -82,14 +82,14 @@ function Programacion({ torneo }: { torneo: Torneo }) {
           })}
         </div>
         {esStaff && (
-          <div className="flex gap-2">
-            <button className="btn-ghost !py-2" onClick={() => programar(false)} title="Vuelve a armar los horarios de lo que no está fijo">
+          <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto">
+            <button className="btn-ghost !flex-col !gap-1 !px-2 !py-2 text-xs sm:!flex-row sm:!gap-2 sm:!px-4 sm:text-sm whitespace-nowrap" onClick={() => programar(false)} title="Vuelve a armar los horarios de lo que no está fijo">
               <Wand2 className="size-4" /> Programar
             </button>
-            <button className="btn-ghost !py-2" onClick={() => programar(true)} title="Reacomoda lo que falta desde ahora">
+            <button className="btn-ghost !flex-col !gap-1 !px-2 !py-2 text-xs sm:!flex-row sm:!gap-2 sm:!px-4 sm:text-sm whitespace-nowrap" onClick={() => programar(true)} title="Reacomoda lo que falta desde ahora">
               <RefreshCw className="size-4" /> Desde ahora
             </button>
-            <button className="btn-ghost !py-2 !text-amber-200" onClick={() => setImprevistos(true)} title="Lluvia, pistas, sedes y días">
+            <button className="btn-ghost !flex-col !gap-1 !px-2 !py-2 text-xs sm:!flex-row sm:!gap-2 sm:!px-4 sm:text-sm whitespace-nowrap !text-amber-200" onClick={() => setImprevistos(true)} title="Lluvia, pistas, sedes y días">
               <CloudRain className="size-4" /> Imprevistos
             </button>
           </div>

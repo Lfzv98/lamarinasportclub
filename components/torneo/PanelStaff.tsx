@@ -58,7 +58,7 @@ export function PanelStaff({ torneo, esStaff, esMesa }: { torneo: Torneo; esStaf
       icon: ClipboardList,
       badge: fvp,
       destinos: [
-        { ruta: "/categorias", label: "Inscritos · cupos · sorteo", icon: Users, badge: fvp + (torneo.estado === "INSCRIPCION" ? sinSorteo : 0) },
+        { ruta: "/categorias", label: "Inscritos y sorteo", icon: Users, badge: fvp + (torneo.estado === "INSCRIPCION" ? sinSorteo : 0) },
         { ruta: "/inscripciones", label: "Pagos online", icon: Ticket },
         { ruta: "/ajustes", label: "Ajustes", icon: Settings },
       ],

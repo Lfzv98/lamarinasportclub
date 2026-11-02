@@ -335,7 +335,7 @@ export function PlantelLista({
                 {pl(a.puntos, "punto")} · {a.telefono}
               </p>
             </div>
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
               {tel && (
                 <a
                   className="btn-ghost !p-2.5"
@@ -349,7 +349,7 @@ export function PlantelLista({
               )}
               <button
                 className={clsx(
-                  "btn-ghost !px-3 !py-2 text-xs",
+                  "btn-ghost whitespace-nowrap !px-3 !py-2 text-xs",
                   a.principal && "!border-lima/50 !text-lima",
                 )}
                 onClick={() => cambiarPrincipal(a)}

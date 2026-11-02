@@ -175,7 +175,7 @@ function Mesa({ torneo }: { torneo: Torneo }) {
         ].map((s) => (
           <div key={s.l} className={clsx("glass rounded-2xl p-3 sm:p-4", s.alerta && "!border-amber-300/40")}>
             <s.icon className={clsx("size-4", s.alerta ? "text-amber-200" : "text-neon")} />
-            <p className={clsx("mt-1.5 font-display text-2xl font-bold tabular", s.alerta && "text-amber-200")}>{s.v}</p>
+            <p className={clsx("mt-1.5 whitespace-nowrap font-display font-bold tabular", typeof s.v === "number" ? "text-2xl" : "text-lg sm:text-2xl", s.alerta && "text-amber-200")}>{s.v}</p>
             <p className="text-xs text-white/50">{s.l}</p>
           </div>
         ))}

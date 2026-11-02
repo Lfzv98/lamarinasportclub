@@ -4,7 +4,7 @@ import { exigirStaff } from "@/lib/server/auth";
 import { ErrorApi, leerJson, manejar } from "@/lib/server/http";
 import { getTorneosRepository } from "@/lib/server/repository";
 import { buscadorVigente } from "@/lib/server/rankingFvp";
-import { actualizarTorneo, paraVisor, visorDe } from "@/lib/server/torneos";
+import { actualizarTorneo, paraVisor, puedeVer, visorDe } from "@/lib/server/torneos";
 import { despues, fusionarTorneos } from "@/lib/torneo/torneo";
 import { validarTorneo } from "@/lib/torneo/validacion";
 import type { ApiTorneosRespuesta, Torneo } from "@/types/torneo";
@@ -15,12 +15,29 @@ export const dynamic = "force-dynamic";
  * GET /api/torneos → { modo, torneos }. `?todos=1` incluye los eliminados.
  * El staff recibe todo; los participantes, según la clave del torneo (ver lib/server/torneos.ts).
  */
+/**
+ * GET /api/torneos[?todos=1][&v=id~versión,…]
+ * Con `v` (las versiones que el cliente ya tiene), solo viajan los torneos que cambiaron: con un Open de
+ * 450 duplas abierto en cientos de celulares, cada sincronización pesa unos bytes en vez de ~1 MB.
+ * La versión incluye cómo lo ve este visor (staff / con acceso / bloqueado): si eso cambia, se reenvía.
+ */
 export const GET = manejar(async (req: Request) => {
   const repo = getTorneosRepository();
   const v = await visorDe(req);
-  const todos = new URL(req.url).searchParams.get("todos") === "1";
-  const torneos = (await repo.listar()).filter((t) => todos || !t.eliminado).map((t) => paraVisor(t, v));
-  return NextResponse.json<ApiTorneosRespuesta>({ modo: repo.modo, torneos });
+  const q = new URL(req.url).searchParams;
+  const todos = q.get("todos") === "1";
+  const indice = (await repo.indice()).filter((i) => todos || !i.eliminado);
+  const versionDe = (i: (typeof indice)[number]) => `${Date.parse(i.actualizadoEn)}${v.staff ? "s" : puedeVer(i as unknown as Torneo, v) ? "v" : "b"}`;
+  const versiones = Object.fromEntries(indice.map((i) => [i.id, versionDe(i)]));
+  const conocidas = new Map(
+    (q.get("v") ?? "")
+      .split(",")
+      .filter(Boolean)
+      .map((x) => x.split("~") as [string, string]),
+  );
+  const pedir = indice.filter((i) => conocidas.get(i.id) !== versiones[i.id]).map((i) => i.id);
+  const torneos = (pedir.length ? await repo.obtenerVarios(pedir) : []).map((t) => paraVisor(t, v));
+  return NextResponse.json<ApiTorneosRespuesta>({ modo: repo.modo, torneos, versiones });
 });
 
 /**
