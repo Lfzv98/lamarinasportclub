@@ -1,5 +1,6 @@
 "use client";
 
+import { SalidaAlInicio } from "@/components/SalidaAlInicio";
 import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -31,10 +32,7 @@ export function EventoShell({ id, children }: { id: string; children: (evento: E
         {cargando ? (
           <div className="size-10 animate-spin rounded-full border-2 border-white/10 border-t-neon" />
         ) : (
-          <>
-            <p className="font-display text-2xl font-bold">Evento no encontrado</p>
-            {!publico && <Link href="/americanos" className="btn-neon">Volver al inicio</Link>}
-          </>
+          <SalidaAlInicio />
         )}
       </main>
     );

@@ -9,6 +9,7 @@ import { ArrowLeft, Maximize, Minimize } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Reloj, useCursorOculto, useFullscreenYWakeLock } from "@/components/Pantalla";
 import { QR } from "@/components/QR";
+import { cerradoOtroDia, SalidaAlInicio, useCargaLista, useHoy } from "@/components/SalidaAlInicio";
 import { MarcadorTenis, textoResultado, vistaPartido } from "@/components/tenis/Marcador";
 import { Cancha, FondoSuperficie, PelotaTenis } from "@/components/tenis/piezas";
 import { useTenis, useTenisEnVivo, useTorneoTenis } from "@/lib/tenisStore";
@@ -20,14 +21,17 @@ export default function TenisTVPage() {
   const { id } = useParams<{ id: string }>();
   const t = useTorneoTenis(id);
   const hidratado = useTenis((s) => s.hidratado);
+  const offline = useTenis((s) => s.offline);
   useTenisEnVivo(2000);
-  if (!t)
-    return (
-      <main className="flex min-h-dvh items-center justify-center">
-        <PelotaTenis className="size-14" girando={!hidratado} />
-      </main>
-    );
-  return <TV torneo={t} />;
+  const listo = useCargaLista(hidratado, !!t || offline);
+  const hoy = useHoy();
+  if (t && !cerradoOtroDia(t.estado === "FINALIZADO", t.actualizadoEn, hoy)) return <TV torneo={t} />;
+  if (t || listo) return <SalidaAlInicio />;
+  return (
+    <main className="flex min-h-dvh items-center justify-center">
+      <PelotaTenis className="size-14" girando />
+    </main>
+  );
 }
 
 function useEscala(ancho: number, alto: number) {
