@@ -23,7 +23,7 @@ import type { MarcadorVivo, PartidoTorneo, Torneo } from "@/types/torneo";
 /** Pantalla de una pista (las de las esquinas): marcador oficial en grande y relato punto a punto. */
 export default function PistaPage({ params }: { params: Promise<{ id: string; n: string }> }) {
   const { id, n } = use(params);
-  return <TorneoShellMinimo id={id}>{(t) => <Pantalla torneo={t} numero={Number(n)} />}</TorneoShellMinimo>;
+  return <TorneoShellMinimo id={id} pantalla>{(t) => <Pantalla torneo={t} numero={Number(n)} />}</TorneoShellMinimo>;
 }
 
 function Pantalla({ torneo, numero }: { torneo: Torneo; numero: number }) {

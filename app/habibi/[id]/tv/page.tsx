@@ -9,6 +9,7 @@ import { useState } from "react";
 import { CruceCard, PodioHabibi, TablaGrupo, useCruces } from "@/components/habibi/piezas";
 import { ANCHO_ESTRECHO, Escenario, Reloj, useCursorOculto, useFullscreenYWakeLock, useLienzo, useVertical } from "@/components/Pantalla";
 import { QR } from "@/components/QR";
+import { cerradoOtroDia, SalidaAlInicio, useCargaLista, useHoy } from "@/components/SalidaAlInicio";
 import { BandaVallas } from "@/components/Vallas";
 import { QRPopup, useUrlRanking } from "@/components/QRPopup";
 import { categoriaLabel } from "@/lib/categories";
@@ -20,19 +21,19 @@ export default function HabibiTVPage() {
   const { id } = useParams<{ id: string }>();
   const llave = useEvento(id);
   const hidratado = useAmericanos((s) => s.hidratado);
-  if (!llave || !infoLlave(llave))
+  const ultimoSync = useAmericanos((s) => s.ultimoSync);
+  const listo = useCargaLista(hidratado, !!ultimoSync);
+  const hoy = useHoy();
+  const vigente = !!llave && !!infoLlave(llave) && !cerradoOtroDia(llave.estado === "FINALIZADO", llave.actualizadoEn, hoy);
+  if (!vigente) {
+    if (llave || listo) return <SalidaAlInicio />;
     return (
       <main className="flex min-h-dvh items-center justify-center">
-        {hidratado ? (
-          <Link href="/habibi" className="btn-neon">
-            Torneo no encontrado · Volver
-          </Link>
-        ) : (
-          <div className="size-12 animate-spin rounded-full border-2 border-white/10 border-t-neon" />
-        )}
+        <div className="size-12 animate-spin rounded-full border-2 border-white/10 border-t-neon" />
       </main>
     );
-  return <TV llave={llave} />;
+  }
+  return <TV llave={llave!} />;
 }
 
 /**

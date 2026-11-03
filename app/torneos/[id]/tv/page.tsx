@@ -21,7 +21,7 @@ import type { PartidoTorneo, Torneo } from "@/types/torneo";
 /** Modo TV del torneo (terraza / bar): todas las pistas en vivo, lo que viene y los últimos resultados. */
 export default function TorneoTVPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  return <TorneoShellMinimo id={id}>{(t) => <TV torneo={t} />}</TorneoShellMinimo>;
+  return <TorneoShellMinimo id={id} pantalla>{(t) => <TV torneo={t} />}</TorneoShellMinimo>;
 }
 
 function TV({ torneo }: { torneo: Torneo }) {

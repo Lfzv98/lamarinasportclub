@@ -1,5 +1,6 @@
 "use client";
 
+import { SalidaAlInicio } from "@/components/SalidaAlInicio";
 import clsx from "clsx";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -52,12 +53,7 @@ export default function HabibiPage() {
         {!hidratado || !ultimoSync ? (
           <div className="size-10 animate-spin rounded-full border-2 border-white/10 border-t-neon" />
         ) : (
-          <>
-            <p className="font-display text-2xl font-bold">Torneo no encontrado</p>
-            <Link href="/habibi" className="btn-neon">
-              Volver
-            </Link>
-          </>
+          <SalidaAlInicio />
         )}
       </main>
     );

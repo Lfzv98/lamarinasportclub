@@ -1,5 +1,6 @@
 "use client";
 
+import { SalidaAlInicio } from "@/components/SalidaAlInicio";
 import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -117,10 +118,7 @@ export function TorneoShell({ id, children, ancho = "max-w-6xl" }: { id: string;
         {cargando ? (
           <div className="size-10 animate-spin rounded-full border-2 border-white/10 border-t-neon" />
         ) : (
-          <>
-            <p className="font-display text-2xl font-bold">Torneo no encontrado</p>
-            <Link href="/torneos" className="btn-neon">Ver torneos</Link>
-          </>
+          <SalidaAlInicio />
         )}
       </main>
     );

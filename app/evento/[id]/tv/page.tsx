@@ -12,6 +12,7 @@ import { enEspera } from "@/components/EnEspera";
 import { Leaderboard } from "@/components/Leaderboard";
 import { PistaLabel } from "@/components/PistaLabel";
 import { QR } from "@/components/QR";
+import { cerradoOtroDia, SalidaAlInicio, useCargaLista, useHoy } from "@/components/SalidaAlInicio";
 import { QRPopup, useUrlRanking } from "@/components/QRPopup";
 import { BandaVallas } from "@/components/Vallas";
 import { useReloj } from "@/hooks/useReloj";
@@ -29,14 +30,18 @@ export default function ModoTVPage() {
   const { id } = useParams<{ id: string }>();
   const evento = useEvento(id);
   const hidratado = useAmericanos((s) => s.hidratado);
+  const ultimoSync = useAmericanos((s) => s.ultimoSync);
+  const listo = useCargaLista(hidratado, !!ultimoSync);
+  const hoy = useHoy();
 
-  if (!evento)
-    return (
-      <main className="flex min-h-dvh items-center justify-center">
-        {hidratado ? <Link href="/americanos" className="btn-neon">Evento no encontrado · Volver</Link> : <div className="size-12 animate-spin rounded-full border-2 border-white/10 border-t-neon" />}
-      </main>
-    );
-  return <TV evento={evento} />;
+  // Terminado otro día (o el evento ya no existe): la TV vuelve a la página principal.
+  if (evento && !cerradoOtroDia(evento.estado === "FINALIZADO", evento.actualizadoEn, hoy)) return <TV evento={evento} />;
+  if (evento || listo) return <SalidaAlInicio />;
+  return (
+    <main className="flex min-h-dvh items-center justify-center">
+      <div className="size-12 animate-spin rounded-full border-2 border-white/10 border-t-neon" />
+    </main>
+  );
 }
 
 function TV({ evento }: { evento: EventoAmericano }) {
