@@ -6,6 +6,7 @@ import { Fragment, use, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Clock, Flag, Info, Share2, Trophy } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
+import { Comparativa as ComparativaDuplas } from "@/components/torneo/Comparativa";
 import { TorneoShell } from "@/components/torneo/TorneoShell";
 import { useAhora, useMarcadoresEnVivo } from "@/components/torneo/vivo";
 import { useFotoDupla, useFotosTorneo } from "@/lib/fotos";
@@ -176,76 +177,12 @@ function Cabecera({ torneo, p, m, e, nombreLado }: { torneo: Torneo; p: PartidoT
 
 /* ---------- comparativa ---------- */
 
-/** Totales por dupla: lo individual se suma, lo de la dupla se toma una vez. */
-function porDupla(stats: StatsJugador[], l: Lado) {
-  const xs = stats.filter((s) => s.lado === l);
-  const suma = (k: keyof StatsJugador) => xs.reduce((n, s) => n + (s[k] as number), 0);
-  const uno = xs[0];
-  return {
-    puntos: uno?.puntosGanados ?? 0,
-    jugados: uno?.puntosJugados ?? 0,
-    alSaque: suma("ganadosAlSaque"),
-    alSaqueDe: suma("puntosAlSaque"),
-    alResto: uno?.ganadosAlResto ?? 0,
-    alRestoDe: uno?.puntosAlResto ?? 0,
-    primeros: suma("primerosDentro"),
-    saques: suma("saques"),
-    aces: suma("aces"),
-    df: suma("doblesFaltas"),
-    winners: suma("winners"),
-    enf: suma("erroresNoForzados"),
-    ef: suma("erroresForzados"),
-    bp: uno?.breakPoints ?? 0,
-    bpG: uno?.breaksConvertidos ?? 0,
-    oro: uno?.puntosDeOro ?? 0,
-    oroG: uno?.puntosDeOroGanados ?? 0,
-    racha: uno?.rachaMax ?? 0,
-  };
-}
-
 function Comparativa({ m, e }: { m: MarcadorVivo; e: EstadoMarcador }) {
-  const stats = useMemo(() => statsPartido(m), [m]);
-  const A = porDupla(stats, "A");
-  const B = porDupla(stats, "B");
-  const filas: { t: string; a: number; b: number; ta?: string; tb?: string; menosEsMejor?: boolean }[] = [
-    { t: "Puntos ganados", a: A.puntos, b: B.puntos },
-    { t: "Ganados al saque", a: pct(A.alSaque, A.alSaqueDe) ?? 0, b: pct(B.alSaque, B.alSaqueDe) ?? 0, ta: `${pct(A.alSaque, A.alSaqueDe) ?? 0}%`, tb: `${pct(B.alSaque, B.alSaqueDe) ?? 0}%` },
-    { t: "Ganados al resto", a: pct(A.alResto, A.alRestoDe) ?? 0, b: pct(B.alResto, B.alRestoDe) ?? 0, ta: `${pct(A.alResto, A.alRestoDe) ?? 0}%`, tb: `${pct(B.alResto, B.alRestoDe) ?? 0}%` },
-    { t: "1er saque dentro", a: pct(A.primeros, A.saques) ?? 0, b: pct(B.primeros, B.saques) ?? 0, ta: `${pct(A.primeros, A.saques) ?? 0}%`, tb: `${pct(B.primeros, B.saques) ?? 0}%` },
-    { t: "Winners", a: A.winners, b: B.winners },
-    { t: "Errores no forzados", a: A.enf, b: B.enf, menosEsMejor: true },
-    { t: "Breaks", a: A.bpG, b: B.bpG, ta: `${A.bpG}/${A.bp}`, tb: `${B.bpG}/${B.bp}` },
-    { t: "Puntos de oro", a: A.oroG, b: B.oroG, ta: `${A.oroG}/${A.oro}`, tb: `${B.oroG}/${B.oro}` },
-    { t: "Aces", a: A.aces, b: B.aces },
-    { t: "Dobles faltas", a: A.df, b: B.df, menosEsMejor: true },
-    { t: "Racha máxima", a: A.racha, b: B.racha },
-  ];
   return (
     <section className="glass rounded-[2rem] p-5">
       <p className="label">Partido · {e.jugados.length} puntos</p>
-      <div className="mt-2 space-y-3">
-        {filas.map((f) => {
-          const total = f.a + f.b || 1;
-          const mejorA = f.menosEsMejor ? f.a < f.b : f.a > f.b;
-          const mejorB = f.menosEsMejor ? f.b < f.a : f.b > f.a;
-          return (
-            <div key={f.t}>
-              <div className="flex items-baseline justify-between text-sm">
-                <span className={clsx("w-14 font-display text-lg font-bold tabular", mejorA ? "text-lima" : "text-white/70")}>{f.ta ?? f.a}</span>
-                <span className="text-xs text-white/55">{f.t}</span>
-                <span className={clsx("w-14 text-right font-display text-lg font-bold tabular", mejorB ? "text-cielo" : "text-white/70")}>{f.tb ?? f.b}</span>
-              </div>
-              <div className="mt-1 flex h-1.5 gap-1">
-                <div className="flex flex-1 justify-end overflow-hidden rounded-full bg-white/5">
-                  <motion.div className="h-full rounded-full bg-lima" initial={{ width: 0 }} animate={{ width: `${(f.a / total) * 100}%` }} />
-                </div>
-                <div className="flex-1 overflow-hidden rounded-full bg-white/5">
-                  <motion.div className="h-full rounded-full bg-cielo" initial={{ width: 0 }} animate={{ width: `${(f.b / total) * 100}%` }} />
-                </div>
-              </div>
-            </div>
-          );
-        })}
+      <div className="mt-2">
+        <ComparativaDuplas m={m} />
       </div>
     </section>
   );

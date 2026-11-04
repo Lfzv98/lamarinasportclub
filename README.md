@@ -10,7 +10,7 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 | --- | --- |
 | `/` | Inicio: cuatro entradas, **Americanos**, **Americano HABIBI Tournament**, **Torneos** y **Árbitros** (y **Tenis** solo si el club lo tiene encendido) |
 | Menú (☰ arriba a la derecha) | Todas las secciones: Americanos, Torneos, Árbitros, Nuevo americano/torneo de pádel (Tenis y Nuevo torneo de tenis solo en clubes con tenis), Ranking FVP, Manual y Ajustes (Mi club, Árbitros del club, Claves). Lo del staff lleva candado y pide el mismo PIN del staff |
-| `/arbitro` | Panel del árbitro (tablet): se registra una sola vez en el club (nombre, teléfono, PIN de árbitros y un código propio de 4 dígitos) y sirve para todos los torneos, luego entra tocando su nombre y su código. Ve su turno y su pista, llama, empieza, anota y toma las fotos de las duplas |
+| `/arbitro` | Tablet del árbitro en **una sola pantalla**: se registra una sola vez en el club (nombre, teléfono, PIN de árbitros y un código propio de 4 dígitos) y luego entra tocando su nombre y su código. Ve solo su pista y su partido: previa (sorteo, saque, lados, fotos, llamar, W.O.), un toque por punto, falta, ace, cambiar sacador, sanción, médico y retiro siempre a la vista, sin diálogos: todo se hace al tocar y **Deshacer** vuelve atrás cualquier acción. El final se envía solo a mesa tras 10 s que se pueden deshacer, y aparece el siguiente partido de la pista |
 | `/americanos` | Eventos activos e historial, acceso rápido a Modo TV |
 | `/setup` | Asistente de 5 pasos: categoría, formato y puntuación, pistas y horario, jugadores, resumen con sorteo |
 | `/evento/:id` | Cuadro vivo: rondas con hora, cronómetro con alarma, pistas activas, carga de score |
@@ -27,7 +27,7 @@ PWA de PadelReserve para organizar americanos y torneos de pádel en La Marina S
 | `/torneos/:id/cuadros` | Grupos con tabla y "¿Por qué este orden?", llaves con byes, 3er puesto, consolación |
 | `/torneos/:id/programacion` | Horarios por día y pista, "¿Cuándo juego?", Programar / Desde ahora / Imprevistos |
 | `/torneos/:id/partido/:partido` | Partido para los atletas (con la clave): comparativa de estadísticas, tabla por jugador y punto a punto |
-| `/torneos/:id/anotar/:partido` | Anotador del árbitro o del staff: asistente previo (fotos, sorteo con la pelota según FIP, lado, quién saca), un toque por punto, detalle opcional sin barra de tiempo, saque solo y aviso de cambio de lado con cronómetro FIP (directo tras el 1-0, 1:30 en impares, 2:00 entre sets) que también sale en la TV de la pista |
+| `/torneos/:id/anotar/:partido` | La misma consola de una sola pantalla para el staff o un árbitro de relevo (queda bloqueada hasta tocar «Anotar en su lugar» o «Tomar el relevo»), con el aviso de cambio de lado y el cronómetro FIP (directo tras el 1-0, 1:30 en impares, 2:00 entre sets) que también sale en la TV de la pista |
 | `/torneos/:id/arbitros` | Árbitros (staff): el plantel del club con lo que anotó cada uno en ese torneo, pausar o borrar, y turnos por día, franja y pista con reparto automático |
 | `/torneos/:id/pista/:n` | Pantalla de la esquina de cada pista (1920×1080) para el público: marcador, datos por dupla y relato sin métricas individuales |
 | `/torneos/:id/tv` | Modo TV del torneo: todas las pistas, próximos, resultados y patrocinadores |

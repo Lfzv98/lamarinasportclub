@@ -4,8 +4,8 @@ import clsx from "clsx";
 import { usePathname } from "next/navigation";
 import { ByPadelReserve } from "@/components/Marcas";
 
-/** Pantallas que ya llevan su propio pie (inicio y legales) o son de pantalla completa (TV, anotar, imprimir). */
-const SIN_FIRMA = [/^\/$/, /^\/privacidad$/, /^\/terminos$/, /\/tv$/, /\/anotar(\/|$)/, /\/pista\/[^/]+$/, /^\/manual\/imprimir$/, /^\/offline$/];
+/** Pantallas que ya llevan su propio pie (inicio, legales, árbitros) o son de pantalla completa (TV, anotar, imprimir, tablet de pista). */
+const SIN_FIRMA = [/^\/$/, /^\/arbitro$/, /^\/privacidad$/, /^\/terminos$/, /\/tv$/, /\/anotar(\/|$)/, /\/pista\/[^/]+$/, /^\/manual\/imprimir$/, /^\/offline$/];
 /** Pantallas con barra fija abajo (navegación o "Guardar"): la firma queda por encima de la barra. */
 const CON_BARRA = [/^\/evento\/[^/]+(\/[^/]+)?$/, /^\/habibi\/[^/]+$/, /^\/torneos\/(?!ranking$)[^/]+/, /^\/(setup|club)$/, /\/ajustes$/, /\/nuevo$/];
 

@@ -993,83 +993,82 @@ const CONTENIDO: Pagina[] = [
   ),
   pagina(
     "Árbitros",
-    <ConCaptura src="arb-pista" alt="Pista 3 con partido llamado y Empezar partido">
-      <h2>Tu pista</h2>
+    <ConCaptura src="arb-pista" alt="Consola de la pista: las dos duplas, quién saca, sorteo y Empezar partido">
+      <h2>Una sola pantalla</h2>
       <ul className="ml-lista">
-        <li>Arriba, tu turno. Si no tienes, elige la pista. La tablet la recuerda.</li>
-        <li>Ves el partido llamado y los que siguen en esa pista.</li>
+        <li>La tablet muestra solo tu pista y su partido: de la previa al envío a mesa, sin cambiar de pantalla.</li>
+        <li>Arriba, el botón de la pista: otra pista, tus turnos, la TV y salir.</li>
         <li>
-          <B>Empezar partido</B> cuando estén las dos duplas.
+          Partido siguiente: <B>Llamar a pista</B> o empieza directo. Llamado: corre la tolerancia y, al pasar, sale <B>No vino…</B> en cada
+          dupla (W.O.).
         </li>
-        <li>
-          <B>No vino…</B> si falta una dupla y pasó la tolerancia (W.O.).
-        </li>
+        <li>Al enviar un resultado aparece solo el siguiente partido de la pista.</li>
       </ul>
     </ConCaptura>,
   ),
   pagina(
     "Árbitros",
-    <ConCaptura src="arb-sorteo" alt="Sorteo con la pelota">
+    <ConCaptura src="arb-sorteo" alt="Previa: sorteo, saque y lados en la misma pantalla">
       <h2>Antes del primer punto</h2>
+      <p>Todo está a la vista. Toca en el orden que quieras:</p>
       <Pasos
         items={[
           <>
-            <b>Foto:</b> las dos duplas juntas en la red. <B>Tomar</B> o <B>Seguir sin foto</B>.
+            <b>Sorteo:</b> toca la pelota o marca quién ganó la moneda, y qué eligió: sacar, restar o lado.
           </>,
           <>
-            <b>Sorteo:</b> toca la pelota o marca quién ganó la moneda.
+            <b>Lados:</b> cada dupla aparece en su lado visto desde tu silla. <B>Cambiar lados</B> las invierte.
           </>,
           <>
-            <b>El ganador elige:</b> sacar, restar o lado.
+            <b>Saque:</b> <B>Saca primero</B> en la dupla que abre y, en cada dupla, el jugador que saca primero.
           </>,
           <>
-            <b>Lado:</b> toca en la cancha de qué lado empieza cada dupla, visto desde tu silla.
-          </>,
-          <>
-            <b>Saque:</b> quién saca en cada dupla.
+            <b>Foto:</b> la cámara en la esquina de cada dupla (opcional).
           </>,
         ]}
       />
+      <p className="ml-chico">El botón de abajo dice qué falta. Cuando está todo, dice Empezar partido.</p>
     </ConCaptura>,
   ),
   pagina(
     "Árbitros",
-    <ConCaptura src="arb-anotador" alt="Anotador con una dupla arriba y otra abajo">
+    <ConCaptura src="arb-anotador" alt="Consola en juego: las dos duplas, acciones de cada dupla y Deshacer">
       <h2>Anotar</h2>
       <ul className="ml-lista">
         <li>
           La pantalla está partida en dos, igual que la cancha. <b>Toca la mitad de la dupla que ganó el punto.</b>
         </li>
-        <li>El punto verde marca quién saca.</li>
+        <li>El nombre en verde es quien saca. Las duplas se cambian solas de lado.</li>
         <li>
-          <B>Falta</B> anota la falta de saque (dos = doble falta). <B>Ace</B>, el ace.
+          Abajo, siempre: <B>Falta</B> (dos = doble falta), <B>Ace</B> y <B>Deshacer</B>.
         </li>
         <li>
-          <B>Deshacer</B> borra el último punto.
+          Bajo cada dupla: <B>Cambiar sacador</B>, <B>Sanción</B>, <B>Médico</B> y <B>Se retira</B>.
         </li>
       </ul>
-      <p className="ml-chico">
-        Punto de oro, tie-break y súper tie-break salen solos según las reglas de la categoría.
-      </p>
+      <Nota titulo="Sin confirmaciones">
+        Cada toque hace la acción al instante. <B>Deshacer</B> dice qué va a deshacer y vuelve atrás cualquier cosa: punto, falta,
+        sanción, sacador o atención médica.
+      </Nota>
     </ConCaptura>,
   ),
   pagina(
     "Árbitros",
-    <ConCaptura src="arb-detalle" alt="Detalle opcional: winner o error de cada jugador">
-      <h2>El detalle (opcional)</h2>
-      <p>Después de cada punto aparece abajo:</p>
+    <ConCaptura src="arb-detalle" alt="Winner, error no forzado y error forzado de cada jugador y estadísticas abajo">
+      <h2>Estadísticas a la mano</h2>
+      <p>Bajo cada dupla, por jugador, siempre a la vista:</p>
       <ul className="ml-lista">
         <li>
-          <b>Winner de:</b> quién lo ganó con un golpe.
+          <B>Winner</B>: punto para su dupla.
         </li>
         <li>
-          <b>Error de:</b> quién falló, y si fue forzado.
+          <B>E. no forzado</B> y <B>E. forzado</B>: punto para la otra dupla.
         </li>
       </ul>
-      <p>Con eso salen las estadísticas de cada atleta. Si no hay tiempo, ignóralo: no hace falta cerrarlo.</p>
-      <Nota titulo="⋯ Más opciones">
-        Corregir el sacador, sanciones FIP (advertencia, pérdida de punto, descalificación), atención médica de 3 min, accidente de
-        hasta 15 min y retiro por lesión.
+      <p>Un toque anota el punto y la estadística. Si no hay tiempo, toca la mitad de la dupla: punto sin detalle.</p>
+      <Nota titulo="Como en la transmisión">
+        Abajo se ven puntos, winners, errores no forzados, remates, breaks y puntos de oro de cada dupla. <B>Estadísticas</B> abre la
+        comparativa completa. Después de un winner o error se puede marcar el golpe (Golpe sí / no).
       </Nota>
     </ConCaptura>,
   ),
@@ -1085,6 +1084,22 @@ const CONTENIDO: Pagina[] = [
         <li>En el tie-break, cada 6 puntos.</li>
       </ul>
       <p>Las duplas se cambian solas de mitad en la pantalla, y el aviso también sale en la TV de la pista.</p>
+    </ConCaptura>,
+  ),
+  pagina(
+    "Árbitros",
+    <ConCaptura src="arb-fin" alt="Partido terminado con cuenta regresiva y Deshacer">
+      <h2>Fin del partido</h2>
+      <ul className="ml-lista">
+        <li>Con el último punto sale el resultado y una cuenta de 10 segundos.</li>
+        <li>
+          Si nadie toca nada, se envía solo a mesa técnica. <B>Enviar ya</B> lo manda antes.
+        </li>
+        <li>
+          ¿Fue un error? <B>Deshacer último punto</B> y el partido sigue.
+        </li>
+        <li>Retiro, descalificación y W.O. funcionan igual: se aplican al tocar y se pueden deshacer durante la cuenta.</li>
+      </ul>
     </ConCaptura>,
   ),
 
@@ -1289,7 +1304,7 @@ const CONTENIDO: Pagina[] = [
       <dt>No me acepta el PIN.</dt>
       <dd>Revisa que sea el vigente. Tras 5 intentos hay que esperar 10 minutos.</dd>
       <dt>Llegó alguien tarde o se lesionó.</dt>
-      <dd>Americano: Jugadores y fotos. Torneo: el árbitro marca retiro por lesión en ⋯.</dd>
+      <dd>Americano: Jugadores y fotos. Torneo: el árbitro toca «Se retira» bajo la dupla (o «Médico» para los 3 min).</dd>
       <dt>Cargué mal un resultado.</dt>
       <dd>Deshacer en el aviso, o abre la pista o el partido y corrígelo.</dd>
       <dt>No se activa el Sorteo.</dt>
