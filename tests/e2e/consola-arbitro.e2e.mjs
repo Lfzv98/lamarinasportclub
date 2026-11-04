@@ -128,6 +128,7 @@ await tv.goto(`${U}/torneos/${encodeURIComponent(tor.id)}/pista/3`, { waitUntil:
 await tv.waitForTimeout(2500);
 const ttv = await tv.locator("body").innerText();
 ok(/cambio de lado/i.test(ttv), "la TV de la pista muestra el cambio de lado al mismo tiempo");
+ok(/sets\s+games\s+puntos/i.test(ttv), "la TV de la pista lee SETS · GAMES · PUNTOS");
 await tv.screenshot({ path: `${out}/05b-tv-pista.png` });
 await tv.close();
 // Falta y doble falta

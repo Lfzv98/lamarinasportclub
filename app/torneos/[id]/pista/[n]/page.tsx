@@ -17,6 +17,7 @@ import { nombreCategoria } from "@/lib/torneo/categorias";
 import { atencionEnCurso, calcularMarcador, cambioDeLadoEnCurso, descansoReglamentario, relatoPublico, setsFinales, type Lado } from "@/lib/torneo/marcador";
 import { estadoPistas, limiteWO } from "@/lib/torneo/programacion";
 import { filasComparativa } from "@/lib/torneo/estadisticas";
+import { textoSets } from "@/lib/torneo/tabla";
 import { categoria, dupla, nombreJugador, nombresCompletosDupla } from "@/lib/torneo/torneo";
 import { useMarcador } from "@/lib/torneosStore";
 import type { MarcadorVivo, PartidoTorneo, Torneo } from "@/types/torneo";
@@ -135,24 +136,29 @@ function Marcador({ torneo, p, m, estrecho = false }: { torneo: Torneo; p: Parti
                 ? "TIE-BREAK"
                 : null;
   const ultimos = e.jugados.slice(-16);
-  // En un celular las columnas de sets y puntos se angostan para dejarle espacio a los nombres.
-  const filas = estrecho ? "grid-cols-[minmax(0,1fr)_repeat(var(--sets),2.75rem)_5.5rem]" : "grid-cols-[1fr_repeat(var(--sets),5rem)_11rem]";
+  // Como en la transmisión: SETS ganados, GAMES del set en curso y PUNTOS del game.
+  // En un celular las columnas se angostan para dejarle espacio a los nombres.
+  const filas = estrecho ? "grid-cols-[minmax(0,1fr)_2.75rem_2.75rem_5.5rem]" : "grid-cols-[1fr_7rem_7rem_11rem]";
+  const gamesSet = e.terminado ? (sets.at(-1) ?? e.games) : e.games;
+  const cerrados = textoSets(sets.slice(0, e.terminado ? sets.length : e.setActual).filter((s) => s.a + s.b > 0));
 
   return (
     <div className="flex min-h-0 flex-col gap-5">
       <div className="glass flex flex-1 flex-col justify-center gap-4 rounded-[2.5rem] p-8">
-        <div className={clsx("grid items-center text-center font-semibold uppercase text-white/35", filas, estrecho ? "gap-2 px-4 text-xs tracking-wider" : "gap-4 text-lg tracking-[0.2em]")} style={{ ["--sets" as string]: sets.length }}>
-          <span className="text-left">{m.reglas.sets === 3 ? "Mejor de 3" : "1 set"} · {m.reglas.puntoDeOro ? "punto de oro" : "ventaja"}</span>
-          {sets.map((_, i) => (
-            <span key={i}>{i === 2 && m.reglas.superTie ? ((m.reglas.tieDecisivo ?? 10) === 7 ? "TB" : "STB") : `Set ${i + 1}`}</span>
-          ))}
-          <span>{e.enTie ? "Tie" : "Puntos"}</span>
+        <div className={clsx("grid items-center text-center font-semibold uppercase text-white/35", filas, estrecho ? "gap-2 px-4 text-xs tracking-wider" : "gap-4 text-lg tracking-[0.2em]")}>
+          <span className="text-left">
+            {m.reglas.sets === 3 ? "Mejor de 3" : "1 set"} · {m.reglas.puntoDeOro ? "punto de oro" : "ventaja"}
+            {cerrados && <span className="text-white/60"> · {cerrados}</span>}
+          </span>
+          <span>Sets</span>
+          <span>Games</span>
+          <span>{e.enSuperTie ? "Súper tie" : e.enTie ? "Tie" : "Puntos"}</span>
         </div>
         {(["A", "B"] as const).map((l, i) => {
           const ids = l === "A" ? m.jugadoresA : m.jugadoresB;
           const gana = e.terminado && e.ganador === l;
           return (
-            <div key={l} className={clsx("grid items-center rounded-[2rem]", filas, estrecho ? "gap-2 px-4 py-4" : "gap-4 px-6 py-5", gana ? "seleccion" : "bg-white/[0.04]")} style={{ ["--sets" as string]: sets.length }}>
+            <div key={l} className={clsx("grid items-center rounded-[2rem]", filas, estrecho ? "gap-2 px-4 py-4" : "gap-4 px-6 py-5", gana ? "seleccion" : "bg-white/[0.04]")}>
               <div className={clsx("flex min-w-0 items-center", estrecho ? "gap-3" : "gap-5")}>
                 <span className={clsx("w-2 shrink-0 self-stretch rounded-full", l === "A" ? "bg-lima" : "bg-cielo")} />
                 {!estrecho && <CaraDupla torneo={torneo} duplaId={l === "A" ? p.duplaA : p.duplaB} ids={ids} alto={96} />}
@@ -165,11 +171,10 @@ function Marcador({ torneo, p, m, estrecho = false }: { torneo: Torneo; p: Parti
                   ))}
                 </div>
               </div>
-              {sets.map((s, j) => (
-                <span key={j} className={clsx("font-display font-bold tabular", estrecho ? "text-4xl" : "text-6xl", j === e.setActual && !e.terminado ? "text-white" : (l === "A" ? s.a > s.b : s.b > s.a) ? "text-lima" : "text-white/35")}>
-                  {l === "A" ? s.a : s.b}
-                </span>
-              ))}
+              <span className={clsx("font-display font-bold tabular", estrecho ? "text-4xl" : "text-6xl", (l === "A" ? e.setsGanados.a : e.setsGanados.b) > 0 ? "text-lima" : "text-white/35")}>
+                {l === "A" ? e.setsGanados.a : e.setsGanados.b}
+              </span>
+              <span className={clsx("font-display font-bold tabular text-white", estrecho ? "text-4xl" : "text-6xl")}>{l === "A" ? gamesSet.a : gamesSet.b}</span>
               <motion.span
                 key={`${e.texto[i]}-${m.puntos.length}`}
                 initial={{ scale: 0.85, opacity: 0.5 }}
