@@ -16,6 +16,7 @@ import { useFotoDupla, useFotosTorneo } from "@/lib/fotos";
 import { nombreCategoria } from "@/lib/torneo/categorias";
 import { atencionEnCurso, calcularMarcador, cambioDeLadoEnCurso, descansoReglamentario, relatoPublico, setsFinales, type Lado } from "@/lib/torneo/marcador";
 import { estadoPistas, limiteWO } from "@/lib/torneo/programacion";
+import { filasComparativa } from "@/lib/torneo/estadisticas";
 import { categoria, dupla, nombreJugador, nombresCompletosDupla } from "@/lib/torneo/torneo";
 import { useMarcador } from "@/lib/torneosStore";
 import type { MarcadorVivo, PartidoTorneo, Torneo } from "@/types/torneo";
@@ -191,7 +192,7 @@ function Marcador({ torneo, p, m, estrecho = false }: { torneo: Torneo; p: Parti
         </div>
       </div>
 
-      <div className={clsx("grid gap-4", estrecho ? "grid-cols-2" : "grid-cols-[1.4fr_repeat(3,minmax(0,1fr))]")}>
+      <div className={clsx("grid gap-4", estrecho ? "grid-cols-2" : "grid-cols-[1.2fr_repeat(6,minmax(0,1fr))]")}>
         <div className="glass rounded-[1.5rem] p-4">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/40">Últimos puntos</p>
           <div className="mt-3 flex gap-1.5">
@@ -205,16 +206,12 @@ function Marcador({ torneo, p, m, estrecho = false }: { torneo: Torneo; p: Parti
             </p>
           )}
         </div>
-        {/* Datos del partido por dupla. Las métricas de cada atleta las ven solo los participantes. */}
-        {[
-          { t: "Puntos", f: (l: Lado) => e.jugados.filter((x) => x.gana === l).length },
-          { t: "Breaks", f: (l: Lado) => e.jugados.filter((x) => x.gana === l && x.breakPoint && x.gana !== x.equipoSaca).length },
-          { t: "Puntos de oro", f: (l: Lado) => e.jugados.filter((x) => x.gana === l && x.oro).length },
-        ].map((s) => (
+        {/* Estadísticas por dupla, como el grafismo de la transmisión. Las de cada atleta las ven solo los participantes. */}
+        {filasComparativa(m, true).map((s) => (
           <div key={s.t} className="glass rounded-[1.5rem] p-4">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/40">{s.t}</p>
-            <p className="mt-2 font-display text-4xl font-bold tabular">
-              <span className="text-lima">{s.f("A")}</span> <span className="text-white/25">·</span> <span className="text-cielo">{s.f("B")}</span>
+            <p className={clsx("min-h-[2.5em] font-semibold uppercase leading-tight text-white/40", estrecho ? "text-xs tracking-wider" : "text-sm tracking-wider")}>{s.t}</p>
+            <p className={clsx("mt-2 whitespace-nowrap font-display font-bold tabular", estrecho ? "text-2xl" : "text-[2.1rem]")}>
+              <span className="text-lima">{s.ta ?? s.a}</span> <span className="text-white/25">·</span> <span className="text-cielo">{s.tb ?? s.b}</span>
             </p>
           </div>
         ))}

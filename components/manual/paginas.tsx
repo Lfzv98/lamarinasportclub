@@ -1054,19 +1054,22 @@ const CONTENIDO: Pagina[] = [
   ),
   pagina(
     "Árbitros",
-    <ConCaptura src="arb-detalle" alt="Detalle opcional: winner o error de cada jugador">
-      <h2>El detalle (opcional)</h2>
-      <p>Después de cada punto aparece en la franja de abajo, sin tapar el marcador:</p>
+    <ConCaptura src="arb-detalle" alt="Winner, error no forzado y error forzado de cada jugador y estadísticas abajo">
+      <h2>Estadísticas a la mano</h2>
+      <p>Bajo cada dupla, por jugador, siempre a la vista:</p>
       <ul className="ml-lista">
         <li>
-          <b>Winner:</b> quién lo ganó con un golpe.
+          <B>Winner</B>: punto para su dupla.
         </li>
         <li>
-          <b>Error:</b> quién falló. Toca «no forzado» para marcarlo forzado.
+          <B>E. no forzado</B> y <B>E. forzado</B>: punto para la otra dupla.
         </li>
       </ul>
-      <p>Con eso salen las estadísticas de cada atleta. Si no hay tiempo, anota el siguiente punto: se cierra solo.</p>
-      <Nota titulo="Detalle sí / no">Arriba a la derecha. Con «no», la tablet solo lleva el marcador.</Nota>
+      <p>Un toque anota el punto y la estadística. Si no hay tiempo, toca la mitad de la dupla: punto sin detalle.</p>
+      <Nota titulo="Como en la transmisión">
+        Abajo se ven puntos, winners, errores no forzados, remates, breaks y puntos de oro de cada dupla. <B>Estadísticas</B> abre la
+        comparativa completa. Después de un winner o error se puede marcar el golpe (Golpe sí / no).
+      </Nota>
     </ConCaptura>,
   ),
   pagina(

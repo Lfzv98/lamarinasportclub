@@ -67,18 +67,41 @@ await shot("03-en-juego");
 const puntoIzq = p.locator("button[aria-label^='Punto para']").first();
 const puntoDer = p.locator("button[aria-label^='Punto para']").nth(1);
 const nombreIzq = (await puntoIzq.getAttribute("aria-label")).replace("Punto para ", "");
+const puntos = async () => [await puntoIzq.locator("span.font-display").innerText(), await puntoDer.locator("span.font-display").innerText()];
+// Winner del jugador de la izquierda: un toque = punto para su dupla + estadística
+const winnerIzq = p.locator("button[aria-label^='Winner de']").first();
+ok(await winnerIzq.isVisible() && await p.locator("button[aria-label^='Error no forzado de']").count() === 4 && await p.locator("button[aria-label^='Error forzado de']").count() === 4, "winner, error no forzado y forzado de cada jugador siempre a la vista");
+await winnerIzq.click();
+await espera(400);
+ok(JSON.stringify(await puntos()) === '["15","0"]', `el winner suma el punto a su dupla (${await puntos()})`);
+ok(await p.getByRole("button", { name: /^remate$/i }).isVisible(), "después del winner, el golpe (opcional) en la franja de abajo");
+await shot("04-detalle");
+await p.getByRole("button", { name: /^remate$/i }).click();
+await espera(300);
+ok(/Deshacer\nWinner de /.test(await texto()), "deshacer dice qué deshace (winner)");
+await p.getByRole("button", { name: /^Deshacer/ }).click();
+await espera(400);
+// Error no forzado del jugador de la izquierda: el punto es para la otra dupla
+await p.locator("button[aria-label^='Error no forzado de']").first().click();
+await espera(400);
+ok(JSON.stringify(await puntos()) === '["0","15"]', `el error no forzado da el punto a la otra dupla (${await puntos()})`);
+await p.getByRole("button", { name: /^volea$/i }).click();
+await espera(300);
+ok(/Errores no forzados\n+0 · 1/i.test(await texto()), "las estadísticas de abajo se actualizan al instante");
+await p.getByRole("button", { name: "Estadísticas del partido" }).click();
+await espera(500);
+ok(/Remates ganadores/i.test(await p.locator("body").innerText()), "la hoja de estadísticas trae la comparativa completa");
+await shot("04c-estadisticas");
+await p.keyboard.press("Escape");
+await p.locator("[aria-label='Cerrar']").first().click().catch(() => {});
+await espera(500);
+await p.getByRole("button", { name: /^Deshacer/ }).click();
+await espera(400);
+// Toque simple en la mitad: punto sin detalle
 await puntoIzq.click();
 await espera(400);
-ok(/Winner/i.test(await texto()), "tras el punto aparece el detalle opcional");
-await shot("04-detalle");
-// Winner del primer jugador
-await p.locator("text=Winner").locator("xpath=following-sibling::button[1]").click();
-await espera(300);
-ok(/Remate/i.test(await texto()), "segundo toque: golpe");
-await p.getByRole("button", { name: /remate/i }).click();
-await espera(300);
 // el punto se deshace con su detalle
-ok(/Deshacer\nPunto de /.test(await texto()), "deshacer dice qué deshace");
+ok(/Deshacer\nPunto de /.test(await texto()), "deshacer dice qué deshace (punto simple)");
 await p.getByRole("button", { name: /^Deshacer/ }).click();
 await espera(500);
 t = await texto();
@@ -145,7 +168,7 @@ await shot("08-retiro");
 await p.getByRole("button", { name: /Deshacer retiro/ }).click(); await espera(500);
 ok(await p.locator("button[aria-label^='Punto para']:not([disabled])").count() === 2 && !/Se envía solo/.test(await texto()), "deshacer retiro vuelve al partido");
 // Terminar el partido: punto a punto para la derecha hasta el final (con detalle apagado)
-await p.getByRole("button", { name: /Detalle sí/ }).click();
+await p.getByRole("button", { name: /Golpe sí/ }).click();
 for (let i = 0; i < 120; i++) {
   if (/Partido terminado/i.test(await texto())) break;
   await p.locator(`button[aria-label='Punto para ${nombreIzq}']`).click();

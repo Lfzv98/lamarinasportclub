@@ -14,12 +14,14 @@
  */
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeftRight, Camera, Check, CircleSlash, Flag, HeartPulse, Megaphone, Play, Send, ShieldAlert, Sparkles, Timer, Trophy, Undo2, UserX, X, Zap } from "lucide-react";
+import { ArrowLeftRight, BarChart3, Camera, Check, CircleSlash, Flag, HeartPulse, Megaphone, Play, Send, ShieldAlert, Sparkles, Timer, Trophy, Undo2, UserX, X, Zap } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { FotoDupla, TomarFoto } from "@/components/Foto";
 import { PelotaPadel } from "@/components/torneo/PelotaPadel";
+import { Comparativa } from "@/components/torneo/Comparativa";
 import { EstadoConexion } from "@/components/torneo/Conexion";
+import { Hoja } from "@/components/ui/Hoja";
 import { useAhora } from "@/components/torneo/vivo";
 import { toast } from "@/components/ui/Toaster";
 import { useArbitro } from "@/lib/arbitro";
@@ -43,6 +45,7 @@ import {
   type PasoDeshacer,
   type Previa,
 } from "@/lib/torneo/consola";
+import { filasComparativa } from "@/lib/torneo/estadisticas";
 import { nombrePista } from "@/lib/torneo/imprevistos";
 import {
   ace,
@@ -65,7 +68,9 @@ import {
   relatoPunto,
   sancionar,
   setsFinales,
+  statsPartido,
   type EstadoMarcador,
+  type StatsJugador,
   type Lado,
 } from "@/lib/torneo/marcador";
 import { limiteWO } from "@/lib/torneo/programacion";
@@ -73,7 +78,7 @@ import { resultadoRetiro, textoSets } from "@/lib/torneo/tabla";
 import { categoria, dupla, nombreDupla, reglasDe } from "@/lib/torneo/torneo";
 import { useAmericanos } from "@/lib/store";
 import { useMarcador, useTorneos } from "@/lib/torneosStore";
-import type { FinPunto, Golpe, JugadorTorneo, MarcadorVivo, PartidoTorneo, Torneo } from "@/types/torneo";
+import type { Golpe, JugadorTorneo, MarcadorVivo, PartidoTorneo, Torneo } from "@/types/torneo";
 
 const GOLPES: Golpe[] = ["REMATE", "X3", "X4", "VIBORA", "BANDEJA", "VOLEA", "GLOBO", "CHIQUITA", "BAJADA", "DRIVE", "REVES"];
 const MOTIVOS_SANCION = ["Demora en el juego", "Conducta antideportiva", "Obscenidad", "Abuso de pelota", "Abuso de pala o equipo", "Abuso verbal", "Indumentaria", "Consejos fuera de tiempo"];
@@ -613,7 +618,8 @@ function EnJuego({ ctx, m, rotulo, izquierda, bloqueo, onEnviado }: { ctx: Conte
   const ahora = useAhora(1000);
   const [pila, setPila] = useState<PasoDeshacer[]>([]);
   const [bandeja, setBandeja] = useState<Bandeja | null>(null);
-  const [forzado, setForzado] = useState(false);
+  const [verStats, setVerStats] = useState(false);
+  const stats = useMemo(() => statsPartido(m), [m]);
   const [abierto, setAbierto] = useState<{ lado: Lado; que: "SANCION" | "MEDICO" } | null>(null);
   const [cierre, setCierre] = useState<Cierre | null>(null);
   const [detalle, setDetalle] = useState(true);
@@ -697,10 +703,20 @@ function EnJuego({ ctx, m, rotulo, izquierda, bloqueo, onEnviado }: { ctx: Conte
     vibrar(15);
     sonar("tap");
     setAbierto(null);
-    const nuevo = anotarPunto(m, l);
-    hacer(nuevo, `Punto de ${nombre(l)}`);
-    setForzado(false);
-    if (detalle) setBandeja({ n: nuevo.puntos.length, gana: l, paso: "COMO" });
+    setBandeja(null);
+    hacer(anotarPunto(m, l), `Punto de ${nombre(l)}`);
+  }
+
+  /** Un toque = punto + estadística: el winner suma para su dupla; el error, para la otra. */
+  function puntoCon(lado: Lado, jugadorId: string, fin: "WINNER" | "ERROR_NO_FORZADO" | "ERROR_FORZADO") {
+    if (e.terminado || bloqueado) return;
+    vibrar(15);
+    sonar("tap");
+    setAbierto(null);
+    const gana = fin === "WINNER" ? lado : otroLado(lado);
+    const nuevo = anotarPunto(m, gana, { fin, jugadorId });
+    hacer(nuevo, `${NOMBRE_STAT[fin]} de ${corto(jugadorId)}`);
+    setBandeja(detalle ? { n: nuevo.puntos.length, gana, paso: "GOLPE" } : null);
   }
 
   function enviar(c: Cierre) {
@@ -796,8 +812,11 @@ function EnJuego({ ctx, m, rotulo, izquierda, bloqueo, onEnviado }: { ctx: Conte
     <div className="flex h-full flex-col gap-2">
       <Barra izquierda={izquierda} rotulo={rotulo}>
         <Sets ctx={ctx} e={e} />
-        <button onClick={alternarDetalle} aria-pressed={detalle} className={clsx("shrink-0 rounded-xl border px-2.5 py-2 text-xs font-semibold", detalle ? "border-lima/40 text-lima" : "border-white/10 text-white/45")} title="Preguntar winner, error y golpe después de cada punto">
-          Detalle {detalle ? "sí" : "no"}
+        <button onClick={() => (vibrar(8), setVerStats(true))} className="flex shrink-0 items-center gap-1.5 rounded-xl border border-white/10 px-2.5 py-2 text-xs font-semibold text-white/80" aria-label="Estadísticas del partido">
+          <BarChart3 className="size-4 text-lima" /> <span className="hidden sm:inline">Estadísticas</span>
+        </button>
+        <button onClick={alternarDetalle} aria-pressed={detalle} className={clsx("shrink-0 rounded-xl border px-2.5 py-2 text-xs font-semibold", detalle ? "border-lima/40 text-lima" : "border-white/10 text-white/45")} title="Preguntar con qué golpe después de un winner o un error">
+          Golpe {detalle ? "sí" : "no"}
         </button>
       </Barra>
       {franja}
@@ -813,6 +832,8 @@ function EnJuego({ ctx, m, rotulo, izquierda, bloqueo, onEnviado }: { ctx: Conte
               bloqueado={bloqueado || !!cierre}
               abierto={abierto?.lado === l ? abierto.que : null}
               onPunto={() => punto(l)}
+              onStat={(id, fin) => puntoCon(l, id, fin)}
+              stats={stats}
               onAbrir={(que) => (vibrar(8), setAbierto((x) => (x?.lado === l && x.que === que ? null : { lado: l, que })))}
               onCerrar={() => setAbierto(null)}
               onSacador={() => {
@@ -863,38 +884,7 @@ function EnJuego({ ctx, m, rotulo, izquierda, bloqueo, onEnviado }: { ctx: Conte
 
       {/* Detalle del punto: fijo, nunca tapa los botones de punto, y no frena el siguiente. */}
       <div className="glass flex h-[5.5rem] shrink-0 items-center gap-2 overflow-hidden rounded-2xl px-3">
-        {bandejaViva?.paso === "COMO" ? (
-          <>
-            <span className="label !m-0 w-14 shrink-0 !text-lima">Winner</span>
-            {(bandejaViva.gana === "A" ? m.jugadoresA : m.jugadoresB).map((id) => (
-              <BotonJugador key={id} j={jug(id)} tono="lima" onClick={() => (vibrar(8), retoque(detallarUltimo(m, { fin: "WINNER", jugadorId: id })), setBandeja({ ...bandejaViva, paso: "GOLPE" }))} />
-            ))}
-            <span className="mx-1 h-12 w-px shrink-0 bg-white/10" />
-            <button
-              onClick={() => (vibrar(6), setForzado((v) => !v))}
-              aria-pressed={forzado}
-              className={clsx("shrink-0 rounded-xl border px-2 py-1 text-left text-[11px] font-bold uppercase leading-tight tracking-wider", forzado ? "border-amber-300/60 text-amber-200" : "border-transparent text-coral")}
-            >
-              Error
-              <span className="block font-semibold normal-case tracking-normal text-white/50">{forzado ? "forzado ✓" : "no forzado"}</span>
-            </button>
-            {(bandejaViva.gana === "A" ? m.jugadoresB : m.jugadoresA).map((id) => (
-              <BotonJugador
-                key={id}
-                j={jug(id)}
-                tono="coral"
-                onClick={() => {
-                  vibrar(8);
-                  retoque(detallarUltimo(m, { fin: (forzado ? "ERROR_FORZADO" : "ERROR_NO_FORZADO") as FinPunto, jugadorId: id }));
-                  setBandeja({ ...bandejaViva, paso: "GOLPE" });
-                }}
-              />
-            ))}
-            <button className="ml-auto shrink-0 rounded-full p-2 text-white/40" onClick={() => setBandeja(null)} aria-label="Sin detalle">
-              <X className="size-5" />
-            </button>
-          </>
-        ) : bandejaViva?.paso === "GOLPE" ? (
+        {bandejaViva?.paso === "GOLPE" ? (
           <>
             {m.puntos.at(-1)?.fin?.startsWith("ERROR") &&
               (["RED", "AFUERA"] as const).map((z) => (
@@ -906,6 +896,7 @@ function EnJuego({ ctx, m, rotulo, izquierda, bloqueo, onEnviado }: { ctx: Conte
                   {z === "RED" ? "A la red" : "Afuera"}
                 </button>
               ))}
+            <span className="label !m-0 hidden shrink-0 sm:block">¿Con qué golpe?</span>
             <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto py-1">
               {GOLPES.map((g) => (
                 <button key={g} className="btn-ghost shrink-0 !px-4 !py-3 text-sm capitalize" onClick={() => (vibrar(8), retoque(detallarUltimo(m, { golpe: g })), setBandeja(null))}>
@@ -918,10 +909,7 @@ function EnJuego({ ctx, m, rotulo, izquierda, bloqueo, onEnviado }: { ctx: Conte
             </button>
           </>
         ) : (
-          <p className="min-w-0 flex-1 truncate text-center text-sm text-white/45">
-            {ultimo ? relatoPunto(ultimo, corto, nombre) : "Toca la mitad de la dupla que ganó el punto."}
-            {detalle ? "" : " · Detalle apagado: solo el marcador."}
-          </p>
+          <StatsRapidas m={m} relato={ultimo ? relatoPunto(ultimo, corto, nombre) : "Toca la mitad de la dupla que ganó el punto, o el winner / error del jugador."} onVer={() => (vibrar(8), setVerStats(true))} />
         )}
       </div>
 
@@ -953,18 +941,50 @@ function EnJuego({ ctx, m, rotulo, izquierda, bloqueo, onEnviado }: { ctx: Conte
           </span>
         </button>
       </footer>
+
+      <Hoja abierta={verStats} onClose={() => setVerStats(false)} titulo="Estadísticas del partido" sub={`${e.jugados.length} puntos · ${textoSets(setsFinales(e).filter((x) => x.a + x.b > 0)) || "0-0"}`}>
+        <Comparativa m={m} nombres={[nombre("A"), nombre("B")]} />
+        <p className="label !mt-6">Por jugador</p>
+        <div className="grid grid-cols-2 gap-2">
+          {stats.map((x) => (
+            <div key={x.jugadorId} className={clsx("rounded-2xl border p-3 text-xs", x.lado === "A" ? "border-lima/25" : "border-cielo/25")}>
+              <p className="mb-1 truncate text-sm font-semibold">{corto(x.jugadorId)}</p>
+              <p className="text-white/65">
+                {x.winners} winners · {x.erroresNoForzados} ENF · {x.erroresForzados} EF
+              </p>
+              <p className="text-white/45">
+                {x.aces} aces · {x.doblesFaltas} dobles faltas
+              </p>
+            </div>
+          ))}
+        </div>
+      </Hoja>
     </div>
   );
 }
 
-function BotonJugador({ j, tono, onClick }: { j?: JugadorTorneo; tono: "lima" | "coral"; onClick: () => void }) {
+const NOMBRE_STAT = { WINNER: "Winner", ERROR_NO_FORZADO: "Error no forzado", ERROR_FORZADO: "Error forzado" } as const;
+
+/** Lo principal del partido siempre a la vista, como el grafismo de la transmisión. */
+function StatsRapidas({ m, relato, onVer }: { m: MarcadorVivo; relato: string; onVer: () => void }) {
+  const filas = useMemo(() => filasComparativa(m, true), [m]);
   return (
-    <button onClick={onClick} className={clsx("flex h-16 min-w-0 shrink items-center gap-2 rounded-2xl border bg-white/[0.04] px-2.5 pr-3 font-semibold transition active:scale-95", tono === "lima" ? "border-lima/30" : "border-coral/30")}>
-      <span className="hidden sm:block">
-        <Avatar nombre={[j?.nombre, j?.apellido].join(" ")} fotoUrl={j?.fotoUrl} size={36} />
-      </span>
-      <span className="truncate">{j?.nombre ?? "?"}</span>
-    </button>
+    <>
+      <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
+        {filas.map((f) => (
+          <div key={f.t} className="min-w-0 flex-1 rounded-xl bg-white/[0.04] px-2 py-1.5 text-center">
+            <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-white/45">{f.t}</p>
+            <p className="font-display text-lg font-bold leading-tight tabular">
+              <span className="text-lima">{f.ta ?? f.a}</span> <span className="text-white/25">·</span> <span className="text-cielo">{f.tb ?? f.b}</span>
+            </p>
+          </div>
+        ))}
+        <p className="hidden max-w-[14rem] shrink truncate text-xs text-white/40 xl:block">{relato}</p>
+      </div>
+      <button className="btn-ghost shrink-0 !px-3 !py-3 text-sm" onClick={onVer} aria-label="Ver todas las estadísticas">
+        <BarChart3 className="size-4" /> <span className="hidden sm:inline">Todas</span>
+      </button>
+    </>
   );
 }
 
@@ -976,6 +996,8 @@ function ColJuego({
   bloqueado,
   abierto,
   onPunto,
+  onStat,
+  stats,
   onAbrir,
   onCerrar,
   onSacador,
@@ -990,6 +1012,8 @@ function ColJuego({
   bloqueado: boolean;
   abierto: "SANCION" | "MEDICO" | null;
   onPunto: () => void;
+  onStat: (jugadorId: string, fin: "WINNER" | "ERROR_NO_FORZADO" | "ERROR_FORZADO") => void;
+  stats: StatsJugador[];
   onAbrir: (q: "SANCION" | "MEDICO") => void;
   onCerrar: () => void;
   onSacador: () => void;
@@ -1051,6 +1075,23 @@ function ColJuego({
         </span>
         <span className="relative mt-1 hidden text-[11px] font-semibold uppercase tracking-[0.2em] text-white/35 sm:block">Toca para punto</span>
       </button>
+
+      {/* Cómo terminó el punto, jugador por jugador: un toque anota el punto y la estadística. */}
+      <div className="relative grid shrink-0 grid-cols-2 gap-1.5 border-t border-white/10 bg-marino-2/40 p-1.5">
+        {ids.map((id) => {
+          const st = stats.find((x) => x.jugadorId === id);
+          return (
+            <div key={id} className="min-w-0">
+              <p className="truncate px-1 pb-0.5 text-[11px] font-semibold text-white/60">{jug(id)?.nombre ?? "?"}</p>
+              <div className="grid grid-cols-3 gap-1">
+                <BotonStat tono="lima" texto="Winner" corto="W" n={st?.winners ?? 0} titulo={`Winner de ${jug(id)?.nombre}: punto para ${nombre(lado)}`} onClick={() => onStat(id, "WINNER")} disabled={bloqueado || e.terminado} />
+                <BotonStat tono="coral" texto="E. no forz." corto="ENF" n={st?.erroresNoForzados ?? 0} titulo={`Error no forzado de ${jug(id)?.nombre}: punto para la otra dupla`} onClick={() => onStat(id, "ERROR_NO_FORZADO")} disabled={bloqueado || e.terminado} />
+                <BotonStat tono="ambar" texto="E. forzado" corto="EF" n={st?.erroresForzados ?? 0} titulo={`Error forzado de ${jug(id)?.nombre}: punto para la otra dupla`} onClick={() => onStat(id, "ERROR_FORZADO")} disabled={bloqueado || e.terminado} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
       {/* Acciones de esta dupla: siempre visibles, fuera de la zona de punto. */}
       <div className="relative grid shrink-0 grid-cols-4 gap-1.5 border-t border-white/10 bg-marino-2/60 p-1.5">
@@ -1118,6 +1159,29 @@ function ColJuego({
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+function BotonStat({ tono, texto, corto, n, titulo, onClick, disabled }: { tono: "lima" | "coral" | "ambar"; texto: string; corto: string; n: number; titulo: string; onClick: () => void; disabled?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={titulo}
+      title={titulo}
+      className={clsx(
+        "flex min-h-11 min-w-0 flex-col items-center justify-center rounded-xl border px-0.5 py-1 leading-tight transition active:scale-95 disabled:opacity-40",
+        tono === "lima" && "border-lima/35 bg-lima/10 text-lima",
+        tono === "coral" && "border-coral/35 bg-coral/10 text-coral",
+        tono === "ambar" && "border-amber-300/35 bg-amber-300/10 text-amber-200",
+      )}
+    >
+      <span className="truncate text-[11px] font-bold sm:text-xs">
+        <span className="hidden lg:inline">{texto}</span>
+        <span className="lg:hidden">{corto}</span>
+      </span>
+      <span className="font-display text-sm font-bold tabular text-white/80">{n}</span>
+    </button>
   );
 }
 
