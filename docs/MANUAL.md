@@ -148,15 +148,15 @@ En el torneo → **Árbitros** (staff) se ve el plantel del club con los turnos 
 
 En la tablet, el árbitro ve **Tu turno: Pista N · hh:mm–hh:mm** con cuántos partidos le tocan; la app abre su pista sola y solo muestra las pistas que le tocan hoy (con **Otra pista** para cubrir a un compañero). **Mis turnos** lista todo su torneo.
 
-### Antes de empezar el partido: asistente de 5 toques
+### La tablet de la pista: una sola pantalla
 
-1. **Fotos**: una foto por dupla en la pista (opcional; **Saltar**). Sale junto a sus nombres en el anotador, la TV de la pista y la página del partido.
-2. **Sorteo**: se toca la **pelota de pádel**, rebota de un lado a otro y cae en la dupla ganadora (sorteo aleatorio del dispositivo). También se puede marcar a mano si se hizo con moneda.
-3. **Elección del ganador** (reglamento FIP): **Sacar**, **Restar** o **Elegir lado**. Si elige sacar o restar, la otra dupla elige el lado; si elige lado, la otra dupla decide si saca o resta. Es decir, quien gana y entrega el saque puede quedarse con el lado.
-4. **Lado**: un dibujo de la pista visto desde la silla del árbitro; se toca el lado.
-5. **Quién saca** en cada dupla, con botones grandes. **Empezar partido**.
+Desde la pista elegida, la tablet muestra solo el partido que toca en esa pista y no cambia de pantalla en todo el partido (`components/arbitro/Consola.tsx`). Arriba está el botón de la pista (otra pista, turnos, mesa técnica, TV, salir) y una franja fija con lo urgente del momento: tolerancia del llamado, cambio de lado con su cuenta, atención médica, punto de oro, punto de set o de partido.
 
-En el tablero, cada mitad de la pantalla corresponde al lado real de la pista y se cambia sola (con animación) en cada cambio de lado. El detalle Winner/Error ya no tiene barra de tiempo: queda abierto hasta que el árbitro elige o lo cierra con la X.
+**Antes de empezar**, todo a la vista y en cualquier orden: las dos duplas en su lado real visto desde la silla (**Cambiar lados** las invierte), **Saca primero** en la dupla que abre, el jugador que saca primero en cada dupla, la cámara para la foto de cada dupla, el **sorteo** con la pelota (o marcando quién ganó la moneda) y lo que eligió el ganador (sacar o restar ya marca el saque). **Llamar a pista** si el partido es el siguiente; si está llamado corre la tolerancia FIP y al pasar aparece **No vino…** en cada dupla. El botón grande de abajo dice qué falta y, cuando está todo, **Empezar partido**.
+
+**En juego**, cada mitad es una dupla en su lado real y se cambia sola en cada cambio de lado. Un toque por punto. Abajo, siempre: **Falta** (la segunda es doble falta), **Ace** y **Deshacer**. Bajo cada dupla: **Cambiar sacador** (en el 1er set corrige el orden; desde el 2º usa el cambio de orden FIP del set), **Sanción** (se elige el motivo y se aplica la que toca según la tabla FIP), **Médico** (lesión de 3 min o accidente de 15) y **Se retira**. El detalle Winner / Error / golpe sale en una franja fija que no tapa el marcador y se cierra solo con el siguiente punto; **Detalle sí/no** lo apaga.
+
+**Sin confirmaciones.** Cada toque hace la acción al instante y **Deshacer** dice qué va a deshacer y vuelve atrás cualquier acción (punto, falta, sanción, sacador, atención médica), una tras otra (`lib/torneo/consola.ts`). Al terminar el partido, o con un retiro, descalificación o W.O., sale el resultado con una cuenta de 10 segundos: si nadie toca, se envía solo a mesa técnica; **Deshacer** lo cancela y **Enviar ya** lo adelanta. Luego aparece el siguiente partido de la pista.
 
 **Cambio de lado (FIP Regla 2):** se cambia en los games impares (1-0, 2-1, 3-0, 3-2…). Tras el primer game del set se cambia directo, sin descanso; en los demás impares hay un máximo de 1:30; al terminar un set, 2:00; en el tie-break, cada 6 puntos con 20 s. En cada cambio la tablet del árbitro suena y muestra un aviso grande con un cronómetro circular; al llegar a cero suena una alarma y dice "¡Tiempo! A jugar". La TV de la pista muestra al público "CAMBIO DE LADO · 1:24" con la misma cuenta regresiva.
 
