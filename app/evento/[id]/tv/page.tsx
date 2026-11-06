@@ -1,5 +1,6 @@
 "use client";
 
+import { EventoBuscando } from "@/components/EventoBuscando";
 import clsx from "clsx";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -30,10 +31,14 @@ export default function ModoTVPage() {
   const evento = useEvento(id);
   const hidratado = useAmericanos((s) => s.hidratado);
 
+  const ultimoSync = useAmericanos((s) => s.ultimoSync);
+
   if (!evento)
-    return (
+    return hidratado && ultimoSync ? (
+      <EventoBuscando />
+    ) : (
       <main className="flex min-h-dvh items-center justify-center">
-        {hidratado ? <Link href="/americanos" className="btn-neon">Evento no encontrado · Volver</Link> : <div className="size-12 animate-spin rounded-full border-2 border-white/10 border-t-neon" />}
+        <div className="size-12 animate-spin rounded-full border-2 border-white/10 border-t-neon" />
       </main>
     );
   return <TV evento={evento} />;

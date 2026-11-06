@@ -3,10 +3,23 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const CLAVE = "lamarina-setup-borrador";
+/** Un borrador de más de 12 h se considera abandonado y no se recupera. */
+const VIGENCIA_MS = 12 * 3600_000;
 
 function leer(): Record<string, unknown> {
   try {
-    return JSON.parse(localStorage.getItem(CLAVE) ?? "{}");
+    const b = JSON.parse(localStorage.getItem(CLAVE) ?? "{}") as Record<string, unknown>;
+    // Un borrador viejo (ej. de otro día) no se recupera: si no, el americano
+    // nuevo saldría con la fecha, los jugadores y las reglas de aquella vez.
+    if (typeof b._t === "number" && Date.now() - b._t > VIGENCIA_MS) {
+      localStorage.removeItem(CLAVE);
+      return {};
+    }
+    // La fecha nunca queda en un día que ya pasó (ej. borrador de anoche).
+    const d = new Date();
+    const hoy = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    if (typeof b.fecha === "string" && b.fecha < hoy) b.fecha = hoy;
+    return b;
   } catch {
     return {};
   }
@@ -41,7 +54,7 @@ export function useBorrador<T>(campo: string, inicial: T | (() => T)) {
 export function hayBorrador(): boolean {
   const b = leer() as { jugadores?: unknown[]; parejas?: unknown[]; _t?: number };
   // Borradores de más de 12 h se consideran abandonados.
-  return !!b._t && Date.now() - b._t < 12 * 3600_000 && ((b.jugadores?.length ?? 0) > 0 || (b.parejas?.length ?? 0) > 0);
+  return !!b._t && Date.now() - b._t < VIGENCIA_MS && ((b.jugadores?.length ?? 0) > 0 || (b.parejas?.length ?? 0) > 0);
 }
 
 export function useLimpiarBorrador() {
