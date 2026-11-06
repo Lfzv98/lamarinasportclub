@@ -161,7 +161,8 @@ const TV = await b.newContext({ viewport: { width: 1920, height: 1080 } });
 const tv = await nuevo(TV);
 await tv.goto(`${U}/habibi/${id}/tv`, { waitUntil: "networkidle" });
 await tv.waitForTimeout(2000);
-ok((await tv.locator("img[src='/brand/logo.png']").count()) === 1, "TV: un solo logo (el de fondo), sin logo arriba a la izquierda");
+// La banda de publicidad de abajo (Vallas) lleva su propio logo; arriba no va ninguno.
+ok((await tv.locator("header img[src='/brand/logo.png']").count()) === 0 && (await tv.locator("img[src='/brand/logo.png'][class*='blur']").count()) === 1, "TV: logo grande de fondo y ninguno arriba a la izquierda");
 ok(await tv.locator("h2:has-text('Grupo A')").count() > 0, "TV: tablas de los grupos");
 await foto(tv, "11-tv-grupos");
 

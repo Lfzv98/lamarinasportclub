@@ -39,7 +39,7 @@ export default function Americanos() {
   const soloStaff = (e: React.MouseEvent) => {
     if (esStaff) return;
     e.preventDefault();
-    setPedirLogin(true);
+    setPedirLogin(true, "/setup");
   };
   const enVivo = eventos.filter((e) => e.estado !== "FINALIZADO");
   const pasados = eventos.filter((e) => e.estado === "FINALIZADO");

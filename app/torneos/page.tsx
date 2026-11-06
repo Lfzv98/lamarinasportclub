@@ -24,7 +24,7 @@ export default function TorneosPage() {
   const soloStaff = (e: React.MouseEvent) => {
     if (esStaff) return;
     e.preventDefault();
-    setPedirLogin(true);
+    setPedirLogin(true, "/torneos/nuevo");
   };
 
   return (

@@ -130,6 +130,7 @@ npm run dev        # http://localhost:3000
 npm test           # tests: americanos (rotación, marcadores, horarios, fusión, plantel, validación) y torneos (sorteo, desempates, programación, lluvia, sedes, anotador, reglamento FIP)
 node tests/e2e/robustez.e2e.mjs   # 22 pruebas en navegador (con la app corriendo)
 node tests/e2e/horario.e2e.mjs    # 18 pruebas del selector de fecha y horas (celular y computadora)
+node tests/e2e/demo-venta.e2e.mjs # PIN → setup, borrador viejo, servidor reiniciado (QR/TV se recuperan) y sesión vencida (con REINICIAR)
 node tests/e2e/habibi.e2e.mjs     # Americano HABIBI de punta a punta: asistente, grupos, llave desde octavos, empate con punto de oro, campeones, TV
 npm run typecheck
 npm run build

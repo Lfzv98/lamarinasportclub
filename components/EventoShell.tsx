@@ -11,6 +11,7 @@ import { ModoBadge } from "@/components/ModoBadge";
 import { QRBoton } from "@/components/QRPopup";
 import { StaffChip } from "@/components/StaffGate";
 import { EstadoBadge } from "@/components/EventoCard";
+import { EventoBuscando } from "@/components/EventoBuscando";
 import { categoriaLabel } from "@/lib/categories";
 import { useAmericanos, useEsStaff, useEvento } from "@/lib/store";
 import type { EventoAmericano } from "@/types/americano";
@@ -26,16 +27,10 @@ export function EventoShell({ id, children }: { id: string; children: (evento: E
 
   if (!evento) {
     const cargando = !hidratado || !ultimoSync;
+    if (!cargando) return <EventoBuscando volver={!publico} />;
     return (
       <main className="flex min-h-dvh flex-col items-center justify-center gap-4 p-6 text-center">
-        {cargando ? (
-          <div className="size-10 animate-spin rounded-full border-2 border-white/10 border-t-neon" />
-        ) : (
-          <>
-            <p className="font-display text-2xl font-bold">Evento no encontrado</p>
-            {!publico && <Link href="/americanos" className="btn-neon">Volver al inicio</Link>}
-          </>
-        )}
+        <div className="size-10 animate-spin rounded-full border-2 border-white/10 border-t-neon" />
       </main>
     );
   }

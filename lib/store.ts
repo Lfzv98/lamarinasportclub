@@ -46,7 +46,11 @@ interface EstadoStore {
   staff: Staff | null | undefined;
   metodosLogin: { pin: boolean; pinLargo: number; padelreserve: boolean };
   pedirLogin: boolean;
-  setPedirLogin: (v: boolean) => void;
+  /** Pantalla a la que se va al entrar como staff (ej. "Nuevo Americano" → /setup). */
+  destinoLogin: string | null;
+  /** Este dispositivo ya entró como staff alguna vez (se borra al cerrar sesión). */
+  fueStaff: boolean;
+  setPedirLogin: (v: boolean, destino?: string) => void;
   cargarStaff: () => Promise<void>;
   login: (datos: { pin: string } | { email: string; password: string }) => Promise<string | null>;
   logout: () => Promise<void>;
@@ -121,6 +125,9 @@ async function enviar(evento: EventoAmericano): Promise<boolean> {
   }
 }
 
+/** Ya se pidió el PIN para volver a publicar (una vez por apertura de la app). */
+let avisoRepublicar = false;
+
 function subir(evento: EventoAmericano) {
   clearTimeout(timers.get(evento.id));
   timers.set(
@@ -165,6 +172,17 @@ export const useAmericanos = create<EstadoStore>()(
           });
           await Promise.all(aSubir.map(enviar));
 
+          // Celular del staff con la sesión vencida (12 h) y el servidor sin sus
+          // americanos en curso (ej. se reinició): nadie más los ve (QR, TV, otro
+          // celular) hasta volver a subirlos, así que se pide el PIN una vez.
+          if (staff === null && get().fueStaff && !avisoRepublicar) {
+            const faltan = Object.values(eventos).some((e) => !e.eliminado && e.estado !== "FINALIZADO" && !remotos.has(e.id));
+            if (faltan) {
+              avisoRepublicar = true;
+              set({ pedirLogin: true });
+            }
+          }
+
           const rc = await fetch("/api/club", { cache: "no-store" });
           if (rc.ok) {
             const { club } = (await rc.json()) as { club: ConfigClub };
@@ -195,13 +213,15 @@ export const useAmericanos = create<EstadoStore>()(
       staff: undefined,
       metodosLogin: { pin: true, pinLargo: 4, padelreserve: false },
       pedirLogin: false,
-      setPedirLogin: (v) => set({ pedirLogin: v }),
+      destinoLogin: null,
+      fueStaff: false,
+      setPedirLogin: (v, destino) => set({ pedirLogin: v, destinoLogin: v ? (destino ?? null) : null }),
 
       async cargarStaff() {
         try {
           const r = await fetch("/api/staff/me", { cache: "no-store" });
           const d = (await r.json()) as { staff: Staff | null; metodos: EstadoStore["metodosLogin"] };
-          set({ staff: d.staff, metodosLogin: d.metodos });
+          set({ staff: d.staff, metodosLogin: d.metodos, ...(d.staff ? { fueStaff: true } : {}) });
         } catch {
           // Sin conexión: se mantiene lo último conocido (o espectador).
           if (get().staff === undefined) set({ staff: null });
@@ -213,7 +233,7 @@ export const useAmericanos = create<EstadoStore>()(
           const r = await fetch("/api/staff/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(datos) });
           const d = (await r.json()) as { staff?: Staff; error?: string };
           if (!r.ok || !d.staff) return d.error ?? "No se pudo ingresar.";
-          set({ staff: d.staff, pedirLogin: false });
+          set({ staff: d.staff, pedirLogin: false, fueStaff: true });
           get().sincronizar();
           return null;
         } catch {
@@ -223,7 +243,7 @@ export const useAmericanos = create<EstadoStore>()(
 
       async logout() {
         await fetch("/api/staff/logout", { method: "POST" }).catch(() => undefined);
-        set({ staff: null });
+        set({ staff: null, fueStaff: false });
       },
 
       guardarClub(club) {
@@ -240,11 +260,11 @@ export const useAmericanos = create<EstadoStore>()(
     {
       name: "lamarina-americanos-v1",
       storage: createJSONStorage(() => almacenSeguro),
-      partialize: (s) => ({ eventos: s.eventos, club: s.club, pendientes: s.pendientes, clubPendiente: s.clubPendiente, staff: s.staff }),
+      partialize: (s) => ({ eventos: s.eventos, club: s.club, pendientes: s.pendientes, clubPendiente: s.clubPendiente, staff: s.staff, fueStaff: s.fueStaff }),
       skipHydration: true,
       merge: (guardado, actual) => {
         const g = guardado as Partial<EstadoStore> | undefined;
-        return { ...actual, ...g, club: normalizarClub(g?.club), pendientes: g?.pendientes ?? [] };
+        return { ...actual, ...g, club: normalizarClub(g?.club), pendientes: g?.pendientes ?? [], fueStaff: g?.fueStaff ?? !!g?.staff };
       },
     },
   ),

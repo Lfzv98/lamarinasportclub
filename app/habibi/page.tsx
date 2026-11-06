@@ -28,7 +28,7 @@ export default function HabibiInicio() {
   const soloStaff = (e: React.MouseEvent) => {
     if (esStaff) return;
     e.preventDefault();
-    setPedirLogin(true);
+    setPedirLogin(true, "/habibi/nuevo");
   };
   const activos = torneos.filter((t) => t.estado !== "FINALIZADO");
   const pasados = torneos.filter((t) => t.estado === "FINALIZADO");

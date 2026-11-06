@@ -3,6 +3,7 @@
 import clsx from "clsx";
 import { AnimatePresence, motion } from "framer-motion";
 import { Delete, KeyRound, Loader2, LogIn, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/Logo";
 import { toast } from "@/components/ui/Toaster";
@@ -16,6 +17,7 @@ export function StaffLogin() {
   const setAbierto = useAmericanos((s) => s.setPedirLogin);
   const metodos = useAmericanos((s) => s.metodosLogin);
   const login = useAmericanos((s) => s.login);
+  const router = useRouter();
   const LARGO_PIN = Math.min(8, Math.max(4, metodos.pinLargo || 4));
   const [modo, setModo] = useState<"pin" | "cuenta">("pin");
   const [pin, setPin] = useState("");
@@ -35,6 +37,7 @@ export function StaffLogin() {
   async function enviar(datos: { pin: string } | { email: string; password: string }) {
     setCargando(true);
     setError(null);
+    const destino = useAmericanos.getState().destinoLogin;
     const err = await login(datos);
     setCargando(false);
     if (err) {
@@ -46,6 +49,11 @@ export function StaffLogin() {
     sonar("ok");
     vibrar(20);
     toast("Modo staff activado");
+    // Tocó "Nuevo Americano" (o similar) sin sesión: sigue directo a donde iba.
+    if (destino) {
+      useAmericanos.setState({ destinoLogin: null });
+      router.push(destino);
+    }
   }
 
   function tecla(d: string) {
